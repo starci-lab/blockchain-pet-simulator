@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react'
 import Phaser from 'phaser'
+import dogImg from '../assets/images/chog_sleep.png'
+import dogJson from '../assets/images/chog_sleep.json'
 
 interface PhaserPetGameProps {
   speed?: number
@@ -21,11 +23,7 @@ const PhaserPetGame = ({ speed = 50 }: PhaserPetGameProps) => {
       }
 
       preload() {
-        this.load.atlas(
-          'dog',
-          '/assets/images/chog_sleep.png',
-          '/assets/images/chog_sleep.json'
-        )
+        this.load.atlas('dog', dogImg, dogJson)
       }
 
       create() {

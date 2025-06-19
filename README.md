@@ -14,14 +14,14 @@ npm install pet-rising-game
 
 ```tsx
 import React from 'react'
-import PhaserDogGame from 'pet-rising-game'
+import PhaserPetGame from 'pet-rising-game'
 
 function App() {
   return (
     <div>
       <h1>My App</h1>
       {/* The pet will appear at the bottom of the screen with default speed */}
-      <PhaserDogGame />
+      <PhaserPetGame />
     </div>
   )
 }
@@ -33,7 +33,7 @@ export default App
 
 ```tsx
 import React, { useState } from 'react'
-import PhaserDogGame from 'pet-rising-game'
+import PhaserPetGame from 'pet-rising-game'
 
 function App() {
   const [speed, setSpeed] = useState(50)
@@ -49,7 +49,7 @@ function App() {
         <span>Speed: {speed}</span>
         <button onClick={increaseSpeed}>Speed +</button>
       </div>
-      <PhaserDogGame speed={speed} />
+      <PhaserPetGame speed={speed} />
     </div>
   )
 }
@@ -61,7 +61,7 @@ export default App
 
 ```tsx
 import React from 'react'
-import PhaserDogGame from 'pet-rising-game'
+import PhaserPetGame from 'pet-rising-game'
 
 function App() {
   return (
@@ -69,13 +69,13 @@ function App() {
       <h1>My App with Different Pet Speeds</h1>
 
       {/* Slow pet */}
-      <PhaserDogGame speed={25} />
+      <PhaserPetGame speed={25} />
 
       {/* Normal speed (default) */}
-      <PhaserDogGame speed={50} />
+      <PhaserPetGame speed={50} />
 
       {/* Fast pet */}
-      <PhaserDogGame speed={100} />
+      <PhaserPetGame speed={100} />
     </div>
   )
 }
@@ -105,13 +105,13 @@ export default App
 ### Slow Walking Pet
 
 ```tsx
-<PhaserDogGame speed={25} />
+<PhaserPetGame speed={25} />
 ```
 
 ### Fast Running Pet
 
 ```tsx
-<PhaserDogGame speed={150} />
+<PhaserPetGame speed={150} />
 ```
 
 ### Speed Control Demo
@@ -128,7 +128,7 @@ return (
       value={speed}
       onChange={(e) => setSpeed(Number(e.target.value))}
     />
-    <PhaserDogGame speed={speed} />
+    <PhaserPetGame speed={speed} />
   </div>
 )
 ```
@@ -155,7 +155,7 @@ You can see a live demo at: [GitHub Repository](https://github.com/starci-lab/bl
 This package includes TypeScript declarations. The component props are fully typed:
 
 ```tsx
-interface PhaserDogGameProps {
+interface PhaserPetGameProps {
   speed?: number
 }
 ```

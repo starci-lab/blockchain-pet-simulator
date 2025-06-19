@@ -1,6 +1,6 @@
 {
   "name": "pet-rising-game",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "type": "module",
   "description": "A simple React component with a walking animal animation using Phaser.js",
   "main": "dist/index.js",
