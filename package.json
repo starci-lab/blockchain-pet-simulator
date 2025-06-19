@@ -1,0 +1,54 @@
+{
+  "name": "phaser-dog-game-hyunn",
+  "version": "1.2.0",
+  "type": "module",
+  "description": "A simple React component with a walking dog animation using Phaser.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "react",
+    "phaser",
+    "game",
+    "animation",
+    "dog",
+    "component"
+  ],
+  "author": "hyunn",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nguyenhcp2004/phaser-dog-game"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "build:lib": "vite build --mode library && npm run build:types",
+    "build:types": "tsc -p tsconfig.lib.json",
+    "lint": "eslint .",
+    "preview": "vite preview",
+    "prepublishOnly": "npm run build:lib"
+  },
+  "dependencies": {
+    "path": "^0.12.7",
+    "phaser": "^3.90.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.25.0",
+    "@types/node": "^22.15.29",
+    "@types/react": "^19.1.2",
+    "@types/react-dom": "^19.1.2",
+    "@vitejs/plugin-react-swc": "^3.9.0",
+    "eslint": "^9.25.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.19",
+    "globals": "^16.0.0",
+    "typescript": "~5.8.3",
+    "typescript-eslint": "^8.30.1",
+    "vite": "^6.3.5"
+  }
+}

@@ -1,0 +1,10 @@
+src/
+public/
+index.html
+vite.config.ts
+tsconfig.*.json
+eslint.config.js
+.env*
+node_modules/
+*.log
+.DS_Store
