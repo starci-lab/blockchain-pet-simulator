@@ -1,11 +1,11 @@
 import { useEffect, useRef } from 'react'
 import Phaser from 'phaser'
 
-interface PhaserDogGameProps {
+interface PhaserPetGameProps {
   speed?: number
 }
 
-const PhaserDogGame = ({ speed = 50 }: PhaserDogGameProps) => {
+const PhaserPetGame = ({ speed = 50 }: PhaserPetGameProps) => {
   const gameRef = useRef<HTMLDivElement>(null)
   const phaserGameRef = useRef<Phaser.Game | null>(null)
   useEffect(() => {
@@ -113,4 +113,4 @@ const PhaserDogGame = ({ speed = 50 }: PhaserDogGameProps) => {
   )
 }
 
-export default PhaserDogGame
+export default PhaserPetGame

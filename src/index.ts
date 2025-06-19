@@ -1,1 +1,1 @@
-export { default } from './components/PhaserDogGame'
+export { default } from './components/PhaserPetGame'

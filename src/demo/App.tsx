@@ -1,6 +1,6 @@
+import PhaserPetGame from '../components/PhaserPetGame'
 import './App.css'
 import { useState } from 'react'
-import PhaserDogGame from '../components/PhaserDogGame'
 
 function App() {
   const [speed, setSpeed] = useState(50)
@@ -11,7 +11,7 @@ function App() {
   return (
     <>
       <h1>Phaser Game Demo</h1>
-      <p>A simple walking dog animation</p>
+      <p>A simple walking pet animation</p>
 
       <div style={{ marginTop: '20px' }}>
         <div style={{ marginBottom: '10px' }}>
@@ -23,10 +23,7 @@ function App() {
             Speed +
           </button>
         </div>
-        <p style={{ marginTop: '20px', fontSize: '14px', color: '#666' }}>
-          Install: <code>npm install phaser-dog-game-hyunn</code>
-        </p>
-        <PhaserDogGame speed={speed} />
+        <PhaserPetGame speed={speed} />
       </div>
     </>
   )

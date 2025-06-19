@@ -1,8 +1,8 @@
 {
-  "name": "phaser-dog-game-hyunn",
-  "version": "1.2.1",
+  "name": "pet-rising-game",
+  "version": "1.2.2",
   "type": "module",
-  "description": "A simple React component with a walking dog animation using Phaser.js",
+  "description": "A simple React component with a walking animal animation using Phaser.js",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
@@ -20,7 +20,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/nguyenhcp2004/phaser-dog-game"
+    "url": "https://github.com/starci-lab/blockchain-pet-simulator"
   },
   "scripts": {
     "dev": "vite",
