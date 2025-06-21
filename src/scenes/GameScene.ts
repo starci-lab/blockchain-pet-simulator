@@ -10,9 +10,11 @@ export class GameScene extends Phaser.Scene {
   walkCycles: number = 0
   isUserControlled: boolean = false
   lastEdgeHit: string = ''
-
+  randomStopTimer: number = 0
+  nextRandomStopTime: number = 0
   constructor() {
     super({ key: 'GameScene' })
+    this.setNextRandomStopTime()
   }
 
   preload() {
@@ -76,7 +78,7 @@ export class GameScene extends Phaser.Scene {
       repeat: 1
     })
 
-    // Animations for user control mode 
+    // Animations for user control mode
     this.anims.create({
       key: 'dog-sleep-loop',
       frames: [
@@ -156,11 +158,11 @@ export class GameScene extends Phaser.Scene {
     this.dog.setScale(2)
     this.updateActivity()
   }
-
   update() {
     if (!this.isUserControlled) {
       if (this.currentActivity === 'walk') {
         this.handleWalkCycle()
+        this.handleRandomStop()
       }
     }
 
@@ -178,8 +180,7 @@ export class GameScene extends Phaser.Scene {
       this.direction = -1
       this.dog.setFlipX(true)
       this.lastEdgeHit = 'right'
-      console.log('Hit RIGHT edge, performing random activity')
-      this.randomActivity()
+      // this.randomActivity()
     } else if (
       this.dog.x <= dogWidth / 2 &&
       this.direction === -1 &&
@@ -188,12 +189,27 @@ export class GameScene extends Phaser.Scene {
       this.direction = 1
       this.dog.setFlipX(false)
       this.lastEdgeHit = 'left'
-      console.log('Hit LEFT edge, performing random activity')
-      this.randomActivity()
+      // this.randomActivity()
     }
   }
   handleMovement() {
     this.dog.x += this.direction * this.speed * (1 / 60)
+  }
+
+  handleRandomStop() {
+    this.randomStopTimer += 1 / 60 // ~16.67ms per frame
+
+    if (this.randomStopTimer >= this.nextRandomStopTime) {
+      console.log('Random stop triggered!')
+      this.randomActivity()
+      this.setNextRandomStopTime()
+      this.randomStopTimer = 0
+    }
+  }
+  setNextRandomStopTime() {
+    // Random from 10-15 seconds
+    this.nextRandomStopTime = Phaser.Math.Between(15, 25)
+    console.log('Next random stop in:', this.nextRandomStopTime, 'seconds')
   }
   updateActivity() {
     switch (this.currentActivity) {
