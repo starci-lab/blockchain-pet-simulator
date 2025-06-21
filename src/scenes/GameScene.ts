@@ -1,0 +1,225 @@
+import Phaser from 'phaser'
+import { loadChogAssets } from '../load/asset'
+
+export class GameScene extends Phaser.Scene {
+  dog!: Phaser.GameObjects.Sprite
+  direction: number = 1
+  speed: number = 50
+  currentActivity: string = 'walk'
+  isMoving: boolean = true
+  walkCycles: number = 0
+  isUserControlled: boolean = false
+  lastEdgeHit: string = ''
+
+  constructor() {
+    super({ key: 'GameScene' })
+  }
+
+  preload() {
+    loadChogAssets(this)
+  }
+
+  create() {
+    this.createAnimations()
+    this.createSprite()
+  }
+
+  createAnimations() {
+    this.anims.create({
+      key: 'dog-sleep',
+      frames: [
+        { key: 'dog-sleep', frame: 'chog_sleep 0.aseprite' },
+        { key: 'dog-sleep', frame: 'chog_sleep 1.aseprite' },
+        { key: 'dog-sleep', frame: 'chog_sleep 2.aseprite' },
+        { key: 'dog-sleep', frame: 'chog_sleep 3.aseprite' },
+        { key: 'dog-sleep', frame: 'chog_sleep 4.aseprite' },
+        { key: 'dog-sleep', frame: 'chog_sleep 5.aseprite' }
+      ],
+      frameRate: 3,
+      repeat: 1
+    })
+
+    this.anims.create({
+      key: 'dog-play',
+      frames: [
+        { key: 'dog-play', frame: 'chog_idleplay 0.aseprite' },
+        { key: 'dog-play', frame: 'chog_idleplay 1.aseprite' },
+        { key: 'dog-play', frame: 'chog_idleplay 2.aseprite' },
+        { key: 'dog-play', frame: 'chog_idleplay 3.aseprite' },
+        { key: 'dog-play', frame: 'chog_idleplay 4.aseprite' },
+        { key: 'dog-play', frame: 'chog_idleplay 5.aseprite' },
+        { key: 'dog-play', frame: 'chog_idleplay 6.aseprite' },
+        { key: 'dog-play', frame: 'chog_idleplay 7.aseprite' },
+        { key: 'dog-play', frame: 'chog_idleplay 8.aseprite' },
+        { key: 'dog-play', frame: 'chog_idleplay 9.aseprite' },
+        { key: 'dog-play', frame: 'chog_idleplay 10.aseprite' },
+        { key: 'dog-play', frame: 'chog_idleplay 11.aseprite' },
+        { key: 'dog-play', frame: 'chog_idleplay 12.aseprite' },
+        { key: 'dog-play', frame: 'chog_idleplay 13.aseprite' },
+        { key: 'dog-play', frame: 'chog_idleplay 14.aseprite' }
+      ],
+      frameRate: 10,
+      repeat: 1
+    })
+
+    this.anims.create({
+      key: 'dog-chew',
+      frames: [
+        { key: 'dog-chew', frame: 'chog_chew 0.aseprite' },
+        { key: 'dog-chew', frame: 'chog_chew 1.aseprite' },
+        { key: 'dog-chew', frame: 'chog_chew 2.aseprite' },
+        { key: 'dog-chew', frame: 'chog_chew 3.aseprite' },
+        { key: 'dog-chew', frame: 'chog_chew 4.aseprite' },
+        { key: 'dog-chew', frame: 'chog_chew 5.aseprite' }
+      ],
+      frameRate: 6,
+      repeat: 1
+    })
+
+    this.anims.create({
+      key: 'dog-walk',
+      frames: [
+        { key: 'dog-walk', frame: 'chog_walk 0.aseprite' },
+        { key: 'dog-walk', frame: 'chog_walk 1.aseprite' },
+        { key: 'dog-walk', frame: 'chog_walk 2.aseprite' },
+        { key: 'dog-walk', frame: 'chog_walk 3.aseprite' },
+        { key: 'dog-walk', frame: 'chog_walk 4.aseprite' },
+        { key: 'dog-walk', frame: 'chog_walk 5.aseprite' },
+        { key: 'dog-walk', frame: 'chog_walk 6.aseprite' },
+        { key: 'dog-walk', frame: 'chog_walk 7.aseprite' }
+      ],
+      frameRate: 8,
+      repeat: -1
+    })
+  }
+
+  createSprite() {
+    this.dog = this.add.sprite(
+      100,
+      this.cameras.main.height - 40,
+      'dog-sleep',
+      'chog_sleep 0.aseprite'
+    )
+
+    this.dog.setScale(2)
+    this.updateActivity()
+  }
+
+  update() {
+    if (!this.isUserControlled) {
+      if (this.currentActivity === 'walk') {
+        this.handleWalkCycle()
+      }
+    }
+
+    if (this.isMoving && this.currentActivity === 'walk') {
+      this.handleMovement()
+    }
+  }
+  handleWalkCycle() {
+    const dogWidth = 40 * 2
+    if (
+      this.dog.x >= this.cameras.main.width - dogWidth / 2 &&
+      this.direction === 1 &&
+      this.lastEdgeHit !== 'right'
+    ) {
+      this.direction = -1
+      this.dog.setFlipX(true)
+      this.lastEdgeHit = 'right'
+      console.log('Hit RIGHT edge, performing random activity')
+      this.randomActivity()
+    } else if (
+      this.dog.x <= dogWidth / 2 &&
+      this.direction === -1 &&
+      this.lastEdgeHit !== 'left'
+    ) {
+      this.direction = 1
+      this.dog.setFlipX(false)
+      this.lastEdgeHit = 'left'
+      console.log('Hit LEFT edge, performing random activity')
+      this.randomActivity()
+    }
+  }
+  handleMovement() {
+    this.dog.x += this.direction * this.speed * (1 / 60)
+  }
+
+  updateActivity() {
+    switch (this.currentActivity) {
+      case 'walk':
+        this.dog.play('dog-walk')
+        this.isMoving = true
+        break
+      case 'sleep':
+        this.dog.play('dog-sleep')
+        this.isMoving = false
+        break
+      case 'idleplay':
+        this.dog.play('dog-play')
+        this.isMoving = false
+        break
+      case 'chew':
+        this.dog.play('dog-chew')
+        this.isMoving = false
+        break
+      default:
+        this.dog.play('dog-walk')
+        this.isMoving = true
+    }
+  }
+
+  randomActivity() {
+    const activities = ['idleplay', 'chew']
+    const newActivity = Phaser.Utils.Array.GetRandom(activities)
+    this.setActivity(newActivity)
+
+    this.dog.once('animationcomplete', () => {
+      if (!this.isUserControlled && this.currentActivity === newActivity) {
+        console.log('Animation completed, returning to walk...')
+        this.setActivity('walk')
+      }
+    })
+  }
+
+  setActivity(newActivity: string) {
+    console.log('=== AUTO setActivity ===', newActivity)
+    this.currentActivity = newActivity
+    this.updateActivity()
+    this.walkCycles = 0
+    this.lastEdgeHit = ''
+  }
+
+  setUserActivity(newActivity: string) {
+    console.log('=== USER CLICKED ===', newActivity)
+    this.currentActivity = newActivity
+    this.updateActivity()
+
+    this.walkCycles = 0
+    this.lastEdgeHit = ''
+
+    if (newActivity === 'walk') {
+      this.isUserControlled = false
+      console.log('Switched to AUTO MODE')
+    } else {
+      this.isUserControlled = true
+      console.log('Switched to USER CONTROL MODE')
+    }
+  }
+
+  updateSpeed(newSpeed: number) {
+    console.log('=== SPEED UPDATE ===', 'from', this.speed, 'to', newSpeed)
+    this.speed = newSpeed
+  }
+
+  updateCurrentActivity(newActivity: string) {
+    console.log(
+      '=== ACTIVITY UPDATE ===',
+      'from',
+      this.currentActivity,
+      'to',
+      newActivity
+    )
+    this.currentActivity = newActivity
+    this.updateActivity()
+  }
+}
