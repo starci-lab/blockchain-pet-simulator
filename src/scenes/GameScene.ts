@@ -23,8 +23,8 @@ export class GameScene extends Phaser.Scene {
     this.createAnimations()
     this.createSprite()
   }
-
   createAnimations() {
+    // Animations for auto mode
     this.anims.create({
       key: 'dog-sleep',
       frames: [
@@ -74,6 +74,58 @@ export class GameScene extends Phaser.Scene {
       ],
       frameRate: 6,
       repeat: 1
+    })
+
+    // Animations for user control mode 
+    this.anims.create({
+      key: 'dog-sleep-loop',
+      frames: [
+        { key: 'dog-sleep', frame: 'chog_sleep 0.aseprite' },
+        { key: 'dog-sleep', frame: 'chog_sleep 1.aseprite' },
+        { key: 'dog-sleep', frame: 'chog_sleep 2.aseprite' },
+        { key: 'dog-sleep', frame: 'chog_sleep 3.aseprite' },
+        { key: 'dog-sleep', frame: 'chog_sleep 4.aseprite' },
+        { key: 'dog-sleep', frame: 'chog_sleep 5.aseprite' }
+      ],
+      frameRate: 3,
+      repeat: -1
+    })
+
+    this.anims.create({
+      key: 'dog-play-loop',
+      frames: [
+        { key: 'dog-play', frame: 'chog_idleplay 0.aseprite' },
+        { key: 'dog-play', frame: 'chog_idleplay 1.aseprite' },
+        { key: 'dog-play', frame: 'chog_idleplay 2.aseprite' },
+        { key: 'dog-play', frame: 'chog_idleplay 3.aseprite' },
+        { key: 'dog-play', frame: 'chog_idleplay 4.aseprite' },
+        { key: 'dog-play', frame: 'chog_idleplay 5.aseprite' },
+        { key: 'dog-play', frame: 'chog_idleplay 6.aseprite' },
+        { key: 'dog-play', frame: 'chog_idleplay 7.aseprite' },
+        { key: 'dog-play', frame: 'chog_idleplay 8.aseprite' },
+        { key: 'dog-play', frame: 'chog_idleplay 9.aseprite' },
+        { key: 'dog-play', frame: 'chog_idleplay 10.aseprite' },
+        { key: 'dog-play', frame: 'chog_idleplay 11.aseprite' },
+        { key: 'dog-play', frame: 'chog_idleplay 12.aseprite' },
+        { key: 'dog-play', frame: 'chog_idleplay 13.aseprite' },
+        { key: 'dog-play', frame: 'chog_idleplay 14.aseprite' }
+      ],
+      frameRate: 10,
+      repeat: -1
+    })
+
+    this.anims.create({
+      key: 'dog-chew-loop',
+      frames: [
+        { key: 'dog-chew', frame: 'chog_chew 0.aseprite' },
+        { key: 'dog-chew', frame: 'chog_chew 1.aseprite' },
+        { key: 'dog-chew', frame: 'chog_chew 2.aseprite' },
+        { key: 'dog-chew', frame: 'chog_chew 3.aseprite' },
+        { key: 'dog-chew', frame: 'chog_chew 4.aseprite' },
+        { key: 'dog-chew', frame: 'chog_chew 5.aseprite' }
+      ],
+      frameRate: 6,
+      repeat: -1
     })
 
     this.anims.create({
@@ -143,7 +195,6 @@ export class GameScene extends Phaser.Scene {
   handleMovement() {
     this.dog.x += this.direction * this.speed * (1 / 60)
   }
-
   updateActivity() {
     switch (this.currentActivity) {
       case 'walk':
@@ -151,15 +202,27 @@ export class GameScene extends Phaser.Scene {
         this.isMoving = true
         break
       case 'sleep':
-        this.dog.play('dog-sleep')
+        if (this.isUserControlled) {
+          this.dog.play('dog-sleep-loop')
+        } else {
+          this.dog.play('dog-sleep')
+        }
         this.isMoving = false
         break
       case 'idleplay':
-        this.dog.play('dog-play')
+        if (this.isUserControlled) {
+          this.dog.play('dog-play-loop')
+        } else {
+          this.dog.play('dog-play')
+        }
         this.isMoving = false
         break
       case 'chew':
-        this.dog.play('dog-chew')
+        if (this.isUserControlled) {
+          this.dog.play('dog-chew-loop')
+        } else {
+          this.dog.play('dog-chew')
+        }
         this.isMoving = false
         break
       default:
@@ -182,7 +245,6 @@ export class GameScene extends Phaser.Scene {
   }
 
   setActivity(newActivity: string) {
-    console.log('=== AUTO setActivity ===', newActivity)
     this.currentActivity = newActivity
     this.updateActivity()
     this.walkCycles = 0
@@ -190,7 +252,6 @@ export class GameScene extends Phaser.Scene {
   }
 
   setUserActivity(newActivity: string) {
-    console.log('=== USER CLICKED ===', newActivity)
     this.currentActivity = newActivity
     this.updateActivity()
 
@@ -199,26 +260,16 @@ export class GameScene extends Phaser.Scene {
 
     if (newActivity === 'walk') {
       this.isUserControlled = false
-      console.log('Switched to AUTO MODE')
     } else {
       this.isUserControlled = true
-      console.log('Switched to USER CONTROL MODE')
     }
   }
 
   updateSpeed(newSpeed: number) {
-    console.log('=== SPEED UPDATE ===', 'from', this.speed, 'to', newSpeed)
     this.speed = newSpeed
   }
 
   updateCurrentActivity(newActivity: string) {
-    console.log(
-      '=== ACTIVITY UPDATE ===',
-      'from',
-      this.currentActivity,
-      'to',
-      newActivity
-    )
     this.currentActivity = newActivity
     this.updateActivity()
   }
