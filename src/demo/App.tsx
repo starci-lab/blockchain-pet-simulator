@@ -5,8 +5,8 @@ import './App.css'
 function App() {
   const [speed, setSpeed] = useState(50)
   const [activity, setActivity] = useState<
-    'walking' | 'sleeping' | 'eating' | 'playing'
-  >('walking')
+    'walk' | 'sleep' | 'idleplay' | 'chew'
+  >('walk')
 
   const increaseSpeed = () => setSpeed((prev) => Math.min(prev + 25, 300))
   const decreaseSpeed = () => setSpeed((prev) => Math.max(prev - 25, 25))
@@ -14,7 +14,7 @@ function App() {
   return (
     <>
       <h1>Pet Rising Game Demo</h1>
-      <p>A walking pet with different activities</p>
+      <p>A pet with walking, sleeping, playing and chewing activities</p>
 
       <div style={{ marginTop: '20px' }}>
         {/* Speed Control */}
@@ -25,7 +25,6 @@ function App() {
           <span style={{ marginRight: '10px' }}>Speed: {speed}</span>
           <button onClick={increaseSpeed}>Speed +</button>
         </div>
-
         {/* Activity Control */}
         <div style={{ marginBottom: '15px' }}>
           <label>Activity: </label>
@@ -34,39 +33,56 @@ function App() {
             onChange={(e) => setActivity(e.target.value as any)}
             style={{ marginLeft: '10px' }}
           >
-            <option value='walking'>Walking</option>
-            <option value='sleeping'>Sleeping</option>
-            <option value='eating'>Eating</option>
-            <option value='playing'>Playing</option>
+            <option value='walk'>Walk</option>
+            <option value='sleep'>Sleep</option>
+            <option value='idleplay'>Idle Play</option>
+            <option value='chew'>Chew</option>
           </select>
-        </div>
-
+        </div>{' '}
         {/* Activity Buttons */}
         <div style={{ marginBottom: '20px' }}>
-          {['walking', 'sleeping', 'eating', 'playing'].map((act) => (
+          <button
+            onClick={() => setActivity('walk')}
+            style={{
+              marginRight: '10px',
+              backgroundColor: '#28a745',
+              color: 'white',
+              border: '1px solid #28a745',
+              padding: '5px 15px',
+              borderRadius: '3px',
+              cursor: 'pointer',
+              fontWeight: 'bold'
+            }}
+          >
+            🔄 Auto Mode (Walk)
+          </button>
+
+          {[
+            { key: 'sleep', label: '😴 Sleep' },
+            { key: 'idleplay', label: '🎮 Idle Play' },
+            { key: 'chew', label: '🦴 Chew' }
+          ].map((act) => (
             <button
-              key={act}
-              onClick={() => setActivity(act as any)}
+              key={act.key}
+              onClick={() => setActivity(act.key as any)}
               style={{
                 marginRight: '5px',
-                backgroundColor: activity === act ? '#007bff' : '#f8f9fa',
-                color: activity === act ? 'white' : 'black',
+                backgroundColor: activity === act.key ? '#007bff' : '#f8f9fa',
+                color: activity === act.key ? 'white' : 'black',
                 border: '1px solid #ccc',
                 padding: '5px 10px',
                 borderRadius: '3px',
                 cursor: 'pointer'
               }}
             >
-              {act.charAt(0).toUpperCase() + act.slice(1)}
+              {act.label}
             </button>
           ))}
         </div>
-
         <p style={{ fontSize: '14px', color: '#666' }}>
           Install: <code>npm install pet-rising-game</code>
         </p>
-
-        <PhaserPetGame speed={speed} activity={'eating'} />
+        <PhaserPetGame speed={speed} activity={activity} />
       </div>
     </>
   )
