@@ -32,6 +32,7 @@
     "prepublishOnly": "npm run build:lib"
   },
   "dependencies": {
+    "colyseus.js": "^0.16.19",
     "path": "^0.12.7",
     "phaser": "^3.90.0",
     "react": "^19.1.0",
