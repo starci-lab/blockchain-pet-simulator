@@ -24,11 +24,21 @@ export default defineConfig(({ mode }) => {
             }
           }
         }
+      },
+      resolve: {
+        alias: {
+          '@': resolve(__dirname, './src')
+        }
       }
     }
   }
 
   return {
-    plugins: [react()]
+    plugins: [react()],
+    resolve: {
+      alias: {
+        '@': resolve(__dirname, './src')
+      }
+    }
   }
 })

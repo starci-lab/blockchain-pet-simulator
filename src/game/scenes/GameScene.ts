@@ -1,5 +1,5 @@
+import { loadChogAssets } from '@/game/load'
 import Phaser from 'phaser'
-import { loadChogAssets } from '../load/asset'
 // import { Room, Client, getStateCallbacks } from 'colyseus.js'
 // import { envConfig } from '../configs/env'
 // const BACKEND_URL = envConfig.BACKEND_URL

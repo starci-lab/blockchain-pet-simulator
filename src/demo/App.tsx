@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import PhaserPetGame from '../components/PhaserPetGame'
 import './App.css'
+import PhaserPetGame from '@/components/PhaserPetGame'
 
 function App() {
   const [speed, setSpeed] = useState(50)
