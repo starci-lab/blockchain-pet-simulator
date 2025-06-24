@@ -1,15 +1,21 @@
 import { useEffect, useRef } from 'react'
 import Phaser from 'phaser'
 import { GameScene } from '@/game/scenes/GameScene'
+import http from '@/utils/http'
+import { ROUTES } from '@/constants/routes'
 
 interface PhaserPetGameProps {
   speed?: number
   activity?: 'walk' | 'sleep' | 'idleplay' | 'chew'
+  publicKey: string
+  signMessage?: (message: string) => string | Promise<string>
 }
 
 const PhaserPetGame = ({
   speed = 50,
-  activity = 'walk'
+  activity = 'walk',
+  publicKey,
+  signMessage
 }: PhaserPetGameProps) => {
   const gameRef = useRef<HTMLDivElement>(null)
   const phaserGameRef = useRef<Phaser.Game | null>(null)
@@ -72,6 +78,32 @@ const PhaserPetGame = ({
       }
     }, 100)
   }, [activity])
+
+  useEffect(() => {
+    if (!signMessage || !publicKey) {
+      return
+    }
+    const handleSignMessage = async (message: string) => {
+      try {
+        const response = await http.get(ROUTES.getMessage)
+        const signedMessage = await signMessage(message)
+        console.log(`Signed Message: ${signedMessage}`)
+        const verifyResponse = await http.post(ROUTES.verify, {
+          message: response.data,
+          address: publicKey,
+          signature: signedMessage
+        })
+        console.log('Verification Response:', verifyResponse.data)
+        // lưu vào access token, hoặc lưu vào localStorage, hoặc gửi lên server
+        // lưu state user vào redux, zustand
+        // You can send the signed message to your server or use it in your game logic
+        // colyseus fe
+      } catch (error) {
+        console.error('Error signing message:', error)
+      }
+    }
+    handleSignMessage(`Welcome to the game, ${publicKey}!`)
+  }, [publicKey, signMessage])
 
   return (
     <div
