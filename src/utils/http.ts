@@ -34,8 +34,8 @@ export class Http {
         const { url } = response.config
         if (url === ROUTES.verify) {
           const data = response.data
-          this.accessToken = data.data.access_token
-          this.refreshToken = data.data.refresh_token
+          this.accessToken = data.accessToken
+          this.refreshToken = data.refreshToken
           setAccessTokenToLS(this.accessToken)
           setRefreshTokenToLS(this.refreshToken)
         }

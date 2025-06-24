@@ -20,6 +20,7 @@ const PhaserPetGame = ({
   const gameRef = useRef<HTMLDivElement>(null)
   const phaserGameRef = useRef<Phaser.Game | null>(null)
   const sceneRef = useRef<GameScene | null>(null)
+  console.log('public-key: ', publicKey)
 
   useEffect(() => {
     if (!gameRef.current) return
@@ -83,26 +84,28 @@ const PhaserPetGame = ({
     if (!signMessage || !publicKey) {
       return
     }
-    const handleSignMessage = async (message: string) => {
+    const handleSignMessage = async () => {
       try {
         const response = await http.get(ROUTES.getMessage)
-        const signedMessage = await signMessage(message)
-        console.log(`Signed Message: ${signedMessage}`)
+        const messageToSign = response.data
+        const signedMessage = await signMessage(messageToSign)
+        if (!signedMessage || signedMessage === '') {
+          console.error('Signed message is empty or invalid')
+          return
+        }
+
         const verifyResponse = await http.post(ROUTES.verify, {
-          message: response.data,
+          message: messageToSign,
           address: publicKey,
           signature: signedMessage
         })
         console.log('Verification Response:', verifyResponse.data)
-        // lưu vào access token, hoặc lưu vào localStorage, hoặc gửi lên server
-        // lưu state user vào redux, zustand
-        // You can send the signed message to your server or use it in your game logic
-        // colyseus fe
+        // TODO: Save state user to zustand store
       } catch (error) {
         console.error('Error signing message:', error)
       }
     }
-    handleSignMessage(publicKey)
+    handleSignMessage()
   }, [publicKey, signMessage])
 
   return (
