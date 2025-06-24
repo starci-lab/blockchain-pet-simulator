@@ -19,7 +19,6 @@ export class GameScene extends Phaser.Scene {
     super({ key: 'GameScene' })
     this.setNextRandomStopTime()
   }
-
   preload() {
     loadChogAssets(this)
   }
@@ -27,6 +26,10 @@ export class GameScene extends Phaser.Scene {
   async create() {
     this.createAnimations()
     this.createSprite()
+    this.input.setDefaultCursor(
+      `url(./src/assets/images/cursor/navigation_nw.png), pointer`
+    )
+
     // connect with the room
     // await this.connect();
 
