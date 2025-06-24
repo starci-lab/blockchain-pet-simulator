@@ -1,5 +1,8 @@
+import { loadChogAssets } from '@/game/load'
 import Phaser from 'phaser'
-import { loadChogAssets } from '../load/asset'
+// import { Room, Client, getStateCallbacks } from 'colyseus.js'
+// import { envConfig } from '../configs/env'
+// const BACKEND_URL = envConfig.BACKEND_URL
 
 export class GameScene extends Phaser.Scene {
   dog!: Phaser.GameObjects.Sprite
@@ -21,10 +24,35 @@ export class GameScene extends Phaser.Scene {
     loadChogAssets(this)
   }
 
-  create() {
+  async create() {
     this.createAnimations()
     this.createSprite()
+    // connect with the room
+    // await this.connect();
+
+    // remove local reference when entity is removed from the server
   }
+
+  // async connect() {
+  //   // add connection status text
+  //   const connectionStatusText = this.add
+  //     .text(0, 0, 'Trying to connect with the server...')
+  //     .setStyle({ color: '#ff0000' })
+  //     .setPadding(4)
+
+  //   const client = new Client(BACKEND_URL)
+
+  //   try {
+  //     this.room = await client.joinOrCreate('part1_room', {})
+
+  //     // connection successful!
+  //     connectionStatusText.destroy()
+  //   } catch (e) {
+  //     // couldn't connect
+  //     connectionStatusText.text = 'Could not connect with the server.'
+  //   }
+  // }
+
   createAnimations() {
     // Animations for auto mode
     this.anims.create({
@@ -159,6 +187,11 @@ export class GameScene extends Phaser.Scene {
     this.updateActivity()
   }
   update() {
+    // skip loop if not connected with room yet.
+    // if (!this.room) {
+    //   return
+    // }
+
     if (!this.isUserControlled) {
       if (this.currentActivity === 'walk') {
         this.handleWalkCycle()

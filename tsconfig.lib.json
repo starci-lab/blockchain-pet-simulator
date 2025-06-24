@@ -14,7 +14,11 @@
     "outDir": "./dist-types",
     "emitDeclarationOnly": true,
     "types": ["vite/client"],
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
   },
   "include": ["src/index.ts", "src/components/PhaserGame.tsx"],
   "exclude": ["src/main.tsx", "src/App.tsx", "**/*.test.*", "**/*.spec.*"]

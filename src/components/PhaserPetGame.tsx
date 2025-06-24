@@ -1,19 +1,26 @@
 import { useEffect, useRef } from 'react'
 import Phaser from 'phaser'
-import { GameScene } from '../scenes/GameScene'
+import { GameScene } from '@/game/scenes/GameScene'
+import http from '@/utils/http'
+import { ROUTES } from '@/constants/routes'
 
 interface PhaserPetGameProps {
   speed?: number
   activity?: 'walk' | 'sleep' | 'idleplay' | 'chew'
+  publicKey: string
+  signMessage?: (message: string) => string | Promise<string>
 }
 
 const PhaserPetGame = ({
   speed = 50,
-  activity = 'walk'
+  activity = 'walk',
+  publicKey,
+  signMessage
 }: PhaserPetGameProps) => {
   const gameRef = useRef<HTMLDivElement>(null)
   const phaserGameRef = useRef<Phaser.Game | null>(null)
   const sceneRef = useRef<GameScene | null>(null)
+  console.log('public-key: ', publicKey)
 
   useEffect(() => {
     if (!gameRef.current) return
@@ -72,6 +79,34 @@ const PhaserPetGame = ({
       }
     }, 100)
   }, [activity])
+
+  useEffect(() => {
+    if (!signMessage || !publicKey) {
+      return
+    }
+    const handleSignMessage = async () => {
+      try {
+        const response = await http.get(ROUTES.getMessage)
+        const messageToSign = response.data
+        const signedMessage = await signMessage(messageToSign)
+        if (!signedMessage || signedMessage === '') {
+          console.error('Signed message is empty or invalid')
+          return
+        }
+
+        const verifyResponse = await http.post(ROUTES.verify, {
+          message: messageToSign,
+          address: publicKey,
+          signature: signedMessage
+        })
+        console.log('Verification Response:', verifyResponse.data)
+        // TODO: Save state user to zustand store
+      } catch (error) {
+        console.error('Error signing message:', error)
+      }
+    }
+    handleSignMessage()
+  }, [publicKey, signMessage])
 
   return (
     <div

@@ -1,15 +1,39 @@
-import { useState } from 'react'
-import PhaserPetGame from '../components/PhaserPetGame'
+import { useEffect, useState } from 'react'
 import './App.css'
+import PhaserPetGame from '@/components/PhaserPetGame'
+import { ethers } from 'ethers'
 
 function App() {
   const [speed, setSpeed] = useState(50)
   const [activity, setActivity] = useState<
     'walk' | 'sleep' | 'idleplay' | 'chew'
   >('walk')
+  const [keyPair, setKeyPair] = useState<{
+    privateKey: string
+    publicKey: string
+  } | null>(null)
+  const [wallet, setWallet] = useState<ethers.Wallet | null>(null)
 
   const increaseSpeed = () => setSpeed((prev) => Math.min(prev + 25, 300))
   const decreaseSpeed = () => setSpeed((prev) => Math.max(prev - 25, 25))
+  useEffect(() => {
+    const generateKeyPair = async () => {
+      const wallet = ethers.Wallet.createRandom()
+      setKeyPair({
+        privateKey: wallet.privateKey,
+        publicKey: wallet.address
+      })
+    }
+    generateKeyPair()
+  }, [])
+
+  // Create wallet from keyPair
+  useEffect(() => {
+    if (keyPair) {
+      const newWallet = new ethers.Wallet(keyPair.privateKey)
+      setWallet(newWallet)
+    }
+  }, [keyPair])
 
   return (
     <>
@@ -81,8 +105,15 @@ function App() {
         </div>
         <p style={{ fontSize: '14px', color: '#666' }}>
           Install: <code>npm install pet-rising-game</code>
-        </p>
-        <PhaserPetGame speed={speed} activity={activity} />
+        </p>{' '}
+        <PhaserPetGame
+          publicKey={keyPair?.publicKey || ''}
+          signMessage={(message) =>
+            wallet?.signMessage(message) || Promise.resolve('')
+          }
+          speed={speed}
+          activity={activity}
+        />
       </div>
     </>
   )
