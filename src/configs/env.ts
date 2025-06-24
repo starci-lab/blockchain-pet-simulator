@@ -1,3 +1,3 @@
 export const envConfig = {
-  BACKEND_URL: 'https://chog-backend.fly.dev'
+  baseUrl: 'https://chog-backend.fly.dev/api'
 }
