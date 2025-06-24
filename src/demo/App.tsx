@@ -82,7 +82,7 @@ function App() {
         <p style={{ fontSize: '14px', color: '#666' }}>
           Install: <code>npm install pet-rising-game</code>
         </p>
-        <PhaserPetGame speed={speed} activity={activity} />
+        <PhaserPetGame publicKey='' speed={speed} activity={activity} />
       </div>
     </>
   )

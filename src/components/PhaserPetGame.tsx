@@ -102,7 +102,7 @@ const PhaserPetGame = ({
         console.error('Error signing message:', error)
       }
     }
-    handleSignMessage(`Welcome to the game, ${publicKey}!`)
+    handleSignMessage(publicKey)
   }, [publicKey, signMessage])
 
   return (
