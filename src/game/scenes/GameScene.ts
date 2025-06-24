@@ -1,5 +1,7 @@
+import { SceneName } from '@/constants/scene'
 import { loadChogAssets } from '@/game/load'
 import Phaser from 'phaser'
+import RexUIPlugin from 'phaser3-rex-plugins/templates/ui/ui-plugin.js'
 // import { Room, Client, getStateCallbacks } from 'colyseus.js'
 // import { envConfig } from '../configs/env'
 // const BACKEND_URL = envConfig.BACKEND_URL
@@ -15,17 +17,29 @@ export class GameScene extends Phaser.Scene {
   lastEdgeHit: string = ''
   randomStopTimer: number = 0
   nextRandomStopTime: number = 0
+  // Feeding system properties
+  foodShop!: Phaser.GameObjects.Rectangle
+  foodInventory: number = 0
+  droppedFood: Phaser.GameObjects.Sprite[] = []
+  isChasing: boolean = false
+  chaseTarget: { x: number; y: number } | null = null
+  hungerLevel: number = 100
+  rexUI!: RexUIPlugin
+  inventoryText!: Phaser.GameObjects.Text
+  hungerBar!: Phaser.GameObjects.Rectangle
   constructor() {
-    super({ key: 'GameScene' })
+    super({ key: SceneName.Gameplay })
     this.setNextRandomStopTime()
   }
   preload() {
     loadChogAssets(this)
   }
-
   async create() {
     this.createAnimations()
     this.createSprite()
+    this.createFoodShop()
+    this.createFeedingUI()
+    this.setupInputHandlers()
     this.input.setDefaultCursor(
       `url(./src/assets/images/cursor/navigation_nw.png), pointer`
     )
@@ -195,7 +209,10 @@ export class GameScene extends Phaser.Scene {
     //   return
     // }
 
-    if (!this.isUserControlled) {
+    // Handle chasing food
+    if (this.isChasing && this.chaseTarget) {
+      this.handleChasing()
+    } else if (!this.isUserControlled) {
       if (this.currentActivity === 'walk') {
         this.handleWalkCycle()
         this.handleRandomStop()
@@ -205,6 +222,10 @@ export class GameScene extends Phaser.Scene {
     if (this.isMoving && this.currentActivity === 'walk') {
       this.handleMovement()
     }
+
+    // Decrease hunger over time
+    this.hungerLevel = Math.max(0, this.hungerLevel - 0.01)
+    this.updateUI()
   }
   handleWalkCycle() {
     const dogWidth = 40 * 2
@@ -325,4 +346,177 @@ export class GameScene extends Phaser.Scene {
     this.currentActivity = newActivity
     this.updateActivity()
   }
+
+  createFoodShop() {
+    // Tạo shop ở góc phải
+    const shopX = this.cameras.main.width - 60
+    const shopY = 30
+
+    this.foodShop = this.add.rectangle(shopX, shopY, 80, 40, 0x8b4513)
+    this.foodShop.setStrokeStyle(2, 0x654321)
+    this.foodShop.setInteractive()
+
+    // Thêm text "SHOP"
+    this.add
+      .text(shopX, shopY, '🏪 SHOP', {
+        fontSize: '12px',
+        color: '#ffffff'
+      })
+      .setOrigin(0.5)
+
+    // Click để mua food
+    this.foodShop.on('pointerdown', () => {
+      this.buyFood()
+    })
+  }
+
+  createFeedingUI() {
+    // Hiển thị food inventory
+    const inventoryText = this.add.text(10, 10, `Food: ${this.foodInventory}`, {
+      fontSize: '16px',
+      color: '#333333',
+      backgroundColor: '#ffffff',
+      padding: { x: 8, y: 4 }
+    })
+
+    // Hunger bar
+    const hungerBar = this.add.rectangle(10, 40, 100, 10, 0xff0000)
+    const hungerFill = this.add.rectangle(
+      10,
+      40,
+      this.hungerLevel,
+      10,
+      0x00ff00
+    )
+    hungerFill.setOrigin(0, 0.5)
+    hungerBar.setOrigin(0, 0.5)
+
+    // Lưu reference để update
+    this.inventoryText = inventoryText
+    this.hungerBar = hungerFill
+  }
+
+  setupInputHandlers() {
+    // Click để thả food
+    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      // Chỉ thả food nếu không click vào shop và có food
+      if (
+        !this.foodShop.getBounds().contains(pointer.x, pointer.y) &&
+        this.foodInventory > 0
+      ) {
+        this.dropFood(pointer.x, pointer.y)
+      }
+    })
+  }
+
+  buyFood() {
+    this.foodInventory += 1
+    this.updateUI()
+    console.log(`Bought food! Inventory: ${this.foodInventory}`)
+  }
+
+  dropFood(x: number, y: number) {
+    if (this.foodInventory <= 0) return
+
+    this.foodInventory -= 1
+
+    // Tạo food sprite
+    const food = this.add.circle(x, y, 8, 0xffd700) // Màu vàng cho food
+    food.setStrokeStyle(2, 0xffa500)
+
+    this.droppedFood.push(food as any)
+
+    // Pet sẽ chạy đến food
+    this.startChasing(x, y)
+    this.updateUI()
+
+    console.log(`Dropped food at (${x}, ${y})`)
+  }
+
+  startChasing(x: number, y: number) {
+    this.isChasing = true
+    this.chaseTarget = { x, y }
+    this.isUserControlled = true
+    this.setActivity('walk')
+
+    console.log(`Pet chasing food at (${x}, ${y})`)
+  }
+
+  handleChasing() {
+    if (!this.chaseTarget) return
+
+    const targetX = this.chaseTarget.x
+    const targetY = this.chaseTarget.y
+    const distance = Phaser.Math.Distance.Between(
+      this.dog.x,
+      this.dog.y,
+      targetX,
+      targetY
+    )
+
+    // Nếu đủ gần thì ăn food
+    if (distance < 20) {
+      this.eatFood(targetX, targetY)
+      return
+    }
+
+    // Di chuyển về phía food
+    const angle = Phaser.Math.Angle.Between(
+      this.dog.x,
+      this.dog.y,
+      targetX,
+      targetY
+    )
+    this.dog.x += Math.cos(angle) * this.speed * (1 / 60)
+
+    // Flip sprite theo hướng di chuyển
+    if (Math.cos(angle) > 0) {
+      this.dog.setFlipX(false)
+      this.direction = 1
+    } else {
+      this.dog.setFlipX(true)
+      this.direction = -1
+    }
+  }
+
+  eatFood(x: number, y: number) {
+    // Tìm và xóa food
+    const foodIndex = this.droppedFood.findIndex(
+      (food) => Phaser.Math.Distance.Between(food.x, food.y, x, y) < 20
+    )
+
+    if (foodIndex !== -1) {
+      this.droppedFood[foodIndex].destroy()
+      this.droppedFood.splice(foodIndex, 1)
+    }
+
+    // Tăng hunger
+    this.hungerLevel = Math.min(100, this.hungerLevel + 20)
+
+    // Dừng chase và chuyển sang chew animation
+    this.isChasing = false
+    this.chaseTarget = null
+    this.setActivity('chew')
+
+    console.log(`Pet ate food! Hunger: ${this.hungerLevel}`)
+
+    // Sau khi ăn xong thì quay lại walk
+    this.dog.once('animationcomplete', () => {
+      if (this.currentActivity === 'chew') {
+        this.isUserControlled = false
+        this.setActivity('walk')
+      }
+    })
+  }
+
+  updateUI() {
+    if (this.inventoryText) {
+      this.inventoryText.setText(`Food: ${this.foodInventory}`)
+    }
+    if (this.hungerBar) {
+      this.hungerBar.setSize(this.hungerLevel, 10)
+    }
+  }
+
+  // ...existing code...
 }
