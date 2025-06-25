@@ -20,7 +20,6 @@ const PhaserPetGame = ({
   const gameRef = useRef<HTMLDivElement>(null)
   const phaserGameRef = useRef<Phaser.Game | null>(null)
   const sceneRef = useRef<GameScene | null>(null)
-  console.log('public-key: ', publicKey)
 
   useEffect(() => {
     if (!gameRef.current) return
@@ -87,7 +86,9 @@ const PhaserPetGame = ({
     const handleSignMessage = async () => {
       try {
         const response = await http.get(ROUTES.getMessage)
-        const messageToSign = response.data
+        console.log('Message to Sign Response:', response.data)
+        const messageToSign = response.data.message
+        console.log('Signed Message:', messageToSign)
         const signedMessage = await signMessage(messageToSign)
         if (!signedMessage || signedMessage === '') {
           console.error('Signed message is empty or invalid')
