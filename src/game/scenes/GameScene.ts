@@ -3,10 +3,11 @@ import { loadChogAssets } from '@/game/load'
 import Phaser from 'phaser'
 import RexUIPlugin from 'phaser3-rex-plugins/templates/ui/ui-plugin.js'
 // import { Room, Client, getStateCallbacks } from 'colyseus.js'
-// import { envConfig } from '../configs/env'
-// const BACKEND_URL = envConfig.BACKEND_URL
+// import { envConfig } from '@/configs/env'
+// const BACKEND_URL = envConfig.baseUrl
 
 export class GameScene extends Phaser.Scene {
+  // room!: Room
   dog!: Phaser.GameObjects.Sprite
   direction: number = 1
   speed: number = 50
@@ -45,13 +46,12 @@ export class GameScene extends Phaser.Scene {
     )
 
     // connect with the room
-    // await this.connect();
+    // await this.connect()
 
     // remove local reference when entity is removed from the server
   }
 
   // async connect() {
-  //   // add connection status text
   //   const connectionStatusText = this.add
   //     .text(0, 0, 'Trying to connect with the server...')
   //     .setStyle({ color: '#ff0000' })
@@ -62,10 +62,8 @@ export class GameScene extends Phaser.Scene {
   //   try {
   //     this.room = await client.joinOrCreate('part1_room', {})
 
-  //     // connection successful!
   //     connectionStatusText.destroy()
   //   } catch (e) {
-  //     // couldn't connect
   //     connectionStatusText.text = 'Could not connect with the server.'
   //   }
   // }
@@ -517,6 +515,4 @@ export class GameScene extends Phaser.Scene {
       this.hungerBar.setSize(this.hungerLevel, 10)
     }
   }
-
-  // ...existing code...
 }

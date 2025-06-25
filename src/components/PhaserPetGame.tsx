@@ -80,33 +80,34 @@ const PhaserPetGame = ({
     }, 100)
   }, [activity])
 
-  // useEffect(() => {
-  //   if (!signMessage || !publicKey) {
-  //     return
-  //   }
-  //   const handleSignMessage = async () => {
-  //     try {
-  //       const response = await http.get(ROUTES.getMessage)
-  //       const messageToSign = response.data
-  //       const signedMessage = await signMessage(messageToSign)
-  //       if (!signedMessage || signedMessage === '') {
-  //         console.error('Signed message is empty or invalid')
-  //         return
-  //       }
+  useEffect(() => {
+    if (!signMessage || !publicKey) {
+      return
+    }
+    const handleSignMessage = async () => {
+      try {
+        const response = await http.get(ROUTES.getMessage)
+        const messageToSign = response.data.message
+        console.log('Signed Message:', messageToSign)
+        const signedMessage = await signMessage(messageToSign)
+        if (!signedMessage || signedMessage === '') {
+          console.error('Signed message is empty or invalid')
+          return
+        }
 
-  //       const verifyResponse = await http.post(ROUTES.verify, {
-  //         message: messageToSign,
-  //         address: publicKey,
-  //         signature: signedMessage
-  //       })
-  //       console.log('Verification Response:', verifyResponse.data)
-  //       // TODO: Save state user to zustand store
-  //     } catch (error) {
-  //       console.error('Error signing message:', error)
-  //     }
-  //   }
-  //   handleSignMessage()
-  // }, [publicKey, signMessage])
+        const verifyResponse = await http.post(ROUTES.verify, {
+          message: messageToSign,
+          address: publicKey,
+          signature: signedMessage
+        })
+        console.log('Verification Response:', verifyResponse.data)
+        // TODO: Save state user to zustand store
+      } catch (error) {
+        console.error('Error signing message:', error)
+      }
+    }
+    handleSignMessage()
+  }, [publicKey, signMessage])
 
   return (
     <div
