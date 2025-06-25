@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react'
 import Phaser from 'phaser'
-import { GameScene } from '@/game/scenes/GameScene'
 import http from '@/utils/http'
 import { ROUTES } from '@/constants/routes'
+import { GameScene } from '@/game/scenes/GameScene'
 
 interface PhaserPetGameProps {
   speed?: number
