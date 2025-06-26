@@ -223,5 +223,9 @@ export class Pet {
   stopChasing() {
     this.isChasing = false
     this.chaseTarget = null
+    // Ensure pet returns to proper walk animation when stopping chase
+    if (this.currentActivity === 'walk') {
+      this.setActivity('walk') // Refresh the walk animation
+    }
   }
 }
