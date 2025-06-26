@@ -197,12 +197,6 @@ export class Pet {
   }
 
   setActivity(newActivity: string) {
-    // console.log(
-    //   '🔄 Changing activity from',
-    //   this.currentActivity,
-    //   'to',
-    //   newActivity
-    // )
     this.currentActivity = newActivity
     this.updateActivity()
   }

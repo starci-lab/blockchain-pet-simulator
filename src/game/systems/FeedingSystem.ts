@@ -6,6 +6,7 @@ export class FeedingSystem {
   public droppedFood: Phaser.GameObjects.Sprite[] = []
   public foodShadows: Phaser.GameObjects.Ellipse[] = []
   public foodTimers: Phaser.Time.TimerEvent[] = [] // Track timers for each food
+  private lastChaseCheck: number = 0 // Track when we last checked for chasing opportunities
 
   private scene: Phaser.Scene
   private pet: Pet
@@ -18,6 +19,24 @@ export class FeedingSystem {
   update() {
     // Decrease hunger over time
     this.hungerLevel = Math.max(0, this.hungerLevel - 0.01)
+
+    // Check if pet should start chasing food if it becomes hungry and there's food available
+    // Only check when pet is not chasing and not eating
+    if (
+      !this.pet.isChasing &&
+      this.pet.currentActivity !== 'chew' &&
+      this.hungerLevel < 100 &&
+      this.droppedFood.length > 0
+    ) {
+      // Add a small delay to prevent constant checking
+      if (
+        !this.lastChaseCheck ||
+        this.scene.time.now - this.lastChaseCheck > 1000
+      ) {
+        this.checkAndStartChasing()
+        this.lastChaseCheck = this.scene.time.now
+      }
+    }
   }
 
   buyFood() {
@@ -78,8 +97,8 @@ export class FeedingSystem {
     })
     this.foodTimers.push(despawnTimer)
 
-    // Pet chase theo X, nhưng Y cố định ở ground level
-    this.pet.startChasing(x, groundY)
+    // Check if pet should chase food (only if hungry)
+    this.checkAndStartChasing()
 
     console.log(`Dropped hamburger at (${x}, ${groundY})`)
   }
@@ -94,7 +113,7 @@ export class FeedingSystem {
       // Remove food and clean up timer
       this.removeFoodAtIndex(foodIndex)
 
-      // Tăng hunger
+      // increase hunger
       this.hungerLevel = Math.min(100, this.hungerLevel + 20)
 
       // Dừng chase và chuyển sang chew animation
@@ -104,18 +123,35 @@ export class FeedingSystem {
       console.log(`Pet ate hamburger! Hunger: ${this.hungerLevel}`)
 
       this.pet.sprite.once('animationcomplete', () => {
+        console.log('Animation complete event fired, current activity:', this.pet.currentActivity)
         if (this.pet.currentActivity === 'chew') {
-          this.pet.isUserControlled = false
-          this.pet.setActivity('walk')
-          console.log('Pet finished eating, returning to auto walk mode')
+          // Check if pet should continue chasing more food or return to auto walk
+          if (this.hungerLevel < 100 && this.droppedFood.length > 0) {
+            // Pet is still hungry and there's more food, continue chasing
+            console.log('Pet still hungry, looking for more food...')
+            this.forceStartChasing()
+          } else {
+            // Pet is full or no more food, return to auto walk
+            this.pet.isUserControlled = false
+            this.pet.setActivity('walk')
+            console.log('Pet finished eating, returning to auto walk mode')
+          }
         }
       })
 
       this.scene.time.delayedCall(2000, () => {
+        console.log('Backup timer fired, current activity:', this.pet.currentActivity)
         if (this.pet.currentActivity === 'chew') {
-          this.pet.isUserControlled = false
-          this.pet.setActivity('walk')
-          console.log('Backup: Pet returning to auto walk mode')
+          // Backup timer - same logic as animation complete
+          if (this.hungerLevel < 100 && this.droppedFood.length > 0) {
+            console.log('Backup: Pet still hungry, looking for more food...')
+            // Force checkAndStartChasing to work even if pet is in chew mode
+            this.forceStartChasing()
+          } else {
+            this.pet.isUserControlled = false
+            this.pet.setActivity('walk')
+            console.log('Backup: Pet returning to auto walk mode')
+          }
         }
       })
     }
@@ -127,6 +163,17 @@ export class FeedingSystem {
     const food = this.droppedFood[index]
     const shadow = this.foodShadows[index]
     const timer = this.foodTimers[index]
+
+    // Check if the pet was chasing this specific food
+    const wasChasing =
+      this.pet.isChasing &&
+      this.pet.chaseTarget &&
+      Phaser.Math.Distance.Between(
+        this.pet.chaseTarget.x,
+        this.pet.chaseTarget.y,
+        food.x,
+        food.y
+      ) < 10
 
     // Cancel timer if it exists
     if (timer && !timer.hasDispatched) {
@@ -159,10 +206,66 @@ export class FeedingSystem {
     this.droppedFood.splice(index, 1)
     this.foodShadows.splice(index, 1)
     this.foodTimers.splice(index, 1)
+
+    // If pet was chasing this food and it's despawned (not eaten), find another food to chase
+    if (wasChasing && this.hungerLevel < 100 && this.droppedFood.length > 0) {
+      this.pet.stopChasing()
+      this.scene.time.delayedCall(100, () => {
+        this.checkAndStartChasing()
+      })
+    }
+  }
+
+  private checkAndStartChasing() {
+    // Only chase if pet is hungry (hunger level < 100) and there's food available
+    if (this.hungerLevel >= 100 || this.droppedFood.length === 0) {
+      return
+    }
+
+    // If pet is already chasing or eating, don't interrupt
+    if (this.pet.isChasing || this.pet.currentActivity === 'chew') {
+      return
+    }
+
+    // Randomly select a food from the dropped food list
+    const randomIndex = Math.floor(Math.random() * this.droppedFood.length)
+    const targetFood = this.droppedFood[randomIndex]
+
+    if (targetFood) {
+      this.pet.startChasing(targetFood.x, targetFood.y)
+      console.log(
+        `Pet started chasing food at (${targetFood.x}, ${targetFood.y}), hunger: ${this.hungerLevel}`
+      )
+    }
+  }
+
+  private forceStartChasing() {
+    // Force start chasing even if pet is in chew mode - used when transitioning from eat to chase
+    if (this.hungerLevel >= 100 || this.droppedFood.length === 0) {
+      // If no more food or pet is full, return to walk mode
+      this.pet.isUserControlled = false
+      this.pet.setActivity('walk')
+      return
+    }
+
+    // If pet is currently chasing, don't interrupt
+    if (this.pet.isChasing) {
+      return
+    }
+
+    // Randomly select a food from the dropped food list
+    const randomIndex = Math.floor(Math.random() * this.droppedFood.length)
+    const targetFood = this.droppedFood[randomIndex]
+    
+    if (targetFood) {
+      this.pet.startChasing(targetFood.x, targetFood.y)
+      console.log(
+        `Pet forced to chase food at (${targetFood.x}, ${targetFood.y}), hunger: ${this.hungerLevel}`
+      )
+    }
   }
 
   cleanup() {
-    // Clean up all remaining food and timers
     while (this.droppedFood.length > 0) {
       this.removeFoodAtIndex(0)
     }
