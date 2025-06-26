@@ -35,8 +35,6 @@ export class ColyseusClient {
           connectionStatusText.destroy()
         }
       })
-
-      console.log('🎉 Connection setup complete!')
     } catch (e) {
       console.error('❌ Colyseus connection failed:', e)
       connectionStatusText.setText('❌ Connection failed! Check server.')

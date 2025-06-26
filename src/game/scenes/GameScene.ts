@@ -74,6 +74,7 @@ export class GameScene extends Phaser.Scene {
 
   update() {
     // Update movement system
+    if (!this.colyseusClient) return
     const movementResult = this.movementSystem.update()
 
     // Check if pet reached food
