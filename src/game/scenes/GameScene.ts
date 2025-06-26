@@ -25,6 +25,9 @@ export class GameScene extends Phaser.Scene {
 
   preload() {
     loadChogAssets(this)
+    
+    // Load food assets
+    this.load.image('hamburger', './src/assets/images/food/hambuger.png')
   }
 
   async create() {

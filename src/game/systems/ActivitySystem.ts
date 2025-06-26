@@ -33,7 +33,7 @@ export class ActivitySystem {
   }
 
   private randomActivity() {
-    const activities = ['idleplay', 'chew']
+    const activities = ['idleplay']
     const newActivity = Phaser.Utils.Array.GetRandom(activities)
     this.pet.setActivity(newActivity)
 
