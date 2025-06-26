@@ -28,10 +28,10 @@ export class Pet {
     )
     this.sprite.setScale(2)
 
-    console.log('🐕 Pet created at:', this.sprite.x, this.sprite.y)
-    console.log('🚶 Initial activity:', this.currentActivity)
-    console.log('🏃 Is moving:', this.isMoving)
-    console.log('👤 User controlled:', this.isUserControlled)
+    // console.log('🐕 Pet created at:', this.sprite.x, this.sprite.y)
+    // console.log('🚶 Initial activity:', this.currentActivity)
+    // console.log('🏃 Is moving:', this.isMoving)
+    // console.log('👤 User controlled:', this.isUserControlled)
 
     this.updateActivity()
   }
@@ -197,12 +197,12 @@ export class Pet {
   }
 
   setActivity(newActivity: string) {
-    console.log(
-      '🔄 Changing activity from',
-      this.currentActivity,
-      'to',
-      newActivity
-    )
+    // console.log(
+    //   '🔄 Changing activity from',
+    //   this.currentActivity,
+    //   'to',
+    //   newActivity
+    // )
     this.currentActivity = newActivity
     this.updateActivity()
   }
@@ -223,7 +223,7 @@ export class Pet {
     this.chaseTarget = { x, y }
     this.isUserControlled = true
     this.setActivity('walk')
-    console.log(`Pet chasing food at (${x}, ${y})`)
+    // console.log(`Pet chasing food at (${x}, ${y})`)
   }
 
   stopChasing() {

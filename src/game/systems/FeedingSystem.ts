@@ -4,6 +4,7 @@ export class FeedingSystem {
   public foodInventory: number = 0
   public hungerLevel: number = 100
   public droppedFood: Phaser.GameObjects.Sprite[] = []
+  public foodShadows: Phaser.GameObjects.Ellipse[] = []
 
   private scene: Phaser.Scene
   private pet: Pet
@@ -28,27 +29,86 @@ export class FeedingSystem {
 
     this.foodInventory -= 1
 
-    // Tạo food sprite
-    const food = this.scene.add.circle(x, y, 8, 0xffd700)
-    food.setStrokeStyle(2, 0xffa500)
+    // Tạo food sprite với hamburger image
+    const food = this.scene.add.image(x, y - 100, 'hamburger')
+    food.setScale(1.5) // Scale up hamburger để to hơn
+    food.setAlpha(0.9)
+
+    // Tạo hiệu ứng drop animation
+    this.scene.tweens.add({
+      targets: food,
+      y: y, // Drop to ground
+      duration: 500,
+      ease: 'Bounce.easeOut',
+      onComplete: () => {
+        // Thêm slight bounce effect khi chạm đất
+        this.scene.tweens.add({
+          targets: food,
+          scaleX: 1.7, // Bounce scale tương ứng với scale 1.5
+          scaleY: 1.2,
+          duration: 100,
+          yoyo: true
+          // onComplete: () => {
+          //   food.setScale(1.5) // Quay lại scale gốc 1.5
+          // }
+        })
+      }
+    })
+
+    // Thêm shadow effect khi rơi - shadow cũng to hơn
+    const shadow = this.scene.add.ellipse(x, y + 5, 30, 12, 0x000000, 0.3)
+    this.scene.tweens.add({
+      targets: shadow,
+      scaleX: 1.3,
+      alpha: 0.5,
+      duration: 500,
+      ease: 'Power2.easeOut'
+    })
 
     this.droppedFood.push(food as any)
+    this.foodShadows.push(shadow)
 
-    // Pet sẽ chạy đến food
+    // Pet bắt đầu chase đến vị trí food
     this.pet.startChasing(x, y)
 
-    console.log(`Dropped food at (${x}, ${y})`)
+    console.log(`Dropped hamburger at (${x}, ${y})`)
   }
 
   eatFood(x: number, y: number) {
-    // Tìm và xóa food
+    // Tìm và xóa food - tăng detection range cho hamburger to hơn
     const foodIndex = this.droppedFood.findIndex(
-      (food) => Phaser.Math.Distance.Between(food.x, food.y, x, y) < 20
+      (food) => Phaser.Math.Distance.Between(food.x, food.y, x, y) < 40
     )
 
     if (foodIndex !== -1) {
-      this.droppedFood[foodIndex].destroy()
+      const food = this.droppedFood[foodIndex]
+      const shadow = this.foodShadows[foodIndex]
+
+      // Hiệu ứng ăn food (shrink and fade)
+      this.scene.tweens.add({
+        targets: food,
+        scaleX: 0,
+        scaleY: 0,
+        alpha: 0,
+        duration: 300,
+        ease: 'Power2.easeIn',
+        onComplete: () => {
+          food.destroy()
+        }
+      })
+
+      // Fade shadow
+      this.scene.tweens.add({
+        targets: shadow,
+        alpha: 0,
+        duration: 300,
+        onComplete: () => {
+          shadow.destroy()
+        }
+      })
+
       this.droppedFood.splice(foodIndex, 1)
+      this.foodShadows.splice(foodIndex, 1)
     }
 
     // Tăng hunger
@@ -58,7 +118,7 @@ export class FeedingSystem {
     this.pet.stopChasing()
     this.pet.setActivity('chew')
 
-    console.log(`Pet ate food! Hunger: ${this.hungerLevel}`)
+    console.log(`Pet ate hamburger! Hunger: ${this.hungerLevel}`)
 
     // Sau khi ăn xong thì quay lại walk
     this.pet.sprite.once('animationcomplete', () => {
