@@ -5,6 +5,7 @@ export class FeedingSystem {
   public hungerLevel: number = 100
   public droppedFood: Phaser.GameObjects.Sprite[] = []
   public foodShadows: Phaser.GameObjects.Ellipse[] = []
+  public foodTimers: Phaser.Time.TimerEvent[] = [] // Track timers for each food
 
   private scene: Phaser.Scene
   private pet: Pet
@@ -24,19 +25,22 @@ export class FeedingSystem {
     console.log(`Bought food! Inventory: ${this.foodInventory}`)
   }
 
-  dropFood(x: number, y: number) {
+  dropFood(x: number, _y?: number) {
     if (this.foodInventory <= 0) return
 
     this.foodInventory -= 1
 
-    const food = this.scene.add.image(x, y - 100, 'hamburger')
+    // Food luôn rơi xuống gần đáy màn hình
+    const groundY = this.scene.cameras.main.height - 25
+
+    const food = this.scene.add.image(x, groundY - 25, 'hamburger')
     food.setScale(1.5) // Scale up hamburger
     food.setAlpha(0.9)
 
     // add effect drop animation
     this.scene.tweens.add({
       targets: food,
-      y: y, // Drop to ground
+      y: groundY, // Drop to ground level
       duration: 500,
       ease: 'Bounce.easeOut',
       onComplete: () => {
@@ -52,7 +56,7 @@ export class FeedingSystem {
     })
 
     // Thêm shadow effect khi rơi - shadow cũng to hơn
-    const shadow = this.scene.add.ellipse(x, y + 5, 30, 12, 0x000000, 0.3)
+    const shadow = this.scene.add.ellipse(x, groundY + 5, 30, 12, 0x000000, 0.3)
     this.scene.tweens.add({
       targets: shadow,
       scaleX: 1.3,
@@ -64,10 +68,20 @@ export class FeedingSystem {
     this.droppedFood.push(food as any)
     this.foodShadows.push(shadow)
 
-    // Pet bắt đầu chase đến vị trí food
-    this.pet.startChasing(x, y)
+    // Create timer to auto-despawn food after 1 minute
+    const despawnTimer = this.scene.time.delayedCall(10000, () => {
+      const currentFoodIndex = this.droppedFood.indexOf(food as any)
+      if (currentFoodIndex !== -1) {
+        this.removeFoodAtIndex(currentFoodIndex)
+        console.log('Food auto-despawned after 1 minute')
+      }
+    })
+    this.foodTimers.push(despawnTimer)
 
-    console.log(`Dropped hamburger at (${x}, ${y})`)
+    // Pet chase theo X, nhưng Y cố định ở ground level
+    this.pet.startChasing(x, groundY)
+
+    console.log(`Dropped hamburger at (${x}, ${groundY})`)
   }
 
   eatFood(x: number, y: number) {
@@ -77,61 +91,80 @@ export class FeedingSystem {
     )
 
     if (foodIndex !== -1) {
-      const food = this.droppedFood[foodIndex]
-      const shadow = this.foodShadows[foodIndex]
+      // Remove food and clean up timer
+      this.removeFoodAtIndex(foodIndex)
 
-      // Hiệu ứng ăn food (shrink and fade)
-      this.scene.tweens.add({
-        targets: food,
-        scaleX: 0,
-        scaleY: 0,
-        alpha: 0,
-        duration: 300,
-        ease: 'Power2.easeIn',
-        onComplete: () => {
-          food.destroy()
+      // Tăng hunger
+      this.hungerLevel = Math.min(100, this.hungerLevel + 20)
+
+      // Dừng chase và chuyển sang chew animation
+      this.pet.stopChasing()
+      this.pet.setActivity('chew')
+
+      console.log(`Pet ate hamburger! Hunger: ${this.hungerLevel}`)
+
+      this.pet.sprite.once('animationcomplete', () => {
+        if (this.pet.currentActivity === 'chew') {
+          this.pet.isUserControlled = false
+          this.pet.setActivity('walk')
+          console.log('Pet finished eating, returning to auto walk mode')
         }
       })
 
-      // Fade shadow
-      this.scene.tweens.add({
-        targets: shadow,
-        alpha: 0,
-        duration: 300,
-        onComplete: () => {
-          shadow.destroy()
+      this.scene.time.delayedCall(2000, () => {
+        if (this.pet.currentActivity === 'chew') {
+          this.pet.isUserControlled = false
+          this.pet.setActivity('walk')
+          console.log('Backup: Pet returning to auto walk mode')
         }
       })
+    }
+  }
 
-      this.droppedFood.splice(foodIndex, 1)
-      this.foodShadows.splice(foodIndex, 1)
+  private removeFoodAtIndex(index: number) {
+    if (index < 0 || index >= this.droppedFood.length) return
+
+    const food = this.droppedFood[index]
+    const shadow = this.foodShadows[index]
+    const timer = this.foodTimers[index]
+
+    // Cancel timer if it exists
+    if (timer && !timer.hasDispatched) {
+      timer.destroy()
     }
 
-    // Tăng hunger
-    this.hungerLevel = Math.min(100, this.hungerLevel + 20)
-
-    // Dừng chase và chuyển sang chew animation
-    this.pet.stopChasing()
-    this.pet.setActivity('chew')
-
-    console.log(`Pet ate hamburger! Hunger: ${this.hungerLevel}`)
-
-    // Sau khi ăn xong thì quay lại walk
-    this.pet.sprite.once('animationcomplete', () => {
-      if (this.pet.currentActivity === 'chew') {
-        this.pet.isUserControlled = false
-        this.pet.setActivity('walk')
-        console.log('Pet finished eating, returning to auto walk mode')
+    // Animate food and shadow removal
+    this.scene.tweens.add({
+      targets: food,
+      scaleX: 0,
+      scaleY: 0,
+      alpha: 0,
+      duration: 300,
+      ease: 'Power2.easeIn',
+      onComplete: () => {
+        food.destroy()
       }
     })
 
-    // Backup timer nếu animation không trigger
-    this.scene.time.delayedCall(2000, () => {
-      if (this.pet.currentActivity === 'chew') {
-        this.pet.isUserControlled = false
-        this.pet.setActivity('walk')
-        console.log('Backup: Pet returning to auto walk mode')
+    this.scene.tweens.add({
+      targets: shadow,
+      alpha: 0,
+      duration: 300,
+      onComplete: () => {
+        shadow.destroy()
       }
     })
+
+    // Remove from arrays
+    this.droppedFood.splice(index, 1)
+    this.foodShadows.splice(index, 1)
+    this.foodTimers.splice(index, 1)
+  }
+
+  cleanup() {
+    // Clean up all remaining food and timers
+    while (this.droppedFood.length > 0) {
+      this.removeFoodAtIndex(0)
+    }
   }
 }
