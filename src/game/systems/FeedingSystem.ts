@@ -29,12 +29,11 @@ export class FeedingSystem {
 
     this.foodInventory -= 1
 
-    // Tạo food sprite với hamburger image
     const food = this.scene.add.image(x, y - 100, 'hamburger')
-    food.setScale(1.5) // Scale up hamburger để to hơn
+    food.setScale(1.5) // Scale up hamburger
     food.setAlpha(0.9)
 
-    // Tạo hiệu ứng drop animation
+    // add effect drop animation
     this.scene.tweens.add({
       targets: food,
       y: y, // Drop to ground
@@ -48,9 +47,6 @@ export class FeedingSystem {
           scaleY: 1.2,
           duration: 100,
           yoyo: true
-          // onComplete: () => {
-          //   food.setScale(1.5) // Quay lại scale gốc 1.5
-          // }
         })
       }
     })
@@ -125,6 +121,16 @@ export class FeedingSystem {
       if (this.pet.currentActivity === 'chew') {
         this.pet.isUserControlled = false
         this.pet.setActivity('walk')
+        console.log('Pet finished eating, returning to auto walk mode')
+      }
+    })
+
+    // Backup timer nếu animation không trigger
+    this.scene.time.delayedCall(2000, () => {
+      if (this.pet.currentActivity === 'chew') {
+        this.pet.isUserControlled = false
+        this.pet.setActivity('walk')
+        console.log('Backup: Pet returning to auto walk mode')
       }
     })
   }
