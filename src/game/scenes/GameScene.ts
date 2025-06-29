@@ -32,6 +32,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   async create() {
+    // Disable browser context menu on right click for the whole scene
+    this.input.mouse?.disableContextMenu()
+
     // Initialize entities and systems
     this.initializeEntities()
     this.initializeSystems()
