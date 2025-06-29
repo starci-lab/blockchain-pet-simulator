@@ -7,11 +7,12 @@ import { ActivitySystem } from '@/game/systems/ActivitySystem'
 import { FeedingSystem } from '@/game/systems/FeedingSystem'
 import { GameUI } from '@/game/ui/GameUI'
 import { ColyseusClient } from '@/game/colyseus/client'
-
+import RexUIPlugin from 'phaser3-rex-plugins/templates/ui/ui-plugin.js'
 const BACKEND_URL = 'ws://localhost:3002'
 
 export class GameScene extends Phaser.Scene {
   // Core entities and systems
+  rexUI!: RexUIPlugin
   private pet!: Pet
   private movementSystem!: MovementSystem
   private activitySystem!: ActivitySystem
@@ -25,7 +26,7 @@ export class GameScene extends Phaser.Scene {
 
   preload() {
     loadChogAssets(this)
-    
+
     // Load food assets
     this.load.image('hamburger', './src/assets/images/food/hambuger.png')
   }

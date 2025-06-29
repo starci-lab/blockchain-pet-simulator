@@ -134,7 +134,7 @@ export class GameUI {
         this.foodPriceText.setAlpha(0.6)
       } else {
         // Nếu không đủ token thì show notification
-        this.showNotification('Bạn không đủ token NOM!')
+        this.showNotification('You do not have enough NOM tokens!')
       }
     })
   }
@@ -173,25 +173,42 @@ export class GameUI {
   }
 
   private showNotification(message: string) {
-    if (!this.notificationText) {
-      this.notificationText = this.scene.add
-        .text(this.scene.cameras.main.width / 2, 60, message, {
-          fontSize: '18px',
+    // Toast nhỏ gọn, không có nút xác nhận, tự ẩn sau 2.5s
+    const toast = (this.scene as any).rexUI.add
+      .dialog({
+        x: this.scene.cameras.main.width / 2,
+        y: 80,
+        width: 180,
+        background: (this.scene as any).rexUI.add.roundRectangle(
+          0,
+          0,
+          0,
+          0,
+          12,
+          0xf5a623
+        ),
+        content: this.scene.add.text(0, 0, message, {
+          fontSize: '14px',
           color: '#fff',
-          backgroundColor: '#f5a623',
           fontFamily: 'monospace',
-          padding: { x: 16, y: 8 },
+          padding: { x: 8, y: 4 },
+          wordWrap: { width: 150 },
           align: 'center'
-        })
-        .setOrigin(0.5, 0)
-        .setDepth(1000)
-    } else {
-      this.notificationText.setText(message)
-      this.notificationText.setVisible(true)
-    }
-    // Ẩn sau 2 giây
-    this.scene.time.delayedCall(2000, () => {
-      if (this.notificationText) this.notificationText.setVisible(false)
+        }),
+        space: {
+          content: 10,
+          left: 10,
+          right: 10,
+          top: 10,
+          bottom: 10
+        }
+      })
+      .layout()
+      .setDepth(1000)
+      .popUp(300)
+
+    this.scene.time.delayedCall(2500, () => {
+      toast.destroy()
     })
   }
 

@@ -3,6 +3,7 @@ import Phaser from 'phaser'
 import http from '@/utils/http'
 import { ROUTES } from '@/constants/routes'
 import { GameScene } from '@/game/scenes/GameScene'
+import RexUIPlugin from 'phaser3-rex-plugins/templates/ui/ui-plugin.js'
 
 interface PhaserPetGameProps {
   speed?: number
@@ -30,7 +31,16 @@ const PhaserPetGame = ({
       height: 120,
       parent: gameRef.current,
       backgroundColor: '#87CEEB',
-      scene: GameScene
+      scene: GameScene,
+      plugins: {
+        scene: [
+          {
+            key: 'rexUI',
+            plugin: RexUIPlugin,
+            mapping: 'rexUI'
+          }
+        ]
+      }
     }
 
     phaserGameRef.current = new Phaser.Game(config)
