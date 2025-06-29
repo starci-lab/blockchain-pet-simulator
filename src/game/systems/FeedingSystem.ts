@@ -1,4 +1,5 @@
 import { Pet } from '../entities/Pet'
+import { useUserStore } from '@/store/userStore'
 
 export class FeedingSystem {
   public foodInventory: number = 0
@@ -40,8 +41,17 @@ export class FeedingSystem {
   }
 
   buyFood() {
-    this.foodInventory += 1
-    console.log(`Bought food! Inventory: ${this.foodInventory}`)
+    const foodPrice = 5
+    const spendToken = useUserStore.getState().spendToken
+    if (spendToken(foodPrice)) {
+      this.foodInventory += 1
+      // Có thể gọi update UI ở đây nếu cần
+      console.log(
+        `Mua thành công! Token còn lại: ${useUserStore.getState().nomToken}`
+      )
+    } else {
+      console.log('Không đủ token để mua thức ăn!')
+    }
   }
 
   dropFood(x: number, _y?: number) {
