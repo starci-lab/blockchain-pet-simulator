@@ -28,11 +28,6 @@ export class Pet {
     )
     this.sprite.setScale(2)
 
-    // console.log('🐕 Pet created at:', this.sprite.x, this.sprite.y)
-    // console.log('🚶 Initial activity:', this.currentActivity)
-    // console.log('🏃 Is moving:', this.isMoving)
-    // console.log('👤 User controlled:', this.isUserControlled)
-
     this.updateActivity()
   }
 
