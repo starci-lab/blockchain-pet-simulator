@@ -8,6 +8,7 @@ export class GameUI {
   private foodPriceText!: Phaser.GameObjects.Text
   private isDroppingFood: boolean = false
   private tokenText!: Phaser.GameObjects.Text
+  private notificationText?: Phaser.GameObjects.Text
 
   private scene: Phaser.Scene
   private feedingSystem: FeedingSystem
@@ -132,8 +133,8 @@ export class GameUI {
         this.foodIcon.setAlpha(0.6)
         this.foodPriceText.setAlpha(0.6)
       } else {
-        // Nếu không đủ token thì thông báo
-        alert('Bạn không đủ token để mua thức ăn!')
+        // Nếu không đủ token thì show notification
+        this.showNotification('Bạn không đủ token NOM!')
       }
     })
   }
@@ -157,8 +158,8 @@ export class GameUI {
       // Check if enough tokens, if yes then deduct and drop food
       const canBuy = this.feedingSystem.buyFood()
       if (!canBuy) {
-        // If not enough tokens, alert and exit feed mode
-        alert('Bạn không đủ token để mua thức ăn!')
+        // If not enough tokens, show notification and exit feed mode
+        this.showNotification('You do not have enough NOM tokens!')
         this.isDroppingFood = false
         this.foodIcon.setAlpha(1)
         this.foodPriceText.setAlpha(1)
@@ -168,6 +169,29 @@ export class GameUI {
       this.feedingSystem.dropFood(pointer.x, pointer.y)
       this.updateUI()
       // Kep the feed mode until user cancels or runs out of money
+    })
+  }
+
+  private showNotification(message: string) {
+    if (!this.notificationText) {
+      this.notificationText = this.scene.add
+        .text(this.scene.cameras.main.width / 2, 60, message, {
+          fontSize: '18px',
+          color: '#fff',
+          backgroundColor: '#f5a623',
+          fontFamily: 'monospace',
+          padding: { x: 16, y: 8 },
+          align: 'center'
+        })
+        .setOrigin(0.5, 0)
+        .setDepth(1000)
+    } else {
+      this.notificationText.setText(message)
+      this.notificationText.setVisible(true)
+    }
+    // Ẩn sau 2 giây
+    this.scene.time.delayedCall(2000, () => {
+      if (this.notificationText) this.notificationText.setVisible(false)
     })
   }
 
