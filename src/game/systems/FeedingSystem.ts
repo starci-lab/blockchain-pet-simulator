@@ -40,7 +40,7 @@ export class FeedingSystem {
     }
   }
 
-  buyFood() {
+  buyFood(): boolean {
     const foodPrice = 5
     const spendToken = useUserStore.getState().spendToken
     if (spendToken(foodPrice)) {
@@ -49,8 +49,10 @@ export class FeedingSystem {
       console.log(
         `Mua thành công! Token còn lại: ${useUserStore.getState().nomToken}`
       )
+      return true
     } else {
       console.log('Không đủ token để mua thức ăn!')
+      return false
     }
   }
 
