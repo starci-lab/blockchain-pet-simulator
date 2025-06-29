@@ -1,6 +1,22 @@
 import { Pet } from '../entities/Pet'
 import { useUserStore } from '@/store/userStore'
 
+// Use object instead of enum for erasableSyntaxOnly
+export const HungerState = {
+  Full: 'full',
+  Normal: 'normal',
+  Hungry: 'hungry',
+  Starving: 'starving'
+} as const
+export type HungerState = (typeof HungerState)[keyof typeof HungerState]
+
+export function getHungerState(hungerLevel: number): HungerState {
+  if (hungerLevel >= 95) return HungerState.Full
+  if (hungerLevel >= 80) return HungerState.Normal
+  if (hungerLevel >= 30) return HungerState.Hungry
+  return HungerState.Starving
+}
+
 export class FeedingSystem {
   public foodInventory: number = 0
   public hungerLevel: number = 100
@@ -8,6 +24,7 @@ export class FeedingSystem {
   public foodShadows: Phaser.GameObjects.Ellipse[] = []
   public foodTimers: Phaser.Time.TimerEvent[] = [] // Track timers for each food
   private lastChaseCheck: number = 0 // Track when we last checked for chasing opportunities
+  private lastHungerUpdate: number = 0 // Last time hunger was decreased
 
   private scene: Phaser.Scene
   private pet: Pet
@@ -18,15 +35,29 @@ export class FeedingSystem {
   }
 
   update() {
-    // Decrease hunger over time
-    this.hungerLevel = Math.max(0, this.hungerLevel - 0.01)
+    // Decrease hunger based on real time, target: 2.5 points/hour
+    // 2 points/hour = 2 / 3600 points/second
+    const now = this.scene.time.now
+    if (!this.lastHungerUpdate) this.lastHungerUpdate = now
+    const elapsed = (now - this.lastHungerUpdate) / 1000 // seconds
+    const HUNGER_DECREASE_PER_HOUR = 2
+    const HUNGER_DECREASE_PER_SEC = HUNGER_DECREASE_PER_HOUR / 3600
+    if (elapsed > 0) {
+      this.hungerLevel = Math.max(
+        0,
+        this.hungerLevel - HUNGER_DECREASE_PER_SEC * elapsed
+      )
+      this.lastHungerUpdate = now
+    }
 
     // Check if pet should start chasing food if it becomes hungry and there's food available
     // Only check when pet is not chasing and not eating
+    const hungerState = getHungerState(this.hungerLevel)
     if (
       !this.pet.isChasing &&
       this.pet.currentActivity !== 'chew' &&
-      this.hungerLevel < 100 &&
+      (hungerState === HungerState.Hungry ||
+        hungerState === HungerState.Starving) &&
       this.droppedFood.length > 0
     ) {
       // Add a small delay to prevent constant checking
@@ -45,13 +76,13 @@ export class FeedingSystem {
     const spendToken = useUserStore.getState().spendToken
     if (spendToken(foodPrice)) {
       this.foodInventory += 1
-      // Có thể gọi update UI ở đây nếu cần
+      // You can call update UI here if needed
       console.log(
-        `Mua thành công! Token còn lại: ${useUserStore.getState().nomToken}`
+        `Purchase successful! Remaining tokens: ${useUserStore.getState().nomToken}`
       )
       return true
     } else {
-      console.log('Không đủ token để mua thức ăn!')
+      console.log('Not enough tokens to buy food!')
       return false
     }
   }
@@ -61,14 +92,14 @@ export class FeedingSystem {
 
     this.foodInventory -= 1
 
-    // Food luôn rơi xuống gần đáy màn hình
+    // Food always drops near the bottom of the screen
     const groundY = this.scene.cameras.main.height - 25
 
     const food = this.scene.add.image(x, groundY - 25, 'hamburger')
     food.setScale(1.5) // Scale up hamburger
     food.setAlpha(0.9)
 
-    // add effect drop animation
+    // Add drop animation effect
     this.scene.tweens.add({
       targets: food,
       y: groundY, // Drop to ground level
@@ -78,7 +109,7 @@ export class FeedingSystem {
         // Add slight bounce effect
         this.scene.tweens.add({
           targets: food,
-          scaleX: 1.7, // Bounce scale tương ứng với scale 1.5
+          scaleX: 1.7, // Bounce scale corresponding to scale 1.5
           scaleY: 1.2,
           duration: 100,
           yoyo: true
@@ -86,7 +117,7 @@ export class FeedingSystem {
       }
     })
 
-    // Thêm shadow effect khi rơi - shadow cũng to hơn
+    // Add shadow effect when dropping - shadow is also larger
     const shadow = this.scene.add.ellipse(x, groundY + 5, 30, 12, 0x000000, 0.3)
     this.scene.tweens.add({
       targets: shadow,
@@ -115,8 +146,21 @@ export class FeedingSystem {
     console.log(`Dropped hamburger at (${x}, ${groundY})`)
   }
 
-  eatFood(x: number, y: number) {
-    // Tìm và xóa food - tăng detection range cho hamburger to hơn
+  /**
+   * Pet eats food, recovers hunger based on food type
+   * @param x X position of food
+   * @param y Y position of food
+   * @param foodType Type of food (default: 'hamburger')
+   */
+  eatFood(x: number, y: number, foodType: string = 'hamburger') {
+    // Table of recovery values for each food type
+    const FOOD_RECOVERY: Record<string, number> = {
+      hamburger: 15
+      // Add other types if needed
+    }
+    const recovery = FOOD_RECOVERY[foodType] ?? 10 // Default 10 if not in table
+
+    // Find and remove food - increase detection range for larger hamburger
     const foodIndex = this.droppedFood.findIndex(
       (food) => Phaser.Math.Distance.Between(food.x, food.y, x, y) < 40
     )
@@ -125,14 +169,16 @@ export class FeedingSystem {
       // Remove food and clean up timer
       this.removeFoodAtIndex(foodIndex)
 
-      // increase hunger
-      this.hungerLevel = Math.min(100, this.hungerLevel + 20)
+      // Increase hunger based on food type
+      this.hungerLevel = Math.min(100, this.hungerLevel + recovery)
 
-      // Dừng chase và chuyển sang chew animation
+      // Stop chasing and switch to chew animation
       this.pet.stopChasing()
       this.pet.setActivity('chew')
 
-      console.log(`Pet ate hamburger! Hunger: ${this.hungerLevel}`)
+      console.log(
+        `Pet ate ${foodType}! Hunger: ${this.hungerLevel} (+${recovery})`
+      )
 
       this.pet.sprite.once('animationcomplete', () => {
         console.log(
@@ -253,8 +299,13 @@ export class FeedingSystem {
   }
 
   private checkAndStartChasing() {
-    // Only chase if pet is hungry (hunger level < 100) and there's food available
-    if (this.hungerLevel >= 100 || this.droppedFood.length === 0) {
+    // Only chase if Hungry or Starving
+    const hungerState = getHungerState(this.hungerLevel)
+    if (
+      (hungerState !== HungerState.Hungry &&
+        hungerState !== HungerState.Starving) ||
+      this.droppedFood.length === 0
+    ) {
       return
     }
 
@@ -276,12 +327,13 @@ export class FeedingSystem {
   }
 
   private forceStartChasing() {
-    // Force start chasing even if pet is in chew mode - used when transitioning from eat to chase
-    console.log(
-      `forceStartChasing called - hunger: ${this.hungerLevel}, food count: ${this.droppedFood.length}`
-    )
-
-    if (this.hungerLevel >= 100 || this.droppedFood.length === 0) {
+    // Only chase if Hungry or Starving
+    const hungerState = getHungerState(this.hungerLevel)
+    if (
+      (hungerState !== HungerState.Hungry &&
+        hungerState !== HungerState.Starving) ||
+      this.droppedFood.length === 0
+    ) {
       // If no more food or pet is full, return to walk mode
       console.log('Pet is full or no more food, returning to walk mode')
       this.pet.isUserControlled = false

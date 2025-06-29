@@ -24,6 +24,7 @@ export class GameUI {
   private foodPriceText!: Phaser.GameObjects.Text
   private tokenText!: Phaser.GameObjects.Text
   private isDroppingFood = false
+  private dropHintText?: Phaser.GameObjects.Text
 
   constructor(scene: Phaser.Scene, feedingSystem: FeedingSystem) {
     this.scene = scene
@@ -51,20 +52,23 @@ export class GameUI {
       }
     )
     this.scene.add.rectangle(10, 40, 100, 10, 0xff0000).setOrigin(0, 0.5)
-    this.hungerBar = this.scene.add.rectangle(
-      10,
-      40,
-      this.feedingSystem.hungerLevel,
-      10,
-      0x00ff00
-    ).setOrigin(0, 0.5)
+    this.hungerBar = this.scene.add
+      .rectangle(10, 40, this.feedingSystem.hungerLevel, 10, 0x00ff00)
+      .setOrigin(0, 0.5)
   }
 
   // Token UI
   private createTokenUI() {
     const tokenX = this.scene.cameras.main.width - 30
     const tokenY = 18
-    const bg = this.scene.add.rectangle(tokenX, tokenY, SHOP_WIDTH, SHOP_HEIGHT, TOKEN_BG_COLOR, 0.98)
+    const bg = this.scene.add.rectangle(
+      tokenX,
+      tokenY,
+      SHOP_WIDTH,
+      SHOP_HEIGHT,
+      TOKEN_BG_COLOR,
+      0.98
+    )
     bg.setStrokeStyle(2, TOKEN_BORDER_COLOR).setOrigin(1, 0)
     this.tokenText = this.scene.add
       .text(tokenX - 8, tokenY + 2, '', {
@@ -88,15 +92,24 @@ export class GameUI {
     const shopX = this.scene.cameras.main.width - 30
     const shopY = 18
     // Token background & text
-    const tokenBg = this.scene.add.rectangle(shopX, shopY, SHOP_WIDTH, SHOP_HEIGHT, TOKEN_BG_COLOR, 0.98)
+    const tokenBg = this.scene.add.rectangle(
+      shopX,
+      shopY,
+      SHOP_WIDTH,
+      SHOP_HEIGHT,
+      TOKEN_BG_COLOR,
+      0.98
+    )
     tokenBg.setStrokeStyle(2, TOKEN_BORDER_COLOR).setOrigin(1, 0)
-    this.tokenText = this.scene.add.text(shopX - 8, shopY + 2, '', {
-      fontSize: '16px',
-      color: TOKEN_TEXT_COLOR,
-      fontStyle: 'bold',
-      fontFamily: UI_FONT,
-      padding: { x: 4, y: 2 }
-    }).setOrigin(1, 0)
+    this.tokenText = this.scene.add
+      .text(shopX - 8, shopY + 2, '', {
+        fontSize: '16px',
+        color: TOKEN_TEXT_COLOR,
+        fontStyle: 'bold',
+        fontFamily: UI_FONT,
+        padding: { x: 4, y: 2 }
+      })
+      .setOrigin(1, 0)
     this.updateTokenUI()
     // Food icon
     const iconX = shopX - 80
@@ -128,6 +141,27 @@ export class GameUI {
         this.isDroppingFood = true
         this.foodIcon.setAlpha(0.6)
         this.foodPriceText.setAlpha(0.6)
+        // Show drop hint text
+        if (!this.dropHintText) {
+          this.dropHintText = this.scene.add
+            .text(
+              this.scene.cameras.main.width / 2,
+              10, // 10px from top
+              'Left click to place, right click to cancel',
+              {
+                fontSize: '10px',
+                color: '#fff',
+                fontFamily: UI_FONT,
+                stroke: '#000',
+                strokeThickness: 3,
+                align: 'center'
+              }
+            )
+            .setOrigin(0.5, 0)
+        } else {
+          this.dropHintText.setY(20)
+          this.dropHintText.setVisible(true)
+        }
       } else {
         this.showNotification('You do not have enough NOM tokens!')
       }
@@ -142,6 +176,8 @@ export class GameUI {
         this.isDroppingFood = false
         this.foodIcon.setAlpha(1)
         this.foodPriceText.setAlpha(1)
+        // Hide drop hint text
+        if (this.dropHintText) this.dropHintText.setVisible(false)
         return
       }
       const iconBounds = this.foodIcon.getBounds()
@@ -154,36 +190,55 @@ export class GameUI {
         this.isDroppingFood = false
         this.foodIcon.setAlpha(1)
         this.foodPriceText.setAlpha(1)
+        if (this.dropHintText) this.dropHintText.setVisible(false)
         return
       }
       this.feedingSystem.dropFood(pointer.x, pointer.y)
       this.updateUI()
+      // Hide drop hint text if out of food or tokens
+      if (
+        this.feedingSystem.foodInventory <= 0 &&
+        useUserStore.getState().nomToken < FOOD_PRICE
+      ) {
+        this.isDroppingFood = false
+        if (this.dropHintText) this.dropHintText.setVisible(false)
+        this.foodIcon.setAlpha(1)
+        this.foodPriceText.setAlpha(1)
+      }
     })
   }
 
   // Toast notification
   private showNotification(message: string) {
-    const toast = (this.scene as any).rexUI.add.dialog({
-      x: this.scene.cameras.main.width / 2,
-      y: 80,
-      width: TOAST_WIDTH,
-      background: (this.scene as any).rexUI.add.roundRectangle(0, 0, 0, 0, 12, TOAST_BG_COLOR),
-      content: this.scene.add.text(0, 0, message, {
-        fontSize: '14px',
-        color: '#fff',
-        fontFamily: UI_FONT,
-        padding: { x: 8, y: 4 },
-        wordWrap: { width: TOAST_WIDTH - 30 },
-        align: 'center',
-      }),
-      space: {
-        content: 10,
-        left: 10,
-        right: 10,
-        top: 10,
-        bottom: 10,
-      },
-    })
+    const toast = (this.scene as any).rexUI.add
+      .dialog({
+        x: this.scene.cameras.main.width / 2,
+        y: 80,
+        width: TOAST_WIDTH,
+        background: (this.scene as any).rexUI.add.roundRectangle(
+          0,
+          0,
+          0,
+          0,
+          12,
+          TOAST_BG_COLOR
+        ),
+        content: this.scene.add.text(0, 0, message, {
+          fontSize: '14px',
+          color: '#fff',
+          fontFamily: UI_FONT,
+          padding: { x: 8, y: 4 },
+          wordWrap: { width: TOAST_WIDTH - 30 },
+          align: 'center'
+        }),
+        space: {
+          content: 10,
+          left: 10,
+          right: 10,
+          top: 10,
+          bottom: 10
+        }
+      })
       .layout()
       .setDepth(1000)
       .popUp(300)
