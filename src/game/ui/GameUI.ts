@@ -141,6 +141,10 @@ export class GameUI {
         this.isDroppingFood = true
         this.foodIcon.setAlpha(0.6)
         this.foodPriceText.setAlpha(0.6)
+        // Đổi cursor thành hình hamburger bằng setDefaultCursor
+        this.scene.input.setDefaultCursor(
+          'url(/assets/images/food/hambuger.png) 32 32, pointer'
+        )
         // Show drop hint text
         if (!this.dropHintText) {
           this.dropHintText = this.scene.add
@@ -176,6 +180,10 @@ export class GameUI {
         this.isDroppingFood = false
         this.foodIcon.setAlpha(1)
         this.foodPriceText.setAlpha(1)
+        // Trả cursor về mặc định sau khi thả thức ăn
+        this.scene.input.setDefaultCursor(
+          'url(/assets/images/cursor/navigation_nw.png), pointer'
+        )
         // Hide drop hint text
         if (this.dropHintText) this.dropHintText.setVisible(false)
         return

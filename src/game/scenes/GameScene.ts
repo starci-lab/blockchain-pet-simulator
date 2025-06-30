@@ -42,7 +42,7 @@ export class GameScene extends Phaser.Scene {
 
     // Setup cursor
     this.input.setDefaultCursor(
-      `url(./src/assets/images/cursor/navigation_nw.png), pointer`
+      `url(/assets/images/cursor/navigation_nw.png), pointer`
     )
 
     // Connect to Colyseus (optional, game works offline too)
