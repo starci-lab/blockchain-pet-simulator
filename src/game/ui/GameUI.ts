@@ -143,7 +143,7 @@ export class GameUI {
         this.foodPriceText.setAlpha(0.6)
         // Đổi cursor thành hình hamburger bằng setDefaultCursor
         this.scene.input.setDefaultCursor(
-          'url(/assets/images/food/hambuger.png) 32 32, pointer'
+          'url(./src/assets/images/food/hambuger.png), pointer'
         )
         // Show drop hint text
         if (!this.dropHintText) {
