@@ -186,34 +186,26 @@ export class GameUI {
       }
       const canBuy = this.feedingSystem.buyFood()
       if (!canBuy) {
-        this.showNotification('You do not have enough NOM tokens!')
-        this.isDroppingFood = false
-        this.foodIcon.setAlpha(1)
-        this.foodPriceText.setAlpha(1)
-        if (this.dropHintText) this.dropHintText.setVisible(false)
+        this.showNotification(
+          'You do not have enough NOM tokens!',
+          pointer.x,
+          pointer.y
+        )
         return
       }
       this.feedingSystem.dropFood(pointer.x, pointer.y)
       this.updateUI()
-      // Hide drop hint text if out of food or tokens
-      if (
-        this.feedingSystem.foodInventory <= 0 &&
-        useUserStore.getState().nomToken < FOOD_PRICE
-      ) {
-        this.isDroppingFood = false
-        if (this.dropHintText) this.dropHintText.setVisible(false)
-        this.foodIcon.setAlpha(1)
-        this.foodPriceText.setAlpha(1)
-      }
     })
   }
 
   // Toast notification
-  private showNotification(message: string) {
+  private showNotification(message: string, x?: number, y?: number) {
+    const toastX = x !== undefined ? x : this.scene.cameras.main.width / 2
+    const toastY = y !== undefined ? y : 80
     const toast = (this.scene as any).rexUI.add
       .dialog({
-        x: this.scene.cameras.main.width / 2,
-        y: 80,
+        x: toastX,
+        y: toastY,
         width: TOAST_WIDTH,
         background: (this.scene as any).rexUI.add.roundRectangle(
           0,
