@@ -141,6 +141,10 @@ export class GameUI {
         this.isDroppingFood = true
         this.foodIcon.setAlpha(0.6)
         this.foodPriceText.setAlpha(0.6)
+        // Đổi cursor thành hình hamburger bằng setDefaultCursor
+        this.scene.input.setDefaultCursor(
+          'url(./src/assets/images/food/hambuger.png), pointer'
+        )
         // Show drop hint text
         if (!this.dropHintText) {
           this.dropHintText = this.scene.add
@@ -176,6 +180,10 @@ export class GameUI {
         this.isDroppingFood = false
         this.foodIcon.setAlpha(1)
         this.foodPriceText.setAlpha(1)
+        // Trả cursor về mặc định sau khi thả thức ăn
+        this.scene.input.setDefaultCursor(
+          'url(/assets/images/cursor/navigation_nw.png), pointer'
+        )
         // Hide drop hint text
         if (this.dropHintText) this.dropHintText.setVisible(false)
         return
@@ -186,34 +194,26 @@ export class GameUI {
       }
       const canBuy = this.feedingSystem.buyFood()
       if (!canBuy) {
-        this.showNotification('You do not have enough NOM tokens!')
-        this.isDroppingFood = false
-        this.foodIcon.setAlpha(1)
-        this.foodPriceText.setAlpha(1)
-        if (this.dropHintText) this.dropHintText.setVisible(false)
+        this.showNotification(
+          'You do not have enough NOM tokens!',
+          pointer.x,
+          pointer.y
+        )
         return
       }
       this.feedingSystem.dropFood(pointer.x, pointer.y)
       this.updateUI()
-      // Hide drop hint text if out of food or tokens
-      if (
-        this.feedingSystem.foodInventory <= 0 &&
-        useUserStore.getState().nomToken < FOOD_PRICE
-      ) {
-        this.isDroppingFood = false
-        if (this.dropHintText) this.dropHintText.setVisible(false)
-        this.foodIcon.setAlpha(1)
-        this.foodPriceText.setAlpha(1)
-      }
     })
   }
 
   // Toast notification
-  private showNotification(message: string) {
+  private showNotification(message: string, x?: number, y?: number) {
+    const toastX = x !== undefined ? x : this.scene.cameras.main.width / 2
+    const toastY = y !== undefined ? y : 80
     const toast = (this.scene as any).rexUI.add
       .dialog({
-        x: this.scene.cameras.main.width / 2,
-        y: 80,
+        x: toastX,
+        y: toastY,
         width: TOAST_WIDTH,
         background: (this.scene as any).rexUI.add.roundRectangle(
           0,

@@ -32,9 +32,30 @@ export class ActivitySystem {
     console.log('Next random stop in:', this.nextRandomStopTime, 'seconds')
   }
 
+  private getRandomWeightedActivity(pool: { name: string; weight: number }[]) {
+    const total = pool.reduce((sum, a) => sum + a.weight, 0)
+    const rand = Math.random() * total
+    let acc = 0
+
+    for (const act of pool) {
+      acc += act.weight
+      if (rand < acc) {
+        return act.name
+      }
+    }
+
+    // fallback
+    return pool[0].name
+  }
+
   private randomActivity() {
-    const activities = ['idleplay']
-    const newActivity = Phaser.Utils.Array.GetRandom(activities)
+    const activityPool = [
+      { name: 'idleplay', weight: 85 },
+      { name: 'sleep', weight: 15 }
+    ]
+
+    const newActivity = this.getRandomWeightedActivity(activityPool)
+    this.pet.setActivity(newActivity)
     this.pet.setActivity(newActivity)
 
     this.pet.sprite.once('animationcomplete', () => {

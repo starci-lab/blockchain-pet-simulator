@@ -78,7 +78,9 @@ export class FeedingSystem {
       this.foodInventory += 1
       // You can call update UI here if needed
       console.log(
-        `Purchase successful! Remaining tokens: ${useUserStore.getState().nomToken}`
+        `Purchase successful! Remaining tokens: ${
+          useUserStore.getState().nomToken
+        }`
       )
       return true
     } else {
@@ -176,10 +178,6 @@ export class FeedingSystem {
       this.pet.stopChasing()
       this.pet.setActivity('chew')
 
-      console.log(
-        `Pet ate ${foodType}! Hunger: ${this.hungerLevel} (+${recovery})`
-      )
-
       this.pet.sprite.once('animationcomplete', () => {
         console.log(
           'Animation complete event fired, current activity:',
@@ -239,10 +237,6 @@ export class FeedingSystem {
         food.y
       ) < 10
 
-    console.log(
-      `Removing food at index ${index}, wasChasing: ${wasChasing}, pet.isChasing: ${this.pet.isChasing}`
-    )
-
     // Cancel timer if it exists
     if (timer && !timer.hasDispatched) {
       timer.destroy()
@@ -285,12 +279,8 @@ export class FeedingSystem {
       // Very quick transition to avoid stuttering
       this.scene.time.delayedCall(30, () => {
         if (this.hungerLevel < 100 && this.droppedFood.length > 0) {
-          console.log('Smoothly transitioning to chase another food...')
           this.checkAndStartChasing()
         } else {
-          console.log(
-            'No more food or pet is full, smoothly returning to walk mode'
-          )
           this.pet.isUserControlled = false
           this.pet.setActivity('walk')
         }
@@ -335,7 +325,6 @@ export class FeedingSystem {
       this.droppedFood.length === 0
     ) {
       // If no more food or pet is full, return to walk mode
-      console.log('Pet is full or no more food, returning to walk mode')
       this.pet.isUserControlled = false
       this.pet.setActivity('walk')
       return
@@ -343,7 +332,6 @@ export class FeedingSystem {
 
     // If pet is currently chasing, don't interrupt
     if (this.pet.isChasing) {
-      console.log('Pet is already chasing, not interrupting')
       return
     }
 
@@ -353,11 +341,7 @@ export class FeedingSystem {
 
     if (targetFood) {
       this.pet.startChasing(targetFood.x, targetFood.y)
-      console.log(
-        `Pet forced to chase food at (${targetFood.x}, ${targetFood.y}), hunger: ${this.hungerLevel}`
-      )
     } else {
-      console.log('No target food found, returning to walk mode')
       this.pet.isUserControlled = false
       this.pet.setActivity('walk')
     }

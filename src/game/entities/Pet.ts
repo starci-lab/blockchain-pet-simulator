@@ -61,7 +61,7 @@ export class Pet {
         { key: 'dog-sleep', frame: 'chog_sleep 5.aseprite' }
       ],
       frameRate: 3,
-      repeat: 1
+      repeat: 14
     })
 
     this.scene.anims.create({
@@ -212,7 +212,6 @@ export class Pet {
     this.chaseTarget = { x, y }
     this.isUserControlled = true
     this.setActivity('walk')
-    // console.log(`Pet chasing food at (${x}, ${y})`)
   }
 
   stopChasing() {
@@ -220,7 +219,7 @@ export class Pet {
     this.chaseTarget = null
     // Ensure pet returns to proper walk animation when stopping chase
     if (this.currentActivity === 'walk') {
-      this.setActivity('walk') // Refresh the walk animation
+      this.setActivity('walk')
     }
   }
 }
