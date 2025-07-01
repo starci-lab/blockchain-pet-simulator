@@ -7,6 +7,7 @@ import { ActivitySystem } from '@/game/systems/ActivitySystem'
 import { FeedingSystem } from '@/game/systems/FeedingSystem'
 import { GameUI } from '@/game/ui/GameUI'
 import { ColyseusClient } from '@/game/colyseus/client'
+import { initializeGame } from '@/gameInit'
 import RexUIPlugin from 'phaser3-rex-plugins/templates/ui/ui-plugin.js'
 const BACKEND_URL = 'ws://localhost:3002'
 
@@ -34,6 +35,10 @@ export class GameScene extends Phaser.Scene {
   async create() {
     // Disable browser context menu on right click for the whole scene
     this.input.mouse?.disableContextMenu()
+
+    // Initialize game configuration first
+    console.log('🎮 Initializing game configuration...')
+    await initializeGame()
 
     // Initialize entities and systems
     this.initializeEntities()
@@ -64,13 +69,13 @@ export class GameScene extends Phaser.Scene {
   }
 
   private initializeSystems() {
-    // Initialize systems
+    // Initialize multiplayer client first
+    this.colyseusClient = new ColyseusClient(this)
+
+    // Initialize systems with the client
     this.movementSystem = new MovementSystem(this.pet, this.cameras.main.width)
     this.activitySystem = new ActivitySystem(this.pet)
-    this.feedingSystem = new FeedingSystem(this, this.pet)
-
-    // Initialize multiplayer
-    this.colyseusClient = new ColyseusClient(this)
+    this.feedingSystem = new FeedingSystem(this, this.pet, this.colyseusClient)
   }
 
   private initializeUI() {

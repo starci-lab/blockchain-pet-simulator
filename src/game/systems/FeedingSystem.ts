@@ -1,5 +1,7 @@
+import type { ColyseusClient } from '@/game/colyseus/client'
 import { Pet } from '../entities/Pet'
 import { useUserStore } from '@/store/userStore'
+import { gameConfigManager } from '@/game/configs/gameConfig'
 
 // Use object instead of enum for erasableSyntaxOnly
 export const HungerState = {
@@ -28,10 +30,12 @@ export class FeedingSystem {
 
   private scene: Phaser.Scene
   private pet: Pet
+  private colyseusClient: ColyseusClient
 
-  constructor(scene: Phaser.Scene, pet: Pet) {
+  constructor(scene: Phaser.Scene, pet: Pet, colyseusClient: ColyseusClient) {
     this.scene = scene
     this.pet = pet
+    this.colyseusClient = colyseusClient
   }
 
   update() {
@@ -71,20 +75,33 @@ export class FeedingSystem {
     }
   }
 
-  buyFood(): boolean {
-    const foodPrice = 5
+  buyFood(foodId: string = 'hamburger'): boolean {
+    console.log(`🛒 Attempting to buy food: ${foodId}`)
+    const foodPrice = gameConfigManager.getFoodPrice(foodId)
+    console.log(`Food price for ${foodId}: ${foodPrice}`)
     const spendToken = useUserStore.getState().spendToken
+
     if (spendToken(foodPrice)) {
       this.foodInventory += 1
-      // You can call update UI here if needed
       console.log(
-        `Purchase successful! Remaining tokens: ${
+        `Purchase successful! Food: ${foodId}, Price: ${foodPrice}, Remaining tokens: ${
           useUserStore.getState().nomToken
         }`
       )
+
+      if (this.colyseusClient) {
+        this.colyseusClient.sendMessage('food-purchase', {
+          foodId,
+          price: foodPrice,
+          timestamp: Date.now()
+        })
+      } else {
+        console.log(`⚠️ Not sending message - client not connected`)
+      }
+
       return true
     } else {
-      console.log('Not enough tokens to buy food!')
+      console.log(`Not enough tokens to buy ${foodId}! Price: ${foodPrice}`)
       return false
     }
   }
@@ -155,12 +172,9 @@ export class FeedingSystem {
    * @param foodType Type of food (default: 'hamburger')
    */
   eatFood(x: number, y: number, foodType: string = 'hamburger') {
-    // Table of recovery values for each food type
-    const FOOD_RECOVERY: Record<string, number> = {
-      hamburger: 15
-      // Add other types if needed
-    }
-    const recovery = FOOD_RECOVERY[foodType] ?? 10 // Default 10 if not in table
+    // Get recovery value from config
+    const foodItem = gameConfigManager.getFoodItem(foodType)
+    const recovery = foodItem?.hungerRestore || 10 // Default 10 if not found
 
     // Find and remove food - increase detection range for larger hamburger
     const foodIndex = this.droppedFood.findIndex(

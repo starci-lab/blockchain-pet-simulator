@@ -1,5 +1,6 @@
 import { FeedingSystem } from '../systems/FeedingSystem'
 import { useUserStore } from '@/store/userStore'
+import { gameConfigManager } from '@/game/configs/gameConfig'
 
 const UI_PADDING = 8
 const UI_FONT = 'monospace'
@@ -9,7 +10,6 @@ const TOKEN_TEXT_COLOR = '#a86c00'
 const SHOP_WIDTH = 70
 const SHOP_HEIGHT = 28
 const FOOD_ICON_SIZE = 32
-const FOOD_PRICE = 5
 const TOAST_WIDTH = 180
 const TOAST_DURATION = 2500
 const TOAST_BG_COLOR = 0xf5a623
@@ -119,9 +119,10 @@ export class GameUI {
       .setDisplaySize(FOOD_ICON_SIZE, FOOD_ICON_SIZE)
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true })
-    // Price
+    // Price - get current price dynamically
+    const currentPrice = gameConfigManager.getFoodPrice('hamburger')
     this.foodPriceText = this.scene.add
-      .text(iconX, iconY + 22, FOOD_PRICE.toString(), {
+      .text(iconX, iconY + 22, currentPrice.toString(), {
         fontSize: '14px',
         color: TOKEN_TEXT_COLOR,
         fontStyle: 'bold',
@@ -134,9 +135,10 @@ export class GameUI {
       .setOrigin(0.5, 0)
     // Food icon click handler
     this.foodIcon.on('pointerdown', () => {
+      const currentPrice = gameConfigManager.getFoodPrice('hamburger')
       if (
         this.feedingSystem.foodInventory > 0 ||
-        useUserStore.getState().nomToken >= FOOD_PRICE
+        useUserStore.getState().nomToken >= currentPrice
       ) {
         this.isDroppingFood = true
         this.foodIcon.setAlpha(0.6)
@@ -255,6 +257,13 @@ export class GameUI {
     if (this.hungerBar) {
       this.hungerBar.setSize(this.feedingSystem.hungerLevel, 10)
     }
+
+    // Update price display in case it changed
+    if (this.foodPriceText) {
+      const currentPrice = gameConfigManager.getFoodPrice('hamburger')
+      this.foodPriceText.setText(currentPrice.toString())
+    }
+
     this.updateTokenUI()
   }
 }

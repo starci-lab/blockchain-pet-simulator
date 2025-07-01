@@ -7,6 +7,10 @@
     "module": "ESNext",
     "skipLibCheck": true,
 
+    /* Experimental decorators for Colyseus */
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+
     /* Bundler mode */
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,

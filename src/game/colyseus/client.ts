@@ -1,7 +1,9 @@
+import type { ChatRoomState } from '@/game/schema/ChatSchema'
 import { Room, Client } from 'colyseus.js'
+import { gameConfigManager } from '@/game/configs/gameConfig'
 
 export class ColyseusClient {
-  public room: Room | null = null
+  public room: Room<ChatRoomState> | null = null
   private scene: Phaser.Scene
 
   constructor(scene: Phaser.Scene) {
@@ -19,7 +21,9 @@ export class ColyseusClient {
     try {
       console.log('🔄 Attempting to connect to Colyseus:', backendUrl)
 
-      this.room = await client.joinOrCreate('chat', {})
+      this.room = await client.joinOrCreate('chat', {
+        name: 'Chat Room'
+      })
 
       console.log('✅ Colyseus connected successfully!')
       console.log('Room ID:', this.room.roomId)
@@ -70,6 +74,29 @@ export class ColyseusClient {
     try {
       this.room.onMessage('*', (type, message) => {
         console.log('📨 Received message:', type, message)
+
+        // Handle real-time config updates
+        if (type === 'config-update') {
+          console.log('🔄 Updating game config from server:', message)
+          gameConfigManager.updateConfig(message)
+        }
+
+        // Handle price updates
+        if (type === 'price-update') {
+          console.log('💰 Price update received:', message)
+          gameConfigManager.updateConfig({
+            food: {
+              ...gameConfigManager.getConfig().food,
+              items: gameConfigManager
+                .getConfig()
+                .food.items.map((item) =>
+                  item.id === message.foodId
+                    ? { ...item, price: message.newPrice }
+                    : item
+                )
+            }
+          })
+        }
       })
     } catch (messageError) {
       console.warn(
@@ -99,8 +126,16 @@ export class ColyseusClient {
   }
 
   sendMessage(type: string, data: any) {
+    console.log(`📤 Sending message: ${type}`, data)
     if (this.room) {
       this.room.send(type, data)
+    }
+  }
+
+  // Request latest prices from server
+  requestPriceUpdate() {
+    if (this.room) {
+      this.room.send('request-prices', {})
     }
   }
 
