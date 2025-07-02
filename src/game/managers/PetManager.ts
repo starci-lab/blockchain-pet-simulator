@@ -18,6 +18,14 @@ export class PetManager {
   private colyseusClient: ColyseusClient
   private activePetId: string | null = null
 
+  // Shared food pool for all pets
+  private sharedDroppedFood: Phaser.GameObjects.Sprite[] = []
+  private sharedFoodShadows: Phaser.GameObjects.Ellipse[] = []
+  private sharedFoodTimers: Phaser.Time.TimerEvent[] = []
+
+  // Track which pet is chasing which food to prevent conflicts
+  private foodTargets: Map<Phaser.GameObjects.Sprite, string> = new Map() // food -> petId
+
   constructor(scene: Phaser.Scene, colyseusClient: ColyseusClient) {
     this.scene = scene
     this.colyseusClient = colyseusClient
@@ -50,6 +58,11 @@ export class PetManager {
       feedingSystem,
       movementSystem,
       activitySystem
+    }
+
+    // Set callback to release food target when pet stops chasing
+    pet.onStopChasing = () => {
+      this.releaseFoodTarget(petId)
     }
 
     this.pets.set(petId, petData)
@@ -115,7 +128,7 @@ export class PetManager {
       // Update movement
       const movementResult = petData.movementSystem.update()
 
-      // Check if pet reached food
+      // Check if pet reached shared food
       if (
         movementResult &&
         'reachedTarget' in movementResult &&
@@ -123,7 +136,9 @@ export class PetManager {
         movementResult.targetX !== undefined &&
         movementResult.targetY !== undefined
       ) {
-        petData.feedingSystem.eatFood(
+        // Try to eat from shared food pool instead of individual food
+        this.checkSharedFoodEating(
+          petData,
           movementResult.targetX,
           movementResult.targetY
         )
@@ -147,9 +162,231 @@ export class PetManager {
 
   dropFood(x: number, y?: number): void {
     const activePet = this.getActivePet()
-    if (activePet) {
-      activePet.feedingSystem.dropFood(x, y)
+    if (activePet && activePet.feedingSystem.foodInventory > 0) {
+      // Deduct from active pet's inventory
+      activePet.feedingSystem.foodInventory -= 1
+
+      // Drop food to shared pool instead of individual pet
+      this.dropSharedFood(x, y)
     }
+  }
+
+  // Drop food to shared pool that all pets can eat
+  private dropSharedFood(x: number, _y?: number): void {
+    // Food always drops near the bottom of the screen (ground line)
+    const groundY = this.scene.cameras.main.height - 25
+
+    const food = this.scene.add.image(x, groundY - 25, 'hamburger')
+    food.setScale(1.5)
+    food.setAlpha(0.9)
+
+    // Add drop animation effect
+    this.scene.tweens.add({
+      targets: food,
+      y: groundY,
+      duration: 500,
+      ease: 'Bounce.easeOut',
+      onComplete: () => {
+        this.scene.tweens.add({
+          targets: food,
+          scaleX: 1.7,
+          scaleY: 1.2,
+          duration: 100,
+          yoyo: true
+        })
+      }
+    })
+
+    // Add shadow effect
+    const shadow = this.scene.add.ellipse(x, groundY + 5, 30, 12, 0x000000, 0.3)
+    this.scene.tweens.add({
+      targets: shadow,
+      scaleX: 1.3,
+      alpha: 0.5,
+      duration: 500,
+      ease: 'Power2.easeOut'
+    })
+
+    this.sharedDroppedFood.push(food as any)
+    this.sharedFoodShadows.push(shadow)
+
+    // Create timer to auto-despawn food after 20s
+    const despawnTimer = this.scene.time.delayedCall(20000, () => {
+      const currentFoodIndex = this.sharedDroppedFood.indexOf(food as any)
+      if (currentFoodIndex !== -1) {
+        this.removeSharedFoodAtIndex(currentFoodIndex)
+        console.log('Shared food auto-despawned after 20 seconds')
+      }
+    })
+    this.sharedFoodTimers.push(despawnTimer)
+
+    // Notify all pets about new food
+    this.notifyPetsAboutFood()
+
+    console.log(`Dropped shared food at (${x}, ${groundY})`)
+  }
+
+  // Remove shared food at specific index
+  private removeSharedFoodAtIndex(index: number): void {
+    if (index < 0 || index >= this.sharedDroppedFood.length) return
+
+    const food = this.sharedDroppedFood[index]
+    const shadow = this.sharedFoodShadows[index]
+    const timer = this.sharedFoodTimers[index]
+
+    // Remove from food targets tracking
+    this.foodTargets.delete(food)
+
+    // Cancel timer if it exists
+    if (timer && !timer.hasDispatched) {
+      timer.destroy()
+    }
+
+    // Animate food and shadow removal
+    this.scene.tweens.add({
+      targets: food,
+      scaleX: 0,
+      scaleY: 0,
+      alpha: 0,
+      duration: 300,
+      ease: 'Power2.easeIn',
+      onComplete: () => {
+        food.destroy()
+      }
+    })
+
+    this.scene.tweens.add({
+      targets: shadow,
+      alpha: 0,
+      duration: 300,
+      onComplete: () => {
+        shadow.destroy()
+      }
+    })
+
+    // Remove from arrays
+    this.sharedDroppedFood.splice(index, 1)
+    this.sharedFoodShadows.splice(index, 1)
+    this.sharedFoodTimers.splice(index, 1)
+
+    console.log('Shared food removed at index:', index)
+  }
+
+  // Notify all pets about new food available
+  private notifyPetsAboutFood(): void {
+    for (const petData of this.pets.values()) {
+      // Check if pet should start chasing the new food
+      this.checkPetShouldChaseSharedFood(petData)
+    }
+  }
+
+  // Check if a specific pet should chase shared food
+  private checkPetShouldChaseSharedFood(petData: PetData): void {
+    if (this.sharedDroppedFood.length === 0) return
+    if (petData.pet.isChasing || petData.pet.currentActivity === 'chew') return
+
+    // Check hunger level using the same logic as FeedingSystem
+    const hungerLevel = petData.feedingSystem.hungerLevel
+    const isHungry = hungerLevel < 80 // Hungry or Starving
+
+    if (isHungry) {
+      // Find food that is not being chased by another pet
+      const availableFood = this.sharedDroppedFood.filter(
+        (food) => !this.foodTargets.has(food)
+      )
+
+      if (availableFood.length > 0) {
+        // Pick random available food
+        const randomIndex = Math.floor(Math.random() * availableFood.length)
+        const targetFood = availableFood[randomIndex]
+
+        if (targetFood) {
+          // Mark this food as being chased by this pet
+          this.foodTargets.set(targetFood, petData.id)
+
+          petData.pet.startChasing(targetFood.x, targetFood.y)
+          console.log(
+            `Pet ${petData.id} started chasing shared food at (${targetFood.x}, ${targetFood.y})`
+          )
+        }
+      } else {
+        console.log(
+          `Pet ${petData.id} wants to chase food but all food is being chased`
+        )
+      }
+    }
+  }
+
+  // Check if pet can eat shared food
+  checkSharedFoodEating(petData: PetData, x: number, y: number): boolean {
+    // Find and remove food from shared pool
+    const foodIndex = this.sharedDroppedFood.findIndex(
+      (food) => Phaser.Math.Distance.Between(food.x, food.y, x, y) < 40
+    )
+
+    if (foodIndex !== -1) {
+      // Release food target for this pet
+      this.releaseFoodTarget(petData.id)
+
+      // Remove food from shared pool
+      this.removeSharedFoodAtIndex(foodIndex)
+
+      // Increase pet's hunger
+      petData.feedingSystem.hungerLevel = Math.min(
+        100,
+        petData.feedingSystem.hungerLevel + 20
+      )
+
+      // Stop chasing and switch to chew animation
+      petData.pet.stopChasing()
+      petData.pet.setActivity('chew')
+
+      // Handle post-eating behavior
+      this.handlePetPostEating(petData)
+
+      return true
+    }
+
+    return false
+  }
+
+  // Handle pet behavior after eating
+  private handlePetPostEating(petData: PetData): void {
+    petData.pet.sprite.once('animationcomplete', () => {
+      if (petData.pet.currentActivity === 'chew') {
+        // Check if pet should continue chasing more food or return to auto walk
+        if (
+          petData.feedingSystem.hungerLevel < 100 &&
+          this.sharedDroppedFood.length > 0
+        ) {
+          console.log(
+            `Pet ${petData.id} still hungry, looking for more shared food...`
+          )
+          this.checkPetShouldChaseSharedFood(petData)
+        } else {
+          petData.pet.isUserControlled = false
+          petData.pet.setActivity('walk')
+          console.log(
+            `Pet ${petData.id} finished eating, returning to auto walk mode`
+          )
+        }
+      }
+    })
+
+    // Backup timer
+    this.scene.time.delayedCall(2000, () => {
+      if (petData.pet.currentActivity === 'chew') {
+        if (
+          petData.feedingSystem.hungerLevel < 100 &&
+          this.sharedDroppedFood.length > 0
+        ) {
+          this.checkPetShouldChaseSharedFood(petData)
+        } else {
+          petData.pet.isUserControlled = false
+          petData.pet.setActivity('walk')
+        }
+      }
+    })
   }
 
   // Get shared food inventory (from active pet)
@@ -175,7 +412,6 @@ export class PetManager {
       totalFoodInventory: this.getFoodInventory()
     }
   }
-
   // Cleanup all pets
   cleanup(): void {
     for (const petData of this.pets.values()) {
@@ -184,6 +420,26 @@ export class PetManager {
     }
     this.pets.clear()
     this.activePetId = null
+
+    // Cleanup shared food
+    while (this.sharedDroppedFood.length > 0) {
+      this.removeSharedFoodAtIndex(0)
+    }
+
+    // Clear food targets
+    this.foodTargets.clear()
+
     console.log('🧹 PetManager cleaned up')
+  }
+
+  // Release food target when pet stops chasing
+  private releaseFoodTarget(petId: string): void {
+    for (const [food, chasingPetId] of this.foodTargets.entries()) {
+      if (chasingPetId === petId) {
+        this.foodTargets.delete(food)
+        console.log(`Pet ${petId} released food target`)
+        break
+      }
+    }
   }
 }

@@ -14,6 +14,9 @@ export class Pet {
   public isChasing: boolean = false
   public chaseTarget: { x: number; y: number } | null = null
 
+  // Callback for when pet stops chasing (to notify PetManager)
+  public onStopChasing?: () => void
+
   private scene: Phaser.Scene
 
   constructor(scene: Phaser.Scene) {
@@ -219,6 +222,12 @@ export class Pet {
   stopChasing() {
     this.isChasing = false
     this.chaseTarget = null
+
+    // Notify PetManager about stopping chase
+    if (this.onStopChasing) {
+      this.onStopChasing()
+    }
+
     // Ensure pet returns to proper walk animation when stopping chase
     if (this.currentActivity === 'walk') {
       this.setActivity('walk')

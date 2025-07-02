@@ -44,7 +44,7 @@ export class FeedingSystem {
     const now = this.scene.time.now
     if (!this.lastHungerUpdate) this.lastHungerUpdate = now
     const elapsed = (now - this.lastHungerUpdate) / 1000 // seconds
-    const HUNGER_DECREASE_PER_HOUR = 2
+    const HUNGER_DECREASE_PER_HOUR = 2000
     const HUNGER_DECREASE_PER_SEC = HUNGER_DECREASE_PER_HOUR / 3600
     if (elapsed > 0) {
       this.hungerLevel = Math.max(
@@ -361,30 +361,15 @@ export class FeedingSystem {
     }
   }
 
+  // Cleanup method
+  destroy(): void {
+    this.cleanup()
+    console.log('🧹 FeedingSystem destroyed')
+  }
+
   cleanup() {
     while (this.droppedFood.length > 0) {
       this.removeFoodAtIndex(0)
     }
-  }
-
-  // Proper cleanup method
-  destroy(): void {
-    // Clean up dropped food sprites
-    this.droppedFood.forEach((food) => food.destroy())
-    this.foodShadows.forEach((shadow) => shadow.destroy())
-
-    // Clean up timers
-    this.foodTimers.forEach((timer) => {
-      if (timer && !timer.hasDispatched) {
-        timer.destroy()
-      }
-    })
-
-    // Reset arrays
-    this.droppedFood = []
-    this.foodShadows = []
-    this.foodTimers = []
-
-    console.log('🧹 FeedingSystem cleaned up')
   }
 }

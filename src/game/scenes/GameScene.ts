@@ -76,24 +76,19 @@ export class GameScene extends Phaser.Scene {
     console.log('🐕 Creating initial pets...')
     const groundY = this.cameras.main.height - GROUND_OFFSET
 
-    // Create initial pet(s) - all on same ground line
+    // Create initial pet - start with just one pet
     const petData1 = this.petManager.createPet('pet1', 100, groundY)
     console.log('Pet data created:', petData1)
 
-    // Create a second pet for testing
+    // Create a second pet for testing shared food system
     const petData2 = this.petManager.createPet('pet2', 200, groundY)
     console.log('Pet data 2 created:', petData2)
-
-    // Debug: Check if pet manager has pets
-    console.log('Pet manager stats:', this.petManager.getPetStats())
   }
 
   private initializeUI() {
-    console.log('🎨 Initializing UI...')
     // Initialize UI with pet manager
     this.gameUI = new GameUI(this, this.petManager)
     this.gameUI.create()
-    console.log('✅ UI initialized successfully')
   }
 
   update() {
@@ -104,12 +99,10 @@ export class GameScene extends Phaser.Scene {
 
     // Check if managers are initialized
     if (!this.petManager) {
-      console.warn('⚠️ PetManager not initialized yet')
       return
     }
 
     if (!this.gameUI) {
-      console.warn('⚠️ GameUI not initialized yet')
       return
     }
 
