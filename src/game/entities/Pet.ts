@@ -222,4 +222,12 @@ export class Pet {
       this.setActivity('walk')
     }
   }
+
+  // Cleanup method
+  destroy(): void {
+    if (this.sprite) {
+      this.sprite.destroy()
+    }
+    console.log('🧹 Pet destroyed')
+  }
 }

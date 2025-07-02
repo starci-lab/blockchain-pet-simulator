@@ -1,4 +1,4 @@
-import { FeedingSystem } from '../systems/FeedingSystem'
+import { PetManager } from '@/game/managers/PetManager'
 import { useUserStore } from '@/store/userStore'
 import { gameConfigManager } from '@/game/configs/gameConfig'
 
@@ -16,7 +16,7 @@ const TOAST_BG_COLOR = 0xf5a623
 
 export class GameUI {
   private scene: Phaser.Scene
-  private feedingSystem: FeedingSystem
+  private petManager: PetManager
 
   private inventoryText!: Phaser.GameObjects.Text
   private hungerBar!: Phaser.GameObjects.Rectangle
@@ -26,24 +26,30 @@ export class GameUI {
   private isDroppingFood = false
   private dropHintText?: Phaser.GameObjects.Text
 
-  constructor(scene: Phaser.Scene, feedingSystem: FeedingSystem) {
+  constructor(scene: Phaser.Scene, petManager: PetManager) {
     this.scene = scene
-    this.feedingSystem = feedingSystem
+    this.petManager = petManager
   }
 
   create() {
+    console.log('🎨 Creating GameUI...')
     this.createFeedingUI()
     this.createTokenUI()
     this.createMiniShop()
     this.setupInputHandlers()
+    console.log('✅ GameUI created successfully')
   }
 
   // Feeding UI
   private createFeedingUI() {
+    console.log('🍔 Creating Feeding UI...')
+    const activePet = this.petManager.getActivePet()
+    console.log('Active pet for UI:', activePet ? activePet.id : 'None')
+
     this.inventoryText = this.scene.add.text(
       10,
       10,
-      `Food: ${this.feedingSystem.foodInventory}`,
+      `Food: ${this.petManager.getFoodInventory()}`,
       {
         fontSize: '16px',
         color: '#333333',
@@ -53,8 +59,15 @@ export class GameUI {
     )
     this.scene.add.rectangle(10, 40, 100, 10, 0xff0000).setOrigin(0, 0.5)
     this.hungerBar = this.scene.add
-      .rectangle(10, 40, this.feedingSystem.hungerLevel, 10, 0x00ff00)
+      .rectangle(
+        10,
+        40,
+        activePet?.feedingSystem.hungerLevel || 100,
+        10,
+        0x00ff00
+      )
       .setOrigin(0, 0.5)
+    console.log('✅ Feeding UI created')
   }
 
   // Token UI
@@ -89,6 +102,7 @@ export class GameUI {
 
   // Shop UI
   private createMiniShop() {
+    console.log('🛒 Creating Mini Shop...')
     const shopX = this.scene.cameras.main.width - 30
     const shopY = 18
     // Token background & text
@@ -137,7 +151,7 @@ export class GameUI {
     this.foodIcon.on('pointerdown', () => {
       const currentPrice = gameConfigManager.getFoodPrice('hamburger')
       if (
-        this.feedingSystem.foodInventory > 0 ||
+        this.petManager.getFoodInventory() > 0 ||
         useUserStore.getState().nomToken >= currentPrice
       ) {
         this.isDroppingFood = true
@@ -172,10 +186,12 @@ export class GameUI {
         this.showNotification('You do not have enough NOM tokens!')
       }
     })
+    console.log('✅ Mini Shop created successfully')
   }
 
   // Input handlers
   private setupInputHandlers() {
+    console.log('⌨️ Setting up input handlers...')
     this.scene.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
       if (!this.isDroppingFood) return
       if (pointer.rightButtonDown()) {
@@ -194,7 +210,7 @@ export class GameUI {
       if (Phaser.Geom.Rectangle.Contains(iconBounds, pointer.x, pointer.y)) {
         return
       }
-      const canBuy = this.feedingSystem.buyFood()
+      const canBuy = this.petManager.buyFood()
       if (!canBuy) {
         this.showNotification(
           'You do not have enough NOM tokens!',
@@ -203,9 +219,10 @@ export class GameUI {
         )
         return
       }
-      this.feedingSystem.dropFood(pointer.x, pointer.y)
+      this.petManager.dropFood(pointer.x, pointer.y)
       this.updateUI()
     })
+    console.log('✅ Input handlers set up successfully')
   }
 
   // Toast notification
@@ -248,14 +265,16 @@ export class GameUI {
       toast.destroy()
     })
   }
-
   // Update all UI
   updateUI() {
+    const stats = this.petManager.getPetStats()
+    const activePet = this.petManager.getActivePet()
+
     if (this.inventoryText) {
-      this.inventoryText.setText(`Food: ${this.feedingSystem.foodInventory}`)
+      this.inventoryText.setText(`Food: ${stats.totalFoodInventory}`)
     }
-    if (this.hungerBar) {
-      this.hungerBar.setSize(this.feedingSystem.hungerLevel, 10)
+    if (this.hungerBar && activePet) {
+      this.hungerBar.setSize(activePet.feedingSystem.hungerLevel, 10)
     }
 
     // Update price display in case it changed
@@ -265,5 +284,18 @@ export class GameUI {
     }
 
     this.updateTokenUI()
+  }
+
+  // Debug method to show pet stats
+  showPetStats() {
+    const stats = this.petManager.getPetStats()
+    console.log('🐕 Pet Manager Stats:', stats)
+
+    stats.pets.forEach((pet) => {
+      console.log(`Pet ${pet.id} ${pet.isActive ? '(ACTIVE)' : ''}:`)
+      console.log(`  Hunger: ${pet.hungerLevel.toFixed(1)}%`)
+      console.log(`  Activity: ${pet.currentActivity}`)
+      console.log(`  Food Inventory: ${pet.foodInventory}`)
+    })
   }
 }

@@ -1,25 +1,20 @@
 import { SceneName } from '@/constants/scene'
 import { loadChogAssets } from '@/game/load'
 import Phaser from 'phaser'
-import { Pet } from '@/game/entities/Pet'
-import { MovementSystem } from '@/game/systems/MovementSystem'
-import { ActivitySystem } from '@/game/systems/ActivitySystem'
-import { FeedingSystem } from '@/game/systems/FeedingSystem'
 import { GameUI } from '@/game/ui/GameUI'
 import { ColyseusClient } from '@/game/colyseus/client'
 import { initializeGame } from '@/gameInit'
+import { PetManager } from '@/game/managers/PetManager'
+import { gameConfigManager } from '@/game/configs/gameConfig'
 import RexUIPlugin from 'phaser3-rex-plugins/templates/ui/ui-plugin.js'
 const BACKEND_URL = 'ws://localhost:3002'
 
 export class GameScene extends Phaser.Scene {
-  // Core entities and systems
   rexUI!: RexUIPlugin
-  private pet!: Pet
-  private movementSystem!: MovementSystem
-  private activitySystem!: ActivitySystem
-  private feedingSystem!: FeedingSystem
+  private petManager!: PetManager
   private gameUI!: GameUI
   private colyseusClient!: ColyseusClient
+  private isInitialized = false
 
   constructor() {
     super({ key: SceneName.Gameplay })
@@ -40,9 +35,12 @@ export class GameScene extends Phaser.Scene {
     console.log('🎮 Initializing game configuration...')
     await initializeGame()
 
-    // Initialize entities and systems
-    this.initializeEntities()
+    // Debug log food items
+    gameConfigManager.logFoodItems()
+
+    // Initialize systems
     this.initializeSystems()
+    this.initializePets()
     this.initializeUI()
 
     // Setup cursor
@@ -59,79 +57,131 @@ export class GameScene extends Phaser.Scene {
       'Room status:',
       this.colyseusClient.isConnected() ? 'Connected' : 'Offline mode'
     )
-  }
 
-  private initializeEntities() {
-    // Create pet
-    this.pet = new Pet(this)
-    this.pet.createAnimations()
-    this.pet.create(100, this.cameras.main.height - 40)
+    // Mark as initialized
+    this.isInitialized = true
+    console.log('✅ GameScene fully initialized')
   }
 
   private initializeSystems() {
     // Initialize multiplayer client first
     this.colyseusClient = new ColyseusClient(this)
 
-    // Initialize systems with the client
-    this.movementSystem = new MovementSystem(this.pet, this.cameras.main.width)
-    this.activitySystem = new ActivitySystem(this.pet)
-    this.feedingSystem = new FeedingSystem(this, this.pet, this.colyseusClient)
+    // Initialize pet manager
+    this.petManager = new PetManager(this, this.colyseusClient)
+  }
+
+  private initializePets() {
+    console.log('🐕 Creating initial pets...')
+    // Create initial pet(s)
+    const petData = this.petManager.createPet(
+      'pet1',
+      100,
+      this.cameras.main.height - 40
+    )
+    console.log('Pet data created:', petData)
+
+    // Debug: Check if pet manager has pets
+    console.log('Pet manager stats:', this.petManager.getPetStats())
+
+    // You can add more pets here
+    // this.petManager.createPet('pet2', 200, this.cameras.main.height - 40)
   }
 
   private initializeUI() {
-    // Initialize UI
-    this.gameUI = new GameUI(this, this.feedingSystem)
+    console.log('🎨 Initializing UI...')
+    // Initialize UI with pet manager
+    this.gameUI = new GameUI(this, this.petManager)
     this.gameUI.create()
+    console.log('✅ UI initialized successfully')
   }
 
   update() {
-    // Update movement system
-    if (!this.colyseusClient) return
-    const movementResult = this.movementSystem.update()
-
-    // Check if pet reached food
-    if (
-      movementResult &&
-      'reachedTarget' in movementResult &&
-      movementResult.reachedTarget &&
-      movementResult.targetX !== undefined &&
-      movementResult.targetY !== undefined
-    ) {
-      this.feedingSystem.eatFood(movementResult.targetX, movementResult.targetY)
+    // Don't update until fully initialized
+    if (!this.isInitialized) {
+      return
     }
 
-    // Update activity system
-    this.activitySystem.update()
+    // Check if managers are initialized
+    if (!this.petManager) {
+      console.warn('⚠️ PetManager not initialized yet')
+      return
+    }
 
-    // Update feeding system (hunger decrease)
-    this.feedingSystem.update()
+    if (!this.gameUI) {
+      console.warn('⚠️ GameUI not initialized yet')
+      return
+    }
 
-    // Update UI
-    this.gameUI.updateUI()
+    try {
+      // Update all pets through manager
+      this.petManager.update()
+
+      // Update UI
+      this.gameUI.updateUI()
+    } catch (error) {
+      console.error('❌ Error in GameScene.update():', error)
+    }
   }
 
   // Compatibility methods for React component
   get speed() {
-    return this.pet.speed
+    const activePet = this.petManager.getActivePet()
+    return activePet?.pet.speed || 0
   }
 
   set speed(value: number) {
-    this.pet.speed = value
+    const activePet = this.petManager.getActivePet()
+    if (activePet) {
+      activePet.pet.speed = value
+    }
   }
 
   get currentActivity() {
-    return this.pet.currentActivity
+    const activePet = this.petManager.getActivePet()
+    return activePet?.pet.currentActivity || 'idle'
   }
 
   set currentActivity(value: string) {
-    this.pet.setActivity(value)
+    const activePet = this.petManager.getActivePet()
+    if (activePet) {
+      activePet.pet.setActivity(value)
+    }
   }
 
   updateSpeed(newSpeed: number) {
-    this.pet.speed = newSpeed
+    const activePet = this.petManager.getActivePet()
+    if (activePet) {
+      activePet.pet.speed = newSpeed
+    }
   }
 
   setUserActivity(newActivity: string) {
-    this.pet.setUserActivity(newActivity)
+    const activePet = this.petManager.getActivePet()
+    if (activePet) {
+      activePet.pet.setUserActivity(newActivity)
+    }
+  }
+
+  // New methods for multi-pet management
+  getPetManager(): PetManager {
+    return this.petManager
+  }
+
+  addPet(petId: string, x?: number, y?: number): boolean {
+    const petData = this.petManager.createPet(
+      petId,
+      x || Math.random() * 300 + 50,
+      y || this.cameras.main.height - 40
+    )
+    return !!petData
+  }
+
+  removePet(petId: string): boolean {
+    return this.petManager.removePet(petId)
+  }
+
+  switchToPet(petId: string): boolean {
+    return this.petManager.setActivePet(petId)
   }
 }

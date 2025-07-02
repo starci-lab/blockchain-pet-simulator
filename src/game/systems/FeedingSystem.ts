@@ -366,4 +366,25 @@ export class FeedingSystem {
       this.removeFoodAtIndex(0)
     }
   }
+
+  // Proper cleanup method
+  destroy(): void {
+    // Clean up dropped food sprites
+    this.droppedFood.forEach((food) => food.destroy())
+    this.foodShadows.forEach((shadow) => shadow.destroy())
+
+    // Clean up timers
+    this.foodTimers.forEach((timer) => {
+      if (timer && !timer.hasDispatched) {
+        timer.destroy()
+      }
+    })
+
+    // Reset arrays
+    this.droppedFood = []
+    this.foodShadows = []
+    this.foodTimers = []
+
+    console.log('🧹 FeedingSystem cleaned up')
+  }
 }
