@@ -44,7 +44,7 @@ export class FeedingSystem {
     const now = this.scene.time.now
     if (!this.lastHungerUpdate) this.lastHungerUpdate = now
     const elapsed = (now - this.lastHungerUpdate) / 1000 // seconds
-    const HUNGER_DECREASE_PER_HOUR = 2000
+    const HUNGER_DECREASE_PER_HOUR = 3000
     const HUNGER_DECREASE_PER_SEC = HUNGER_DECREASE_PER_HOUR / 3600
     if (elapsed > 0) {
       this.hungerLevel = Math.max(

@@ -177,4 +177,14 @@ export class GameScene extends Phaser.Scene {
   switchToPet(petId: string): boolean {
     return this.petManager.setActivePet(petId)
   }
+
+  // Debug method
+  debugPets(): void {
+    this.petManager.debugPetsStatus()
+  }
+
+  // Force reset all pets (emergency method)
+  forceResetPets(): void {
+    this.petManager.forceResetAllPets()
+  }
 }

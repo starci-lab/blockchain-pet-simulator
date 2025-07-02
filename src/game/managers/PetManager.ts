@@ -26,9 +26,15 @@ export class PetManager {
   // Track which pet is chasing which food to prevent conflicts
   private foodTargets: Map<Phaser.GameObjects.Sprite, string> = new Map() // food -> petId
 
+  // Safety timer to prevent pets getting stuck
+  private safetyTimer?: Phaser.Time.TimerEvent
+
   constructor(scene: Phaser.Scene, colyseusClient: ColyseusClient) {
     this.scene = scene
     this.colyseusClient = colyseusClient
+
+    // Start safety check timer every 5 seconds
+    this.startSafetyCheck()
   }
 
   // Tạo pet mới
@@ -289,10 +295,18 @@ export class PetManager {
     const hungerLevel = petData.feedingSystem.hungerLevel
     const isHungry = hungerLevel < 80 // Hungry or Starving
 
+    console.log(
+      `🔍 Checking chase for Pet ${petData.id}: hunger=${hungerLevel}%, hungry=${isHungry}`
+    )
+
     if (isHungry) {
       // Find food that is not being chased by another pet
       const availableFood = this.sharedDroppedFood.filter(
         (food) => !this.foodTargets.has(food)
+      )
+
+      console.log(
+        `🍔 Available food count: ${availableFood.length}/${this.sharedDroppedFood.length}`
       )
 
       if (availableFood.length > 0) {
@@ -306,12 +320,12 @@ export class PetManager {
 
           petData.pet.startChasing(targetFood.x, targetFood.y)
           console.log(
-            `Pet ${petData.id} started chasing shared food at (${targetFood.x}, ${targetFood.y})`
+            `🏃 Pet ${petData.id} started chasing shared food at (${targetFood.x}, ${targetFood.y})`
           )
         }
       } else {
         console.log(
-          `Pet ${petData.id} wants to chase food but all food is being chased`
+          `⚠️ Pet ${petData.id} wants to chase food but all food is being chased`
         )
       }
     }
@@ -325,6 +339,8 @@ export class PetManager {
     )
 
     if (foodIndex !== -1) {
+      console.log(`🍔 Pet ${petData.id} is eating food at index ${foodIndex}`)
+
       // Release food target for this pet
       this.releaseFoodTarget(petData.id)
 
@@ -332,9 +348,14 @@ export class PetManager {
       this.removeSharedFoodAtIndex(foodIndex)
 
       // Increase pet's hunger
+      const oldHunger = petData.feedingSystem.hungerLevel
       petData.feedingSystem.hungerLevel = Math.min(
         100,
         petData.feedingSystem.hungerLevel + 20
+      )
+
+      console.log(
+        `📈 Pet ${petData.id} hunger: ${oldHunger} → ${petData.feedingSystem.hungerLevel}`
       )
 
       // Stop chasing and switch to chew animation
@@ -352,41 +373,87 @@ export class PetManager {
 
   // Handle pet behavior after eating
   private handlePetPostEating(petData: PetData): void {
-    petData.pet.sprite.once('animationcomplete', () => {
-      if (petData.pet.currentActivity === 'chew') {
+    console.log(
+      `🍽️ Pet ${petData.id} started eating, will check for next action in 2 seconds`
+    )
+
+    // Force ensure pet is in correct state
+    petData.pet.isUserControlled = true // Temporarily user controlled while eating
+
+    // Use fixed timer instead of animation event for reliability
+    this.scene.time.delayedCall(2000, () => {
+      console.log(
+        `⏰ Timer fired for Pet ${petData.id}, current activity: ${petData.pet.currentActivity}`
+      )
+
+      // Force check and reset pet state regardless of current activity
+      if (
+        petData.pet.currentActivity === 'chew' ||
+        petData.pet.isUserControlled
+      ) {
         // Check if pet should continue chasing more food or return to auto walk
         if (
           petData.feedingSystem.hungerLevel < 100 &&
           this.sharedDroppedFood.length > 0
         ) {
           console.log(
-            `Pet ${petData.id} still hungry, looking for more shared food...`
+            `🔄 Pet ${petData.id} still hungry (${petData.feedingSystem.hungerLevel}%), looking for more shared food...`
           )
+
+          // Reset state before checking for more food
+          petData.pet.isUserControlled = false
+          petData.pet.isChasing = false
+          petData.pet.chaseTarget = null
+
           this.checkPetShouldChaseSharedFood(petData)
         } else {
-          petData.pet.isUserControlled = false
-          petData.pet.setActivity('walk')
+          // Force return to auto walk mode
           console.log(
-            `Pet ${petData.id} finished eating, returning to auto walk mode`
+            `🚶 Pet ${petData.id} finished eating (${petData.feedingSystem.hungerLevel}%), FORCING return to auto walk mode`
           )
+          this.forceReturnToWalk(petData)
         }
+      } else {
+        console.log(
+          `⚠️ Pet ${petData.id} is no longer chewing, current activity: ${petData.pet.currentActivity}, FORCING walk mode`
+        )
+        this.forceReturnToWalk(petData)
+      }
+    })
+  }
+
+  // Force pet to return to walk mode (safety method)
+  private forceReturnToWalk(petData: PetData): void {
+    console.log(`🔧 Force returning Pet ${petData.id} to walk mode`)
+
+    // Release any food target this pet was chasing
+    this.releaseFoodTarget(petData.id)
+
+    // Reset all states completely
+    petData.pet.isUserControlled = false
+    petData.pet.isChasing = false
+    petData.pet.chaseTarget = null
+
+    // Force activity to walk and ensure pet starts moving automatically
+    petData.pet.setActivity('walk')
+
+    // Double-check: if pet is still not moving automatically after a brief delay
+    this.scene.time.delayedCall(500, () => {
+      if (
+        petData.pet.isUserControlled ||
+        petData.pet.currentActivity !== 'walk'
+      ) {
+        console.log(
+          `🔄 Secondary force: Pet ${petData.id} still not walking, applying final reset`
+        )
+        petData.pet.isUserControlled = false
+        petData.pet.isChasing = false
+        petData.pet.chaseTarget = null
+        petData.pet.setActivity('walk')
       }
     })
 
-    // Backup timer
-    this.scene.time.delayedCall(2000, () => {
-      if (petData.pet.currentActivity === 'chew') {
-        if (
-          petData.feedingSystem.hungerLevel < 100 &&
-          this.sharedDroppedFood.length > 0
-        ) {
-          this.checkPetShouldChaseSharedFood(petData)
-        } else {
-          petData.pet.isUserControlled = false
-          petData.pet.setActivity('walk')
-        }
-      }
-    })
+    console.log(`✅ Pet ${petData.id} forced back to walk mode`)
   }
 
   // Get shared food inventory (from active pet)
@@ -414,6 +481,12 @@ export class PetManager {
   }
   // Cleanup all pets
   cleanup(): void {
+    // Stop safety timer
+    if (this.safetyTimer) {
+      this.safetyTimer.destroy()
+      this.safetyTimer = undefined
+    }
+
     for (const petData of this.pets.values()) {
       petData.pet.destroy()
       petData.feedingSystem.destroy()
@@ -441,5 +514,90 @@ export class PetManager {
         break
       }
     }
+  }
+
+  // Start safety check timer
+  private startSafetyCheck(): void {
+    this.safetyTimer = this.scene.time.addEvent({
+      delay: 5000, // 5 seconds
+      callback: () => {
+        this.performSafetyCheck()
+      },
+      loop: true
+    })
+  }
+
+  // Perform safety check on all pets
+  private performSafetyCheck(): void {
+    console.log('🔍 Performing safety check on all pets...')
+
+    for (const petData of this.pets.values()) {
+      // Check if pet has been chewing for too long
+      if (petData.pet.currentActivity === 'chew' && !petData.pet.isChasing) {
+        console.log(
+          `⚠️ SAFETY: Pet ${petData.id} stuck in chew mode, forcing to walk`
+        )
+        this.forceReturnToWalk(petData)
+      }
+
+      // Check if pet is user controlled but not chasing anything
+      if (
+        petData.pet.isUserControlled &&
+        !petData.pet.isChasing &&
+        !petData.pet.chaseTarget
+      ) {
+        console.log(
+          `⚠️ SAFETY: Pet ${petData.id} user controlled but not chasing, releasing control`
+        )
+        petData.pet.isUserControlled = false
+        petData.pet.setActivity('walk')
+      }
+
+      // Check if pet has invalid chase target
+      if (petData.pet.isChasing && !petData.pet.chaseTarget) {
+        console.log(
+          `⚠️ SAFETY: Pet ${petData.id} chasing but no target, resetting`
+        )
+        petData.pet.isChasing = false
+        petData.pet.isUserControlled = false
+        petData.pet.setActivity('walk')
+      }
+    }
+  }
+
+  // Force reset all pets to walking state (emergency method)
+  forceResetAllPets(): void {
+    console.log('🆘 EMERGENCY: Force resetting all pets to walk mode')
+
+    for (const petData of this.pets.values()) {
+      this.forceReturnToWalk(petData)
+    }
+
+    // Clear all food targets
+    this.foodTargets.clear()
+
+    console.log('✅ All pets have been force reset to walk mode')
+  }
+
+  // Debug method to check all pets status
+  debugPetsStatus(): void {
+    console.log('=== PETS STATUS DEBUG ===')
+    for (const petData of this.pets.values()) {
+      console.log(`Pet ${petData.id}:`)
+      console.log(`  Activity: ${petData.pet.currentActivity}`)
+      console.log(`  Is Chasing: ${petData.pet.isChasing}`)
+      console.log(`  Is User Controlled: ${petData.pet.isUserControlled}`)
+      console.log(`  Hunger: ${petData.feedingSystem.hungerLevel}%`)
+      console.log(
+        `  Chase Target: ${
+          petData.pet.chaseTarget
+            ? `(${petData.pet.chaseTarget.x}, ${petData.pet.chaseTarget.y})`
+            : 'None'
+        }`
+      )
+    }
+    console.log(`Food Targets: ${this.foodTargets.size}`)
+    console.log(`Shared Food: ${this.sharedDroppedFood.length}`)
+    console.log('=== END DEBUG ===')
   }
 }
