@@ -8,6 +8,7 @@ import { PetManager } from '@/game/managers/PetManager'
 import { gameConfigManager } from '@/game/configs/gameConfig'
 import RexUIPlugin from 'phaser3-rex-plugins/templates/ui/ui-plugin.js'
 const BACKEND_URL = 'ws://localhost:3002'
+const GROUND_OFFSET = 40 // Distance from bottom of screen for ground line
 
 export class GameScene extends Phaser.Scene {
   rexUI!: RexUIPlugin
@@ -73,19 +74,18 @@ export class GameScene extends Phaser.Scene {
 
   private initializePets() {
     console.log('🐕 Creating initial pets...')
-    // Create initial pet(s)
-    const petData = this.petManager.createPet(
-      'pet1',
-      100,
-      this.cameras.main.height - 40
-    )
-    console.log('Pet data created:', petData)
+    const groundY = this.cameras.main.height - GROUND_OFFSET
+
+    // Create initial pet(s) - all on same ground line
+    const petData1 = this.petManager.createPet('pet1', 100, groundY)
+    console.log('Pet data created:', petData1)
+
+    // Create a second pet for testing
+    const petData2 = this.petManager.createPet('pet2', 200, groundY)
+    console.log('Pet data 2 created:', petData2)
 
     // Debug: Check if pet manager has pets
     console.log('Pet manager stats:', this.petManager.getPetStats())
-
-    // You can add more pets here
-    // this.petManager.createPet('pet2', 200, this.cameras.main.height - 40)
   }
 
   private initializeUI() {
@@ -172,7 +172,7 @@ export class GameScene extends Phaser.Scene {
     const petData = this.petManager.createPet(
       petId,
       x || Math.random() * 300 + 50,
-      y || this.cameras.main.height - 40
+      y || this.cameras.main.height - GROUND_OFFSET
     )
     return !!petData
   }

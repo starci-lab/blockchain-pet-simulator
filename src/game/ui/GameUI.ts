@@ -565,9 +565,10 @@ export class GameUI {
     // Generate new pet ID
     const petId = `pet_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`
 
-    // Find a spawn position (random position on screen)
+    // Find a spawn position (same ground line as other pets)
+    const groundY = this.scene.cameras.main.height - 40 // Same as GROUND_OFFSET in GameScene
     const spawnX = Math.random() * (this.scene.cameras.main.width - 200) + 100
-    const spawnY = Math.random() * (this.scene.cameras.main.height - 200) + 100
+    const spawnY = groundY
 
     // Create new pet through PetManager
     this.petManager.createPet(petId, spawnX, spawnY)

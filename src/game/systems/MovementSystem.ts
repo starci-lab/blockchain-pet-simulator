@@ -14,6 +14,9 @@ export class MovementSystem {
     targetX?: number
     targetY?: number
   } | void {
+    // Ensure pet stays on ground line
+    this.pet.enforceGroundLine()
+
     // Handle chasing food
     if (this.pet.isChasing && this.pet.chaseTarget) {
       return this.handleChasing()
@@ -45,22 +48,22 @@ export class MovementSystem {
       return { reachedTarget: true, targetX, targetY }
     }
 
-    // Di chuyển về phía food
-    const angle = Phaser.Math.Angle.Between(
-      this.pet.sprite.x,
-      this.pet.sprite.y,
-      targetX,
-      targetY
-    )
-    this.pet.sprite.x += Math.cos(angle) * this.pet.speed * (1 / 60)
+    // Di chuyển về phía food - CHỈ THEO TRỤC X để giữ ground line
+    const deltaX = targetX - this.pet.sprite.x
 
-    // Flip sprite theo hướng di chuyển
-    if (Math.cos(angle) > 0) {
-      this.pet.sprite.setFlipX(false)
-      this.pet.direction = 1
-    } else {
-      this.pet.sprite.setFlipX(true)
-      this.pet.direction = -1
+    // Chỉ di chuyển theo trục X, giữ nguyên Y (ground line)
+    if (Math.abs(deltaX) > 5) {
+      // Dead zone để tránh jittering
+      this.pet.sprite.x += Math.sign(deltaX) * this.pet.speed * (1 / 60)
+
+      // Flip sprite theo hướng di chuyển
+      if (deltaX > 0) {
+        this.pet.sprite.setFlipX(false)
+        this.pet.direction = 1
+      } else {
+        this.pet.sprite.setFlipX(true)
+        this.pet.direction = -1
+      }
     }
 
     return { reachedTarget: false }

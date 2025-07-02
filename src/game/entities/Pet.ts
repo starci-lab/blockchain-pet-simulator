@@ -8,6 +8,7 @@ export class Pet {
   public isMoving: boolean = true
   public isUserControlled: boolean = false
   public lastEdgeHit: string = ''
+  public groundY: number = 0 // Ground line Y position
 
   // Chasing properties
   public isChasing: boolean = false
@@ -20,6 +21,7 @@ export class Pet {
   }
 
   create(x: number, y: number) {
+    this.groundY = y // Store ground line position
     this.sprite = this.scene.add.sprite(
       x,
       y,
@@ -220,6 +222,13 @@ export class Pet {
     // Ensure pet returns to proper walk animation when stopping chase
     if (this.currentActivity === 'walk') {
       this.setActivity('walk')
+    }
+  }
+
+  // Ensure pet stays on ground line
+  enforceGroundLine(): void {
+    if (this.sprite && this.sprite.y !== this.groundY) {
+      this.sprite.y = this.groundY
     }
   }
 
