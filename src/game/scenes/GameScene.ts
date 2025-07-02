@@ -6,9 +6,10 @@ import { ColyseusClient } from '@/game/colyseus/client'
 import { initializeGame } from '@/gameInit'
 import { PetManager } from '@/game/managers/PetManager'
 import { gameConfigManager } from '@/game/configs/gameConfig'
+import { GamePositioning } from '@/game/constants/gameConstants'
 import RexUIPlugin from 'phaser3-rex-plugins/templates/ui/ui-plugin.js'
+
 const BACKEND_URL = 'ws://localhost:3002'
-const GROUND_OFFSET = 40 // Distance from bottom of screen for ground line
 
 export class GameScene extends Phaser.Scene {
   rexUI!: RexUIPlugin
@@ -74,7 +75,7 @@ export class GameScene extends Phaser.Scene {
 
   private initializePets() {
     console.log('🐕 Creating initial pets...')
-    const groundY = this.cameras.main.height - GROUND_OFFSET
+    const groundY = GamePositioning.getPetY(this.cameras.main.height)
 
     // Create initial pet - start with just one pet
     const petData1 = this.petManager.createPet('pet1', 100, groundY)
@@ -165,7 +166,7 @@ export class GameScene extends Phaser.Scene {
     const petData = this.petManager.createPet(
       petId,
       x || Math.random() * 300 + 50,
-      y || this.cameras.main.height - GROUND_OFFSET
+      y || GamePositioning.getPetY(this.cameras.main.height)
     )
     return !!petData
   }

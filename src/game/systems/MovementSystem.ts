@@ -1,4 +1,5 @@
 import { Pet } from '../entities/Pet'
+import { GamePositioning, GAME_MECHANICS } from '@/game/constants/gameConstants'
 
 export class MovementSystem {
   private pet: Pet
@@ -44,7 +45,7 @@ export class MovementSystem {
     )
 
     // Nếu đủ gần thì dừng chase
-    if (distance < 20) {
+    if (distance < GAME_MECHANICS.CHASE_DISTANCE) {
       return { reachedTarget: true, targetX, targetY }
     }
 
@@ -54,7 +55,18 @@ export class MovementSystem {
     // Chỉ di chuyển theo trục X, giữ nguyên Y (ground line)
     if (Math.abs(deltaX) > 5) {
       // Dead zone để tránh jittering
-      this.pet.sprite.x += Math.sign(deltaX) * this.pet.speed * (1 / 60)
+      const newX =
+        this.pet.sprite.x + Math.sign(deltaX) * this.pet.speed * (1 / 60)
+
+      // Apply boundary constraints even when chasing
+      const petBounds = GamePositioning.getPetBoundaries(this.cameraWidth)
+
+      // Clamp position to stay within bounds
+      this.pet.sprite.x = Phaser.Math.Clamp(
+        newX,
+        petBounds.minX,
+        petBounds.maxX
+      )
 
       // Flip sprite theo hướng di chuyển
       if (deltaX > 0) {
@@ -70,9 +82,9 @@ export class MovementSystem {
   }
 
   private handleWalkCycle() {
-    const dogWidth = 40 * 2
+    const petBounds = GamePositioning.getPetBoundaries(this.cameraWidth)
     if (
-      this.pet.sprite.x >= this.cameraWidth - dogWidth / 2 &&
+      this.pet.sprite.x >= petBounds.maxX &&
       this.pet.direction === 1 &&
       this.pet.lastEdgeHit !== 'right'
     ) {
@@ -80,7 +92,7 @@ export class MovementSystem {
       this.pet.sprite.setFlipX(true)
       this.pet.lastEdgeHit = 'right'
     } else if (
-      this.pet.sprite.x <= dogWidth / 2 &&
+      this.pet.sprite.x <= petBounds.minX &&
       this.pet.direction === -1 &&
       this.pet.lastEdgeHit !== 'left'
     ) {
@@ -91,6 +103,13 @@ export class MovementSystem {
   }
 
   private handleMovement() {
-    this.pet.sprite.x += this.pet.direction * this.pet.speed * (1 / 60)
+    const newX =
+      this.pet.sprite.x + this.pet.direction * this.pet.speed * (1 / 60)
+
+    // Apply boundary constraints
+    const petBounds = GamePositioning.getPetBoundaries(this.cameraWidth)
+
+    // Clamp position to stay within bounds
+    this.pet.sprite.x = Phaser.Math.Clamp(newX, petBounds.minX, petBounds.maxX)
   }
 }

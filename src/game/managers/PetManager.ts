@@ -3,6 +3,7 @@ import { FeedingSystem } from '@/game/systems/FeedingSystem'
 import { MovementSystem } from '@/game/systems/MovementSystem'
 import { ActivitySystem } from '@/game/systems/ActivitySystem'
 import { ColyseusClient } from '@/game/colyseus/client'
+import { GamePositioning, GAME_MECHANICS } from '@/game/constants/gameConstants'
 
 export interface PetData {
   id: string
@@ -180,16 +181,30 @@ export class PetManager {
   // Drop food to shared pool that all pets can eat
   private dropSharedFood(x: number, _y?: number): void {
     // Food always drops near the bottom of the screen (ground line)
-    const groundY = this.scene.cameras.main.height - 25
+    const cameraHeight = this.scene.cameras.main.height
+    const cameraWidth = this.scene.cameras.main.width
+    const groundY = GamePositioning.getGroundY(cameraHeight)
 
-    const food = this.scene.add.image(x, groundY - 25, 'hamburger')
+    // Clamp food position to stay within bounds
+    const foodBounds = GamePositioning.getFoodBoundaries(cameraWidth)
+    const clampedX = Phaser.Math.Clamp(x, foodBounds.minX, foodBounds.maxX)
+
+    console.log(
+      `🍔 Dropping food: requested x=${x}, clamped x=${clampedX}, bounds=[${foodBounds.minX}, ${foodBounds.maxX}]`
+    )
+
+    const food = this.scene.add.image(
+      clampedX,
+      GamePositioning.getFoodDropY(cameraHeight),
+      'hamburger'
+    )
     food.setScale(1.5)
     food.setAlpha(0.9)
 
     // Add drop animation effect
     this.scene.tweens.add({
       targets: food,
-      y: groundY,
+      y: GamePositioning.getFoodFinalY(cameraHeight),
       duration: 500,
       ease: 'Bounce.easeOut',
       onComplete: () => {
@@ -204,7 +219,14 @@ export class PetManager {
     })
 
     // Add shadow effect
-    const shadow = this.scene.add.ellipse(x, groundY + 5, 30, 12, 0x000000, 0.3)
+    const shadow = this.scene.add.ellipse(
+      clampedX,
+      groundY + 5,
+      30,
+      12,
+      0x000000,
+      0.3
+    )
     this.scene.tweens.add({
       targets: shadow,
       scaleX: 1.3,
@@ -229,7 +251,7 @@ export class PetManager {
     // Notify all pets about new food
     this.notifyPetsAboutFood()
 
-    console.log(`Dropped shared food at (${x}, ${groundY})`)
+    console.log(`Dropped shared food at (${clampedX}, ${groundY})`)
   }
 
   // Remove shared food at specific index
@@ -239,6 +261,28 @@ export class PetManager {
     const food = this.sharedDroppedFood[index]
     const shadow = this.sharedFoodShadows[index]
     const timer = this.sharedFoodTimers[index]
+
+    // Check if any pet was chasing this specific food
+    const chasingPetId = this.foodTargets.get(food)
+    let wasBeingChased = false
+    let chasingPetData: PetData | undefined
+
+    if (chasingPetId) {
+      chasingPetData = this.pets.get(chasingPetId)
+      if (
+        chasingPetData &&
+        chasingPetData.pet.isChasing &&
+        chasingPetData.pet.chaseTarget
+      ) {
+        const distance = Phaser.Math.Distance.Between(
+          chasingPetData.pet.chaseTarget.x,
+          chasingPetData.pet.chaseTarget.y,
+          food.x,
+          food.y
+        )
+        wasBeingChased = distance < 10
+      }
+    }
 
     // Remove from food targets tracking
     this.foodTargets.delete(food)
@@ -275,6 +319,35 @@ export class PetManager {
     this.sharedFoodShadows.splice(index, 1)
     this.sharedFoodTimers.splice(index, 1)
 
+    // Handle pet that was chasing this food (similar to FeedingSystem logic)
+    if (wasBeingChased && chasingPetData) {
+      console.log(
+        `🍔 Pet ${chasingPetData.id} was chasing food that disappeared, handling gracefully`
+      )
+
+      // Stop chasing immediately
+      chasingPetData.pet.stopChasing()
+
+      // Quick transition to avoid stuttering (like FeedingSystem does)
+      this.scene.time.delayedCall(30, () => {
+        if (
+          chasingPetData.feedingSystem.hungerLevel < 100 &&
+          this.sharedDroppedFood.length > 0
+        ) {
+          console.log(
+            `🔄 Pet ${chasingPetData.id} looking for another food after target disappeared`
+          )
+          this.checkPetShouldChaseSharedFood(chasingPetData)
+        } else {
+          console.log(
+            `🚶 Pet ${chasingPetData.id} returning to walk mode after target disappeared`
+          )
+          chasingPetData.pet.isUserControlled = false
+          chasingPetData.pet.setActivity('walk')
+        }
+      })
+    }
+
     console.log('Shared food removed at index:', index)
   }
 
@@ -293,7 +366,7 @@ export class PetManager {
 
     // Check hunger level using the same logic as FeedingSystem
     const hungerLevel = petData.feedingSystem.hungerLevel
-    const isHungry = hungerLevel < 80 // Hungry or Starving
+    const isHungry = hungerLevel < GAME_MECHANICS.HUNGER_THRESHOLD // Hungry or Starving
 
     console.log(
       `🔍 Checking chase for Pet ${petData.id}: hunger=${hungerLevel}%, hungry=${isHungry}`
@@ -310,17 +383,32 @@ export class PetManager {
       )
 
       if (availableFood.length > 0) {
-        // Pick random available food
-        const randomIndex = Math.floor(Math.random() * availableFood.length)
-        const targetFood = availableFood[randomIndex]
+        // Find closest available food instead of random (more natural behavior)
+        let closestFood: Phaser.GameObjects.Sprite | null = null
+        let closestDistance = Infinity
 
-        if (targetFood) {
+        for (const food of availableFood) {
+          const distance = Phaser.Math.Distance.Between(
+            petData.pet.sprite.x,
+            petData.pet.sprite.y,
+            food.x,
+            food.y
+          )
+          if (distance < closestDistance) {
+            closestDistance = distance
+            closestFood = food
+          }
+        }
+
+        if (closestFood) {
           // Mark this food as being chased by this pet
-          this.foodTargets.set(targetFood, petData.id)
+          this.foodTargets.set(closestFood, petData.id)
 
-          petData.pet.startChasing(targetFood.x, targetFood.y)
+          petData.pet.startChasing(closestFood.x, closestFood.y)
           console.log(
-            `🏃 Pet ${petData.id} started chasing shared food at (${targetFood.x}, ${targetFood.y})`
+            `🏃 Pet ${petData.id} started chasing closest shared food at (${
+              closestFood.x
+            }, ${closestFood.y}), distance: ${closestDistance.toFixed(1)}`
           )
         }
       } else {
@@ -405,7 +493,8 @@ export class PetManager {
           petData.pet.isChasing = false
           petData.pet.chaseTarget = null
 
-          this.checkPetShouldChaseSharedFood(petData)
+          // Use forceStartChasing for more reliable food targeting
+          this.forceStartChasing(petData)
         } else {
           // Force return to auto walk mode
           console.log(
@@ -599,5 +688,67 @@ export class PetManager {
     console.log(`Food Targets: ${this.foodTargets.size}`)
     console.log(`Shared Food: ${this.sharedDroppedFood.length}`)
     console.log('=== END DEBUG ===')
+  }
+
+  // Force pet to start chasing (similar to FeedingSystem.forceStartChasing)
+  private forceStartChasing(petData: PetData): void {
+    // Check hunger level first
+    const hungerLevel = petData.feedingSystem.hungerLevel
+    const isHungry = hungerLevel < 80
+
+    if (!isHungry || this.sharedDroppedFood.length === 0) {
+      // If no more food or pet is full, return to walk mode
+      petData.pet.isUserControlled = false
+      petData.pet.setActivity('walk')
+      console.log(
+        `🚶 Pet ${petData.id} not hungry or no food, returning to walk mode`
+      )
+      return
+    }
+
+    // If pet is currently chasing, don't interrupt
+    if (petData.pet.isChasing) {
+      console.log(`⚠️ Pet ${petData.id} already chasing, not forcing new chase`)
+      return
+    }
+
+    // Find available food (not being chased by others)
+    const availableFood = this.sharedDroppedFood.filter(
+      (food) => !this.foodTargets.has(food)
+    )
+
+    if (availableFood.length > 0) {
+      // Pick closest available food
+      let closestFood: Phaser.GameObjects.Sprite | null = null
+      let closestDistance = Infinity
+
+      for (const food of availableFood) {
+        const distance = Phaser.Math.Distance.Between(
+          petData.pet.sprite.x,
+          petData.pet.sprite.y,
+          food.x,
+          food.y
+        )
+        if (distance < closestDistance) {
+          closestDistance = distance
+          closestFood = food
+        }
+      }
+
+      if (closestFood) {
+        this.foodTargets.set(closestFood, petData.id)
+        petData.pet.startChasing(closestFood.x, closestFood.y)
+        console.log(
+          `🚀 Pet ${petData.id} force started chasing food at (${closestFood.x}, ${closestFood.y})`
+        )
+      }
+    } else {
+      // No available food, return to walk mode
+      petData.pet.isUserControlled = false
+      petData.pet.setActivity('walk')
+      console.log(
+        `😔 Pet ${petData.id} no available food, returning to walk mode`
+      )
+    }
   }
 }
