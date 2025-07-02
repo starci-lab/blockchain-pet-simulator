@@ -48,10 +48,7 @@ export class PetManager {
     pet.create(x, y)
 
     // Tạo systems cho pet này
-    const movementSystem = new MovementSystem(
-      pet,
-      this.scene.cameras.main.width
-    )
+    const movementSystem = new MovementSystem(pet, this.scene)
     const activitySystem = new ActivitySystem(pet)
     const feedingSystem = new FeedingSystem(
       this.scene,
@@ -183,14 +180,15 @@ export class PetManager {
     // Food always drops near the bottom of the screen (ground line)
     const cameraHeight = this.scene.cameras.main.height
     const cameraWidth = this.scene.cameras.main.width
-    const groundY = GamePositioning.getGroundY(cameraHeight)
+    const foodFinalY = GamePositioning.getFoodFinalY(cameraHeight)
 
-    // Clamp food position to stay within bounds
-    const foodBounds = GamePositioning.getFoodBoundaries(cameraWidth)
-    const clampedX = Phaser.Math.Clamp(x, foodBounds.minX, foodBounds.maxX)
+    // Clamp food position to stay within pet boundaries (not food boundaries)
+    // This ensures pets can always reach the food
+    const petBounds = GamePositioning.getPetBoundaries(cameraWidth)
+    const clampedX = Phaser.Math.Clamp(x, petBounds.minX, petBounds.maxX)
 
     console.log(
-      `🍔 Dropping food: requested x=${x}, clamped x=${clampedX}, bounds=[${foodBounds.minX}, ${foodBounds.maxX}]`
+      `🍔 Dropping food: requested x=${x}, clamped x=${clampedX}, pet bounds=[${petBounds.minX}, ${petBounds.maxX}], finalY=${foodFinalY}`
     )
 
     const food = this.scene.add.image(
@@ -221,7 +219,7 @@ export class PetManager {
     // Add shadow effect
     const shadow = this.scene.add.ellipse(
       clampedX,
-      groundY + 5,
+      foodFinalY + 5,
       30,
       12,
       0x000000,
@@ -251,7 +249,7 @@ export class PetManager {
     // Notify all pets about new food
     this.notifyPetsAboutFood()
 
-    console.log(`Dropped shared food at (${clampedX}, ${groundY})`)
+    console.log(`Dropped shared food at (${clampedX}, ${foodFinalY})`)
   }
 
   // Remove shared food at specific index
@@ -514,6 +512,13 @@ export class PetManager {
   // Force pet to return to walk mode (safety method)
   private forceReturnToWalk(petData: PetData): void {
     console.log(`🔧 Force returning Pet ${petData.id} to walk mode`)
+    console.log(
+      `  Before reset: pos=(${petData.pet.sprite.x.toFixed(
+        1
+      )}, ${petData.pet.sprite.y.toFixed(1)}), dir=${
+        petData.pet.direction
+      }, flip=${petData.pet.sprite.flipX}`
+    )
 
     // Release any food target this pet was chasing
     this.releaseFoodTarget(petData.id)
@@ -523,8 +528,15 @@ export class PetManager {
     petData.pet.isChasing = false
     petData.pet.chaseTarget = null
 
+    // Reset lastEdgeHit to allow proper boundary detection
+    petData.pet.lastEdgeHit = ''
+
     // Force activity to walk and ensure pet starts moving automatically
     petData.pet.setActivity('walk')
+
+    console.log(
+      `  After reset: userControlled=${petData.pet.isUserControlled}, chasing=${petData.pet.isChasing}, lastEdgeHit='${petData.pet.lastEdgeHit}'`
+    )
 
     // Double-check: if pet is still not moving automatically after a brief delay
     this.scene.time.delayedCall(500, () => {
@@ -538,6 +550,7 @@ export class PetManager {
         petData.pet.isUserControlled = false
         petData.pet.isChasing = false
         petData.pet.chaseTarget = null
+        petData.pet.lastEdgeHit = '' // Reset edge detection again
         petData.pet.setActivity('walk')
       }
     })
@@ -671,12 +684,34 @@ export class PetManager {
   // Debug method to check all pets status
   debugPetsStatus(): void {
     console.log('=== PETS STATUS DEBUG ===')
+    const cameraWidth = this.scene.cameras.main.width
+    const cameraHeight = this.scene.cameras.main.height
+    const petBounds = GamePositioning.getPetBoundaries(cameraWidth)
+    const correctGroundY = GamePositioning.getPetY(cameraHeight)
+
+    console.log(`Camera: ${cameraWidth}x${cameraHeight}`)
+    console.log(`Pet Boundaries: [${petBounds.minX}, ${petBounds.maxX}]`)
+    console.log(`Correct Ground Y: ${correctGroundY}`)
+
     for (const petData of this.pets.values()) {
       console.log(`Pet ${petData.id}:`)
+      console.log(
+        `  Position: (${petData.pet.sprite.x.toFixed(
+          1
+        )}, ${petData.pet.sprite.y.toFixed(1)})`
+      )
+      console.log(`  Stored Ground Y: ${petData.pet.groundY}`)
       console.log(`  Activity: ${petData.pet.currentActivity}`)
       console.log(`  Is Chasing: ${petData.pet.isChasing}`)
       console.log(`  Is User Controlled: ${petData.pet.isUserControlled}`)
+      console.log(`  Direction: ${petData.pet.direction}`)
       console.log(`  Hunger: ${petData.feedingSystem.hungerLevel}%`)
+      console.log(
+        `  In Bounds: ${
+          petData.pet.sprite.x >= petBounds.minX &&
+          petData.pet.sprite.x <= petBounds.maxX
+        }`
+      )
       console.log(
         `  Chase Target: ${
           petData.pet.chaseTarget

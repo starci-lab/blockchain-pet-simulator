@@ -1,4 +1,5 @@
 import Phaser from 'phaser'
+import { GamePositioning } from '@/game/constants/gameConstants'
 
 export class Pet {
   public sprite!: Phaser.GameObjects.Sprite
@@ -23,11 +24,14 @@ export class Pet {
     this.scene = scene
   }
 
-  create(x: number, y: number) {
-    this.groundY = y // Store ground line position
+  create(x: number, y?: number) {
+    // Use centralized ground positioning if Y not provided
+    const groundY = y || GamePositioning.getPetY(this.scene.cameras.main.height)
+    this.groundY = groundY // Store ground line position
+
     this.sprite = this.scene.add.sprite(
       x,
-      y,
+      groundY,
       'dog-walk',
       'chog_walk 0.aseprite'
     )
@@ -223,6 +227,9 @@ export class Pet {
     this.isChasing = false
     this.chaseTarget = null
 
+    // Reset edge detection to allow proper boundary flipping
+    this.lastEdgeHit = ''
+
     // Notify PetManager about stopping chase
     if (this.onStopChasing) {
       this.onStopChasing()
@@ -232,12 +239,20 @@ export class Pet {
     if (this.currentActivity === 'walk') {
       this.setActivity('walk')
     }
+
+    console.log(
+      `🛑 Pet stopped chasing, reset lastEdgeHit='${this.lastEdgeHit}'`
+    )
   }
 
   // Ensure pet stays on ground line
   enforceGroundLine(): void {
-    if (this.sprite && this.sprite.y !== this.groundY) {
-      this.sprite.y = this.groundY
+    const correctGroundY = GamePositioning.getPetY(
+      this.scene.cameras.main.height
+    )
+    if (this.sprite && this.sprite.y !== correctGroundY) {
+      this.sprite.y = correctGroundY
+      this.groundY = correctGroundY // Update stored ground Y
     }
   }
 
