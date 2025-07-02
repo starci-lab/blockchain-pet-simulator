@@ -1,5 +1,12 @@
+import type { ColyseusClient } from '@/game/colyseus/client'
 import { Pet } from '../entities/Pet'
 import { useUserStore } from '@/store/userStore'
+import { gameConfigManager } from '@/game/configs/gameConfig'
+import {
+  GAME_LAYOUT,
+  GAME_MECHANICS,
+  GamePositioning
+} from '../constants/gameConstants'
 
 // Use object instead of enum for erasableSyntaxOnly
 export const HungerState = {
@@ -28,20 +35,21 @@ export class FeedingSystem {
 
   private scene: Phaser.Scene
   private pet: Pet
+  private colyseusClient: ColyseusClient
 
-  constructor(scene: Phaser.Scene, pet: Pet) {
+  constructor(scene: Phaser.Scene, pet: Pet, colyseusClient: ColyseusClient) {
     this.scene = scene
     this.pet = pet
+    this.colyseusClient = colyseusClient
   }
 
   update() {
-    // Decrease hunger based on real time, target: 2.5 points/hour
-    // 2 points/hour = 2 / 3600 points/second
+    // Decrease hunger based on real time using centralized constant
     const now = this.scene.time.now
     if (!this.lastHungerUpdate) this.lastHungerUpdate = now
     const elapsed = (now - this.lastHungerUpdate) / 1000 // seconds
-    const HUNGER_DECREASE_PER_HOUR = 2
-    const HUNGER_DECREASE_PER_SEC = HUNGER_DECREASE_PER_HOUR / 3600
+    const HUNGER_DECREASE_PER_SEC =
+      GAME_MECHANICS.HUNGER_DECREASE_PER_HOUR / 3600
     if (elapsed > 0) {
       this.hungerLevel = Math.max(
         0,
@@ -60,10 +68,11 @@ export class FeedingSystem {
         hungerState === HungerState.Starving) &&
       this.droppedFood.length > 0
     ) {
-      // Add a small delay to prevent constant checking
+      // Add a small delay to prevent constant checking using centralized constant
       if (
         !this.lastChaseCheck ||
-        this.scene.time.now - this.lastChaseCheck > 1000
+        this.scene.time.now - this.lastChaseCheck >
+          GAME_MECHANICS.CHASE_CHECK_INTERVAL
       ) {
         this.checkAndStartChasing()
         this.lastChaseCheck = this.scene.time.now
@@ -71,20 +80,33 @@ export class FeedingSystem {
     }
   }
 
-  buyFood(): boolean {
-    const foodPrice = 5
+  buyFood(foodId: string = 'hamburger'): boolean {
+    console.log(`🛒 Attempting to buy food: ${foodId}`)
+    const foodPrice = gameConfigManager.getFoodPrice(foodId)
+    console.log(`Food price for ${foodId}: ${foodPrice}`)
     const spendToken = useUserStore.getState().spendToken
+
     if (spendToken(foodPrice)) {
       this.foodInventory += 1
-      // You can call update UI here if needed
       console.log(
-        `Purchase successful! Remaining tokens: ${
+        `Purchase successful! Food: ${foodId}, Price: ${foodPrice}, Remaining tokens: ${
           useUserStore.getState().nomToken
         }`
       )
+
+      if (this.colyseusClient) {
+        this.colyseusClient.sendMessage('food-purchase', {
+          foodId,
+          price: foodPrice,
+          timestamp: Date.now()
+        })
+      } else {
+        console.log(`⚠️ Not sending message - client not connected`)
+      }
+
       return true
     } else {
-      console.log('Not enough tokens to buy food!')
+      console.log(`Not enough tokens to buy ${foodId}! Price: ${foodPrice}`)
       return false
     }
   }
@@ -94,33 +116,35 @@ export class FeedingSystem {
 
     this.foodInventory -= 1
 
-    // Food always drops near the bottom of the screen
-    const groundY = this.scene.cameras.main.height - 25
+    // Use centralized ground positioning
+    const cameraHeight = this.scene.cameras.main.height
+    const dropStartY = GamePositioning.getFoodDropY(cameraHeight)
+    const finalY = GamePositioning.getFoodFinalY(cameraHeight)
 
-    const food = this.scene.add.image(x, groundY - 25, 'hamburger')
-    food.setScale(1.5) // Scale up hamburger
+    const food = this.scene.add.image(x, dropStartY, 'hamburger')
+    food.setScale(GAME_LAYOUT.FOOD_SCALE) // Use constant for scale
     food.setAlpha(0.9)
 
     // Add drop animation effect
     this.scene.tweens.add({
       targets: food,
-      y: groundY, // Drop to ground level
+      y: finalY, // Drop to ground level using constant
       duration: 500,
       ease: 'Bounce.easeOut',
       onComplete: () => {
         // Add slight bounce effect
         this.scene.tweens.add({
           targets: food,
-          scaleX: 1.7, // Bounce scale corresponding to scale 1.5
-          scaleY: 1.2,
+          scaleX: GAME_LAYOUT.FOOD_SCALE * 1.13, // Bounce scale based on constant
+          scaleY: GAME_LAYOUT.FOOD_SCALE * 0.8,
           duration: 100,
           yoyo: true
         })
       }
     })
 
-    // Add shadow effect when dropping - shadow is also larger
-    const shadow = this.scene.add.ellipse(x, groundY + 5, 30, 12, 0x000000, 0.3)
+    // Add shadow effect when dropping - positioned relative to ground
+    const shadow = this.scene.add.ellipse(x, finalY + 5, 30, 12, 0x000000, 0.3)
     this.scene.tweens.add({
       targets: shadow,
       scaleX: 1.3,
@@ -132,20 +156,25 @@ export class FeedingSystem {
     this.droppedFood.push(food as any)
     this.foodShadows.push(shadow)
 
-    // Create timer to auto-despawn food after 20s
-    const despawnTimer = this.scene.time.delayedCall(20000, () => {
-      const currentFoodIndex = this.droppedFood.indexOf(food as any)
-      if (currentFoodIndex !== -1) {
-        this.removeFoodAtIndex(currentFoodIndex)
-        console.log('Food auto-despawned after 1 minute')
+    // Create timer to auto-despawn food using constant
+    const despawnTimer = this.scene.time.delayedCall(
+      GAME_MECHANICS.FOOD_DESPAWN_TIME,
+      () => {
+        const currentFoodIndex = this.droppedFood.indexOf(food as any)
+        if (currentFoodIndex !== -1) {
+          this.removeFoodAtIndex(currentFoodIndex)
+          console.log('Food auto-despawned after timeout')
+        }
       }
-    })
+    )
     this.foodTimers.push(despawnTimer)
 
     // Check if pet should chase food (only if hungry)
     this.checkAndStartChasing()
 
-    console.log(`Dropped hamburger at (${x}, ${groundY})`)
+    console.log(
+      `Dropped hamburger at (${x}, ${finalY}) from drop start (${x}, ${dropStartY})`
+    )
   }
 
   /**
@@ -155,16 +184,15 @@ export class FeedingSystem {
    * @param foodType Type of food (default: 'hamburger')
    */
   eatFood(x: number, y: number, foodType: string = 'hamburger') {
-    // Table of recovery values for each food type
-    const FOOD_RECOVERY: Record<string, number> = {
-      hamburger: 15
-      // Add other types if needed
-    }
-    const recovery = FOOD_RECOVERY[foodType] ?? 10 // Default 10 if not in table
+    // Get recovery value from config
+    const foodItem = gameConfigManager.getFoodItem(foodType)
+    const recovery = foodItem?.hungerRestore || 10 // Default 10 if not found
 
-    // Find and remove food - increase detection range for larger hamburger
+    // Find and remove food - use centralized detection range
     const foodIndex = this.droppedFood.findIndex(
-      (food) => Phaser.Math.Distance.Between(food.x, food.y, x, y) < 40
+      (food) =>
+        Phaser.Math.Distance.Between(food.x, food.y, x, y) <
+        GAME_MECHANICS.FOOD_DETECTION_RANGE
     )
 
     if (foodIndex !== -1) {
@@ -198,7 +226,7 @@ export class FeedingSystem {
         }
       })
 
-      this.scene.time.delayedCall(2000, () => {
+      this.scene.time.delayedCall(GAME_MECHANICS.POST_EATING_DELAY, () => {
         console.log(
           'Backup timer fired, current activity:',
           this.pet.currentActivity
@@ -276,8 +304,8 @@ export class FeedingSystem {
       )
       this.pet.stopChasing()
 
-      // Very quick transition to avoid stuttering
-      this.scene.time.delayedCall(30, () => {
+      // Very quick transition to avoid stuttering using centralized constant
+      this.scene.time.delayedCall(GAME_MECHANICS.TRANSITION_DELAY, () => {
         if (this.hungerLevel < 100 && this.droppedFood.length > 0) {
           this.checkAndStartChasing()
         } else {
@@ -345,6 +373,12 @@ export class FeedingSystem {
       this.pet.isUserControlled = false
       this.pet.setActivity('walk')
     }
+  }
+
+  // Cleanup method
+  destroy(): void {
+    this.cleanup()
+    console.log('🧹 FeedingSystem destroyed')
   }
 
   cleanup() {
