@@ -468,10 +468,6 @@ export class PetManager {
 
     // Use fixed timer instead of animation event for reliability
     this.scene.time.delayedCall(2000, () => {
-      console.log(
-        `⏰ Timer fired for Pet ${petData.id}, current activity: ${petData.pet.currentActivity}`
-      )
-
       // Force check and reset pet state regardless of current activity
       if (
         petData.pet.currentActivity === 'chew' ||
@@ -482,10 +478,6 @@ export class PetManager {
           petData.feedingSystem.hungerLevel < 100 &&
           this.sharedDroppedFood.length > 0
         ) {
-          console.log(
-            `🔄 Pet ${petData.id} still hungry (${petData.feedingSystem.hungerLevel}%), looking for more shared food...`
-          )
-
           // Reset state before checking for more food
           petData.pet.isUserControlled = false
           petData.pet.isChasing = false
@@ -495,15 +487,9 @@ export class PetManager {
           this.forceStartChasing(petData)
         } else {
           // Force return to auto walk mode
-          console.log(
-            `🚶 Pet ${petData.id} finished eating (${petData.feedingSystem.hungerLevel}%), FORCING return to auto walk mode`
-          )
           this.forceReturnToWalk(petData)
         }
       } else {
-        console.log(
-          `⚠️ Pet ${petData.id} is no longer chewing, current activity: ${petData.pet.currentActivity}, FORCING walk mode`
-        )
         this.forceReturnToWalk(petData)
       }
     })
@@ -511,15 +497,6 @@ export class PetManager {
 
   // Force pet to return to walk mode (safety method)
   private forceReturnToWalk(petData: PetData): void {
-    console.log(`🔧 Force returning Pet ${petData.id} to walk mode`)
-    console.log(
-      `  Before reset: pos=(${petData.pet.sprite.x.toFixed(
-        1
-      )}, ${petData.pet.sprite.y.toFixed(1)}), dir=${
-        petData.pet.direction
-      }, flip=${petData.pet.sprite.flipX}`
-    )
-
     // Release any food target this pet was chasing
     this.releaseFoodTarget(petData.id)
 
@@ -534,19 +511,12 @@ export class PetManager {
     // Force activity to walk and ensure pet starts moving automatically
     petData.pet.setActivity('walk')
 
-    console.log(
-      `  After reset: userControlled=${petData.pet.isUserControlled}, chasing=${petData.pet.isChasing}, lastEdgeHit='${petData.pet.lastEdgeHit}'`
-    )
-
     // Double-check: if pet is still not moving automatically after a brief delay
     this.scene.time.delayedCall(500, () => {
       if (
         petData.pet.isUserControlled ||
         petData.pet.currentActivity !== 'walk'
       ) {
-        console.log(
-          `🔄 Secondary force: Pet ${petData.id} still not walking, applying final reset`
-        )
         petData.pet.isUserControlled = false
         petData.pet.isChasing = false
         petData.pet.chaseTarget = null
@@ -603,8 +573,6 @@ export class PetManager {
 
     // Clear food targets
     this.foodTargets.clear()
-
-    console.log('🧹 PetManager cleaned up')
   }
 
   // Release food target when pet stops chasing
@@ -657,9 +625,6 @@ export class PetManager {
 
       // Check if pet has invalid chase target
       if (petData.pet.isChasing && !petData.pet.chaseTarget) {
-        console.log(
-          `⚠️ SAFETY: Pet ${petData.id} chasing but no target, resetting`
-        )
         petData.pet.isChasing = false
         petData.pet.isUserControlled = false
         petData.pet.setActivity('walk')
@@ -669,16 +634,12 @@ export class PetManager {
 
   // Force reset all pets to walking state (emergency method)
   forceResetAllPets(): void {
-    console.log('🆘 EMERGENCY: Force resetting all pets to walk mode')
-
     for (const petData of this.pets.values()) {
       this.forceReturnToWalk(petData)
     }
 
     // Clear all food targets
     this.foodTargets.clear()
-
-    console.log('✅ All pets have been force reset to walk mode')
   }
 
   // Debug method to check all pets status
