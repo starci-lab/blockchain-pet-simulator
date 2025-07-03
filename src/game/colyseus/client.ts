@@ -1,9 +1,9 @@
-import type { ChatRoomState } from '@/game/schema/ChatSchema'
+import { ChatRoomState, GameRoomState } from '@/game/schema/ChatSchema'
 import { Room, Client } from 'colyseus.js'
 import { gameConfigManager } from '@/game/configs/gameConfig'
 
 export class ColyseusClient {
-  public room: Room<ChatRoomState> | null = null
+  public room: Room<GameRoomState> | null = null
   private scene: Phaser.Scene
 
   constructor(scene: Phaser.Scene) {
@@ -21,7 +21,7 @@ export class ColyseusClient {
     try {
       console.log('🔄 Attempting to connect to Colyseus:', backendUrl)
 
-      this.room = await client.joinOrCreate('chat', {
+      this.room = await client.joinOrCreate('game', {
         name: 'Chat Room'
       })
 
