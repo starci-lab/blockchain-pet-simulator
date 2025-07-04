@@ -126,6 +126,138 @@ export class PetManager {
     return Array.from(this.pets.values())
   }
 
+  // Get pet data by ID (for server sync)
+  getPetData(petId: string): PetData | undefined {
+    return this.pets.get(petId)
+  }
+
+  // Get all pets data
+  getAllPetsData(): Map<string, PetData> {
+    return this.pets
+  }
+
+  // Sync pet with server data
+  syncPetWithServer(petId: string, serverPet: any): void {
+    const petData = this.getPetData(petId)
+    if (petData) {
+      // Update position if significantly different
+      const threshold = 5 // pixels
+      if (
+        Math.abs(petData.pet.sprite.x - serverPet.x) > threshold ||
+        Math.abs(petData.pet.sprite.y - serverPet.y) > threshold
+      ) {
+        petData.pet.sprite.setPosition(serverPet.x, serverPet.y)
+      }
+
+      // Update other properties
+      petData.pet.speed = serverPet.speed
+
+      // Update hunger through feeding system
+      if (petData.feedingSystem && typeof serverPet.hungerLevel === 'number') {
+        petData.feedingSystem.hungerLevel = serverPet.hungerLevel
+      }
+
+      petData.pet.setActivity(serverPet.currentActivity)
+
+      if (serverPet.isChasing) {
+        petData.pet.startChasing(serverPet.targetX, serverPet.targetY)
+      } else {
+        petData.pet.stopChasing()
+      }
+
+      console.log(`🔄 Pet ${petId} synced with server data`)
+    }
+  }
+
+  // Add food from server
+  addSharedFoodFromServer(foodId: string, serverFood: any): void {
+    console.log('🍎 Adding shared food from server:', foodId, serverFood)
+
+    // Create food sprite (using sprite instead of image for consistency)
+    const foodSprite = this.scene.add.sprite(
+      serverFood.x,
+      serverFood.y,
+      'hamburger'
+    )
+    foodSprite.setScale(0.5)
+
+    // Create shadow
+    const shadow = this.scene.add.ellipse(
+      serverFood.x,
+      serverFood.y + 10,
+      30,
+      15,
+      0x000000,
+      0.3
+    )
+
+    // Create timer for food expiration (optional)
+    const timer = this.scene.time.delayedCall(300000, () => {
+      // 5 minutes
+      this.removeSharedFoodByServerId(foodId)
+    })
+
+    // Add to shared food arrays with server ID metadata
+    const foodWithId = foodSprite as any
+    foodWithId.serverId = foodId
+    foodWithId.droppedAt = serverFood.droppedAt || Date.now()
+
+    this.sharedDroppedFood.push(foodSprite)
+    this.sharedFoodShadows.push(shadow)
+    this.sharedFoodTimers.push(timer)
+
+    // Notify all pets about new food
+    this.notifyPetsAboutFood()
+  }
+
+  // Remove food by server ID
+  removeSharedFoodByServerId(serverId: string): void {
+    const index = this.sharedDroppedFood.findIndex(
+      (food: any) => food.serverId === serverId
+    )
+
+    if (index !== -1) {
+      console.log('🗑️ Removing shared food by server ID:', serverId)
+
+      // Get references
+      const food = this.sharedDroppedFood[index]
+      const shadow = this.sharedFoodShadows[index]
+      const timer = this.sharedFoodTimers[index]
+
+      // Handle pets that were targeting this food
+      this.handleFoodRemovalForPets(food)
+
+      // Clean up
+      food.destroy()
+      shadow.destroy()
+      timer.destroy()
+
+      // Remove from arrays
+      this.sharedDroppedFood.splice(index, 1)
+      this.sharedFoodShadows.splice(index, 1)
+      this.sharedFoodTimers.splice(index, 1)
+    }
+  }
+
+  // Handle food removal for pets that were targeting it
+  private handleFoodRemovalForPets(
+    removedFood: Phaser.GameObjects.Sprite
+  ): void {
+    for (const petData of this.pets.values()) {
+      if (petData.pet.chaseTarget && petData.pet.chaseTarget === removedFood) {
+        console.log(
+          `🚶 Pet ${petData.id} target food removed, returning to walk`
+        )
+        petData.pet.stopChasing()
+        petData.pet.isUserControlled = false
+        petData.pet.setActivity('walk')
+      }
+    }
+
+    // Remove from food targets map
+    this.foodTargets.delete(removedFood)
+  }
+
   // Update all pets
   update(): void {
     for (const petData of this.pets.values()) {

@@ -84,34 +84,77 @@ export class FeedingSystem {
     console.log(`🛒 Attempting to buy food: ${foodId}`)
     const foodPrice = gameConfigManager.getFoodPrice(foodId)
     console.log(`Food price for ${foodId}: ${foodPrice}`)
-    const spendToken = useUserStore.getState().spendToken
 
-    if (spendToken(foodPrice)) {
-      this.foodInventory += 1
+    // Check if connected to server for token validation
+    if (this.colyseusClient && this.colyseusClient.isConnected()) {
+      console.log('🌐 Connected to server - sending purchase request')
+
+      // Send purchase request to server - server will validate tokens and update state
+      this.colyseusClient.sendMessage('food-purchase', {
+        foodId,
+        price: foodPrice,
+        quantity: 1,
+        timestamp: Date.now()
+      })
+
+      // Don't do optimistic updates - wait for server confirmation
+      // The actual inventory and token updates will happen when server confirms the purchase
+      // via the 'food-purchase-response' message handler in ColyseusClient
       console.log(
-        `Purchase successful! Food: ${foodId}, Price: ${foodPrice}, Remaining tokens: ${
-          useUserStore.getState().nomToken
-        }`
+        '📤 Purchase request sent to server, waiting for confirmation...'
       )
-
-      if (this.colyseusClient) {
-        this.colyseusClient.sendMessage('food-purchase', {
-          foodId,
-          price: foodPrice,
-          timestamp: Date.now()
-        })
-      } else {
-        console.log(`⚠️ Not sending message - client not connected`)
-      }
-
-      return true
+      return true // Return true to indicate request was sent (not that purchase succeeded)
     } else {
-      console.log(`Not enough tokens to buy ${foodId}! Price: ${foodPrice}`)
-      return false
+      console.log('🔌 Not connected to server - using local token validation')
+
+      // Fallback to local validation when offline
+      const spendToken = useUserStore.getState().spendToken
+      if (spendToken(foodPrice)) {
+        this.foodInventory += 1
+        console.log(
+          `Local purchase successful! Food: ${foodId}, Price: ${foodPrice}, Remaining tokens: ${
+            useUserStore.getState().nomToken
+          }`
+        )
+        return true
+      } else {
+        console.log(`Not enough tokens to buy ${foodId}! Price: ${foodPrice}`)
+        return false
+      }
     }
   }
 
   dropFood(x: number, _y?: number) {
+    if (this.foodInventory <= 0) {
+      console.log('❌ No food in inventory to drop')
+      return
+    }
+
+    // Send drop request to server if connected
+    if (this.colyseusClient && this.colyseusClient.isConnected()) {
+      console.log('🌐 Sending food drop request to server')
+
+      this.colyseusClient.sendMessage('food-drop', {
+        foodId: 'hamburger', // TODO: Support different food types
+        x: x,
+        y: GamePositioning.getFoodFinalY(this.scene.cameras.main.height),
+        timestamp: Date.now()
+      })
+
+      // Don't optimistically decrease inventory - wait for server confirmation
+      // The inventory decrease and food visual will be handled when server confirms
+      // via the 'food-dropped' message and onAdd callback for dropped food
+      console.log(
+        `📤 Food drop request sent to server, waiting for confirmation...`
+      )
+    } else {
+      console.log('🔌 Offline mode - dropping food locally')
+      this.dropFoodLocally(x, _y)
+    }
+  }
+
+  // Local food drop for offline mode
+  private dropFoodLocally(x: number, _y?: number) {
     if (this.foodInventory <= 0) return
 
     this.foodInventory -= 1
