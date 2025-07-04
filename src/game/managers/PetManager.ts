@@ -76,6 +76,17 @@ export class PetManager {
       this.activePetId = petId
     }
 
+    // Notify server about new pet creation if connected
+    if (this.colyseusClient?.isConnected()) {
+      console.log(`📤 Sending create-pet message to server for ${petId}`)
+      this.colyseusClient.sendMessage('create-pet', {
+        petId: petId,
+        x: x,
+        y: y,
+        petType: 'chog' // Default pet type
+      })
+    }
+
     console.log(`✅ Pet ${petId} created successfully`)
     return petData
   }
@@ -84,6 +95,14 @@ export class PetManager {
   removePet(petId: string): boolean {
     const petData = this.pets.get(petId)
     if (!petData) return false
+
+    // Notify server about pet removal if connected
+    if (this.colyseusClient?.isConnected()) {
+      console.log(`📤 Sending remove-pet message to server for ${petId}`)
+      this.colyseusClient.sendMessage('remove-pet', {
+        petId: petId
+      })
+    }
 
     // Cleanup pet and systems
     petData.pet.destroy()
@@ -261,6 +280,10 @@ export class PetManager {
   // Update all pets
   update(): void {
     for (const petData of this.pets.values()) {
+      const previousActivity = petData.pet.currentActivity
+      const previousX = petData.pet.sprite.x
+      const previousY = petData.pet.sprite.y
+
       // Update movement
       const movementResult = petData.movementSystem.update()
 
@@ -283,6 +306,20 @@ export class PetManager {
       // Update activity and feeding
       petData.activitySystem.update()
       petData.feedingSystem.update()
+
+      // Sync with server if activity or position changed significantly
+      const currentActivity = petData.pet.currentActivity
+      const currentX = petData.pet.sprite.x
+      const currentY = petData.pet.sprite.y
+
+      const positionChanged =
+        Math.abs(currentX - previousX) > 5 || Math.abs(currentY - previousY) > 5
+      const activityChanged = currentActivity !== previousActivity
+
+      // Removed server sync for simplified version
+      if (activityChanged || positionChanged) {
+        console.log(`🔄 Pet ${petData.id} activity/position changed locally`)
+      }
     }
   }
 
@@ -573,6 +610,10 @@ export class PetManager {
           this.foodTargets.set(closestFood, petData.id)
 
           petData.pet.startChasing(closestFood.x, closestFood.y)
+
+          // Removed server sync for simplified version
+          console.log(`🏃 Pet ${petData.id} started chasing food locally`)
+
           console.log(
             `🏃 Pet ${petData.id} started chasing closest shared food at (${
               closestFood.x

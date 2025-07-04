@@ -74,16 +74,10 @@ export class GameScene extends Phaser.Scene {
   }
 
   private initializePets() {
-    console.log('🐕 Creating initial pets...')
-    const groundY = GamePositioning.getPetY(this.cameras.main.height)
-
-    // Create initial pet - start with just one pet
-    const petData1 = this.petManager.createPet('pet1', 100, groundY)
-    console.log('Pet data created:', petData1)
-
-    // Create a second pet for testing shared food system
-    const petData2 = this.petManager.createPet('pet2', 200, groundY)
-    console.log('Pet data 2 created:', petData2)
+    console.log('🐕 Pet initialization - waiting for server sync...')
+    // Don't create initial pets locally when using Colyseus
+    // The server will create and sync the starter pet automatically
+    // This prevents conflicts between local and server pet IDs
   }
 
   private initializeUI() {
