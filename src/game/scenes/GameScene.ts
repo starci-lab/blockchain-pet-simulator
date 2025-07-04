@@ -90,6 +90,9 @@ export class GameScene extends Phaser.Scene {
     // Initialize UI with pet manager
     this.gameUI = new GameUI(this, this.petManager)
     this.gameUI.create()
+
+    // Set GameUI reference in ColyseusClient for notifications
+    this.colyseusClient.setGameUI(this.gameUI)
   }
 
   update() {
