@@ -6,9 +6,16 @@ export class ColyseusClient {
   public room: Room<GameRoomState> | null = null
   private scene: Phaser.Scene
   private stateCallbacksSetup = false
+  private gameUI: any // Reference to GameUI for notifications
 
-  constructor(scene: Phaser.Scene) {
+  constructor(scene: Phaser.Scene, gameUI?: any) {
     this.scene = scene
+    this.gameUI = gameUI
+  }
+
+  // Method to set GameUI reference after initialization
+  setGameUI(gameUI: any) {
+    this.gameUI = gameUI
   }
 
   // ===== CONNECTION MANAGEMENT =====
@@ -124,7 +131,10 @@ export class ColyseusClient {
         useUserStore.getState().setNomToken(message.currentTokens)
       }
 
-      this.showNotification(`❌ ${message.message}`, '#ff0000')
+      // Show styled notification for purchase failure via GameUI
+      if (this.gameUI && this.gameUI.showNotification) {
+        this.gameUI.showNotification(`❌ ${message.message}`)
+      }
     }
   }
 
@@ -134,7 +144,10 @@ export class ColyseusClient {
     if (!message.success) {
       // Revert inventory on failed drop
       this.updateLocalInventory(1, 'add')
-      this.showNotification(`❌ ${message.error}`, '#ff0000')
+      // Show styled notification for drop failure via GameUI
+      if (this.gameUI && this.gameUI.showNotification) {
+        this.gameUI.showNotification(`❌ ${message.error}`)
+      }
     }
     // Success is handled by 'food-dropped' broadcast
   }
@@ -276,27 +289,6 @@ export class ColyseusClient {
   ) {
     this.scene.time.delayedCall(delay, () => {
       if (textObj) textObj.destroy()
-    })
-  }
-
-  private showNotification(message: string, color: string) {
-    const notification = this.scene.add
-      .text(this.scene.cameras.main.width / 2, 100, message)
-      .setStyle({
-        color,
-        fontSize: '16px',
-        backgroundColor: 'rgba(0,0,0,0.7)',
-        padding: { x: 10, y: 5 }
-      })
-      .setOrigin(0.5, 0.5)
-      .setDepth(1000)
-
-    this.scene.tweens.add({
-      targets: notification,
-      alpha: 0,
-      duration: 3000,
-      ease: 'Power2.easeOut',
-      onComplete: () => notification.destroy()
     })
   }
 }

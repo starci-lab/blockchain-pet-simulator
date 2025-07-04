@@ -283,10 +283,10 @@ export class GameUI {
     console.log('✅ Input handlers set up successfully')
   }
 
-  // Toast notification
-  private showNotification(message: string, x?: number, y?: number) {
+  // Public method for external components (like ColyseusClient) to show notifications
+  showNotification(message: string, x?: number, y?: number) {
     const toastX = x !== undefined ? x : this.scene.cameras.main.width / 2
-    const toastY = y !== undefined ? y : 80
+    const toastY = y !== undefined ? y : this.scene.cameras.main.height / 2
     const toast = (this.scene as any).rexUI.add
       .dialog({
         x: toastX,
@@ -323,6 +323,7 @@ export class GameUI {
       toast.destroy()
     })
   }
+
   // Buy Pet Button
   private createBuyPetButton() {
     console.log('🏪 Creating Buy Pet Button...')
