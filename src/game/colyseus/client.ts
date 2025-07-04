@@ -101,6 +101,10 @@ export class ColyseusClient {
         this.handlePlayerSync(message)
         break
 
+      case 'pets-state-sync':
+        this.handlePetsSync(message)
+        break
+
       case 'welcome':
         this.requestPlayerState()
         break
@@ -123,8 +127,6 @@ export class ColyseusClient {
 
       // Update inventory
       this.updateLocalInventory(message.quantity, 'add')
-      // Remove success notification for buy-and-drop operations
-      // this.showNotification(`✅ ${message.message}`, '#00ff00')
     } else {
       // Sync tokens even on failure
       if (message.currentTokens !== undefined) {
@@ -166,7 +168,65 @@ export class ColyseusClient {
         0
       )
       this.setLocalInventory(totalInventory)
+      console.log(`📦 Synced inventory: ${totalInventory}`)
     }
+  }
+
+  private handlePetsSync(message: any) {
+    console.log('🐕 Pets sync:', message)
+
+    const petManager = this.getPetManager()
+    if (!petManager || !message.pets) return
+
+    // Get current local pets
+    const localPets = new Set(
+      petManager.getAllPets().map((petData: any) => petData.id)
+    )
+    const serverPets = new Set(message.pets.map((pet: any) => pet.id))
+
+    // Remove pets that don't exist on server
+    for (const localPetId of localPets) {
+      if (!serverPets.has(localPetId)) {
+        console.log(`🗑️ Removing pet ${localPetId} (not on server)`)
+        petManager.removePet(localPetId)
+      }
+    }
+
+    // Add or update pets from server
+    message.pets.forEach((serverPet: any) => {
+      let localPetData = petManager.getPet(serverPet.id)
+
+      // Create pet if it doesn't exist locally
+      if (!localPetData) {
+        console.log(`➕ Creating new pet ${serverPet.id}`)
+        const x = serverPet.x || 400
+        const y = serverPet.y || 300
+        localPetData = petManager.createPet(serverPet.id, x, y)
+      }
+
+      if (localPetData) {
+        // Update pet properties
+        localPetData.pet.currentActivity = serverPet.currentActivity
+        localPetData.pet.speed = serverPet.speed
+
+        // Update position if provided
+        if (serverPet.x !== undefined && serverPet.y !== undefined) {
+          localPetData.pet.sprite.setPosition(serverPet.x, serverPet.y)
+        }
+
+        // Update feeding system state (hungerLevel is in feedingSystem, not pet)
+        if (localPetData.feedingSystem && serverPet.hungerLevel !== undefined) {
+          localPetData.feedingSystem.hungerLevel = serverPet.hungerLevel
+        }
+
+        // Update activity
+        localPetData.pet.setActivity(serverPet.currentActivity)
+
+        console.log(
+          `🔄 Pet ${serverPet.id} synced: hunger=${serverPet.hungerLevel}, activity=${serverPet.currentActivity}`
+        )
+      }
+    })
   }
 
   // ===== STATE CALLBACKS SETUP =====
