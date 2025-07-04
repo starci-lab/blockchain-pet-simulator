@@ -12,23 +12,22 @@ export class ColyseusClient {
   }
 
   // ===== CONNECTION MANAGEMENT =====
-  
+
   async connect(backendUrl: string) {
     const statusText = this.showConnectionStatus('Connecting...')
     const client = new Client(backendUrl)
 
     try {
       console.log('🔄 Connecting to Colyseus:', backendUrl)
-      
+
       this.room = await client.joinOrCreate('game', { name: 'Pet Game' })
-      
+
       console.log('✅ Connected to Colyseus!')
       statusText.setText('✅ Connected!')
       statusText.setStyle({ color: '#00ff00' })
-      
+
       this.setupEventListeners()
       this.hideStatusAfterDelay(statusText, 3000)
-      
     } catch (error) {
       console.error('❌ Connection failed:', error)
       statusText.setText('❌ Connection failed!')
@@ -51,7 +50,7 @@ export class ColyseusClient {
   }
 
   // ===== EVENT LISTENERS SETUP =====
-  
+
   private setupEventListeners() {
     if (!this.room) return
 
@@ -80,25 +79,25 @@ export class ColyseusClient {
   }
 
   // ===== MESSAGE HANDLING =====
-  
+
   private handleMessage(type: string, message: any) {
     switch (type) {
       case 'food-purchase-response':
         this.handleFoodPurchase(message)
         break
-        
+
       case 'food-drop-response':
         this.handleFoodDrop(message)
         break
-        
+
       case 'player-state-sync':
         this.handlePlayerSync(message)
         break
-        
+
       case 'welcome':
         this.requestPlayerState()
         break
-        
+
       default:
         // Other messages can be handled here
         break
@@ -107,31 +106,30 @@ export class ColyseusClient {
 
   private handleFoodPurchase(message: any) {
     console.log('🛒 Purchase response:', message)
-    
+
     if (message.success) {
       // Update tokens from server
       if (message.currentTokens !== undefined) {
         useUserStore.getState().setNomToken(message.currentTokens)
         console.log(`💰 Tokens updated: ${message.currentTokens}`)
       }
-      
+
       // Update inventory
       this.updateLocalInventory(message.quantity, 'add')
       this.showNotification(`✅ ${message.message}`, '#00ff00')
-      
     } else {
       // Sync tokens even on failure
       if (message.currentTokens !== undefined) {
         useUserStore.getState().setNomToken(message.currentTokens)
       }
-      
+
       this.showNotification(`❌ ${message.message}`, '#ff0000')
     }
   }
 
   private handleFoodDrop(message: any) {
     console.log('🍎 Drop response:', message)
-    
+
     if (!message.success) {
       // Revert inventory on failed drop
       this.updateLocalInventory(1, 'add')
@@ -142,21 +140,23 @@ export class ColyseusClient {
 
   private handlePlayerSync(message: any) {
     console.log('👤 Player sync:', message)
-    
+
     if (message.tokens !== undefined) {
       useUserStore.getState().setNomToken(message.tokens)
       console.log(`💰 Synced tokens: ${message.tokens}`)
     }
-    
+
     if (message.inventory) {
-      const totalInventory = Object.values(message.inventory)
-        .reduce((sum: number, item: any) => sum + (item.quantity || 0), 0)
+      const totalInventory = Object.values(message.inventory).reduce(
+        (sum: number, item: any) => sum + (item.quantity || 0),
+        0
+      )
       this.setLocalInventory(totalInventory)
     }
   }
 
   // ===== STATE CALLBACKS SETUP =====
-  
+
   private setupStateCallbacks(state: GameRoomState) {
     if (this.stateCallbacksSetup) return
     this.stateCallbacksSetup = true
@@ -191,16 +191,21 @@ export class ColyseusClient {
   }
 
   // ===== INVENTORY MANAGEMENT =====
-  
+
   private updateLocalInventory(amount: number, operation: 'add' | 'subtract') {
     const petManager = this.getPetManager()
     if (petManager?.feedingSystem) {
       if (operation === 'add') {
         petManager.feedingSystem.foodInventory += amount
       } else {
-        petManager.feedingSystem.foodInventory = Math.max(0, petManager.feedingSystem.foodInventory - amount)
+        petManager.feedingSystem.foodInventory = Math.max(
+          0,
+          petManager.feedingSystem.foodInventory - amount
+        )
       }
-      console.log(`📦 Inventory ${operation}: ${petManager.feedingSystem.foodInventory}`)
+      console.log(
+        `📦 Inventory ${operation}: ${petManager.feedingSystem.foodInventory}`
+      )
     }
   }
 
@@ -223,7 +228,7 @@ export class ColyseusClient {
   }
 
   // ===== FOOD MANAGEMENT =====
-  
+
   private addFoodToScene(foodId: string, food: any) {
     const petManager = this.getPetManager()
     if (petManager) {
@@ -241,10 +246,13 @@ export class ColyseusClient {
   }
 
   // ===== UTILITY METHODS =====
-  
+
   private getPetManager() {
     const gameScene = this.scene as any
-    if (gameScene.getPetManager && typeof gameScene.getPetManager === 'function') {
+    if (
+      gameScene.getPetManager &&
+      typeof gameScene.getPetManager === 'function'
+    ) {
       return gameScene.getPetManager()
     }
     return null
@@ -261,7 +269,10 @@ export class ColyseusClient {
       .setPadding(4)
   }
 
-  private hideStatusAfterDelay(textObj: Phaser.GameObjects.Text, delay: number) {
+  private hideStatusAfterDelay(
+    textObj: Phaser.GameObjects.Text,
+    delay: number
+  ) {
     this.scene.time.delayedCall(delay, () => {
       if (textObj) textObj.destroy()
     })
