@@ -1,5 +1,5 @@
 import { Pet } from '@/game/entities/Pet'
-import { FeedingSystem } from '@/game/systems/FeedingSystem'
+import { FeedingSystem } from '@/game/systems/FeedingSystem-simple'
 import { MovementSystem } from '@/game/systems/MovementSystem'
 import { ActivitySystem } from '@/game/systems/ActivitySystem'
 import { ColyseusClient } from '@/game/colyseus/client'
