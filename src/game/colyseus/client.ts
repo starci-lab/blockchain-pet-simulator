@@ -116,7 +116,8 @@ export class ColyseusClient {
 
       // Update inventory
       this.updateLocalInventory(message.quantity, 'add')
-      this.showNotification(`✅ ${message.message}`, '#00ff00')
+      // Remove success notification for buy-and-drop operations
+      // this.showNotification(`✅ ${message.message}`, '#00ff00')
     } else {
       // Sync tokens even on failure
       if (message.currentTokens !== undefined) {

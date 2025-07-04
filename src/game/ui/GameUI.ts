@@ -262,12 +262,14 @@ export class GameUI {
             pendingDrop.y
           )
           if (!success) {
+            // Show toast at the position where user clicked (not center)
             this.showNotification(
               'You do not have enough NOM tokens!',
               pendingDrop.x,
               pendingDrop.y
             )
           } else {
+            // Success - just update UI without showing toast
             this.updateUI()
           }
         }
