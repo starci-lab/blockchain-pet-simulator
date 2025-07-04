@@ -48,9 +48,13 @@ export class ColyseusClient {
   }
 
   sendMessage(type: string, data: any) {
-    if (this.room) {
+    if (this.room && this.isConnected()) {
       console.log(`📤 Sending: ${type}`, data)
-      this.room.send(type, data)
+      try {
+        this.room.send(type, data)
+      } catch (error) {
+        console.error('❌ Failed to send message:', error)
+      }
     } else {
       console.warn('⚠️ Cannot send message - not connected')
     }
@@ -89,12 +93,14 @@ export class ColyseusClient {
 
   private handleMessage(type: string, message: any) {
     switch (type) {
-      case 'food-purchase-response':
-        this.handleFoodPurchase(message)
+      case 'purchase-response':
+        this.handlePurchaseResponse(message)
         break
 
-      case 'food-drop-response':
-        this.handleFoodDrop(message)
+      case 'feed-pet-response':
+      case 'play-pet-response':
+      case 'clean-pet-response':
+        this.handlePetActionResponse(message)
         break
 
       case 'player-state-sync':
@@ -115,7 +121,7 @@ export class ColyseusClient {
     }
   }
 
-  private handleFoodPurchase(message: any) {
+  private handlePurchaseResponse(message: any) {
     console.log('🛒 Purchase response:', message)
 
     if (message.success) {
@@ -125,33 +131,37 @@ export class ColyseusClient {
         console.log(`💰 Tokens updated: ${message.currentTokens}`)
       }
 
-      // Update inventory
-      this.updateLocalInventory(message.quantity, 'add')
-    } else {
-      // Sync tokens even on failure
-      if (message.currentTokens !== undefined) {
-        useUserStore.getState().setNomToken(message.currentTokens)
+      // Show success notification
+      if (this.gameUI && this.gameUI.showNotification) {
+        this.gameUI.showNotification(`✅ ${message.message}`)
       }
-
-      // Show styled notification for purchase failure via GameUI
+    } else {
+      // Show failure notification
       if (this.gameUI && this.gameUI.showNotification) {
         this.gameUI.showNotification(`❌ ${message.message}`)
       }
     }
   }
 
-  private handleFoodDrop(message: any) {
-    console.log('🍎 Drop response:', message)
+  private handlePetActionResponse(message: any) {
+    console.log('🐕 Pet action response:', message)
 
-    if (!message.success) {
-      // Revert inventory on failed drop
-      this.updateLocalInventory(1, 'add')
-      // Show styled notification for drop failure via GameUI
+    if (message.success) {
+      // Show success notification
       if (this.gameUI && this.gameUI.showNotification) {
-        this.gameUI.showNotification(`❌ ${message.error}`)
+        this.gameUI.showNotification(`✅ ${message.message}`)
+      }
+
+      // Update pet stats if provided
+      if (message.petStats) {
+        console.log('📊 Pet stats updated:', message.petStats)
+      }
+    } else {
+      // Show failure notification
+      if (this.gameUI && this.gameUI.showNotification) {
+        this.gameUI.showNotification(`❌ ${message.message}`)
       }
     }
-    // Success is handled by 'food-dropped' broadcast
   }
 
   private handlePlayerSync(message: any) {
@@ -162,13 +172,9 @@ export class ColyseusClient {
       console.log(`💰 Synced tokens: ${message.tokens}`)
     }
 
+    // Update inventory summary if provided
     if (message.inventory) {
-      const totalInventory = Object.values(message.inventory).reduce(
-        (sum: number, item: any) => sum + (item.quantity || 0),
-        0
-      )
-      this.setLocalInventory(totalInventory)
-      console.log(`📦 Synced inventory: ${totalInventory}`)
+      console.log(`📦 Inventory synced:`, message.inventory)
     }
   }
 
@@ -195,6 +201,9 @@ export class ColyseusClient {
     console.log(`🔄 Local pets: [${Array.from(localPets).join(', ')}]`)
     console.log(`🔄 Server pets: [${Array.from(serverPets).join(', ')}]`)
 
+    // Track if we create any new pets
+    let newPetsCreated: string[] = []
+
     // Remove pets that don't exist on server
     for (const localPetId of localPets) {
       if (!serverPets.has(localPetId)) {
@@ -209,52 +218,61 @@ export class ColyseusClient {
 
       // Create pet if it doesn't exist locally
       if (!localPetData) {
-        console.log(
-          `➕ Creating new pet ${serverPet.id} at (${serverPet.x}, ${serverPet.y})`
-        )
-        const x = serverPet.x || 400
-        const y = serverPet.y || 300
+        console.log(`➕ Creating new pet ${serverPet.id}`)
+        const x = 400
+        const y = 300
         localPetData = petManager.createPet(serverPet.id, x, y)
 
         if (!localPetData) {
           console.error(`❌ Failed to create pet ${serverPet.id}`)
           return
         }
+
+        // Track new pet creation
+        newPetsCreated.push(serverPet.id)
+
+        // Show notification for new pet
+        if (this.gameUI && this.gameUI.showNotification) {
+          this.gameUI.showNotification(`🎉 New pet appeared: ${serverPet.id}`)
+        }
       }
 
       if (localPetData) {
-        // Update pet properties
-        if (serverPet.currentActivity) {
-          localPetData.pet.currentActivity = serverPet.currentActivity
-        }
-        if (serverPet.speed !== undefined) {
-          localPetData.pet.speed = serverPet.speed
-        }
-
-        // Update position if provided
-        if (serverPet.x !== undefined && serverPet.y !== undefined) {
-          localPetData.pet.sprite.setPosition(serverPet.x, serverPet.y)
-        }
-
-        // Update feeding system state (hungerLevel is in feedingSystem, not pet)
-        if (localPetData.feedingSystem && serverPet.hungerLevel !== undefined) {
-          localPetData.feedingSystem.hungerLevel = serverPet.hungerLevel
-        }
-
-        // Update activity
-        if (serverPet.currentActivity) {
-          localPetData.pet.setActivity(serverPet.currentActivity)
-        }
-
+        // Update pet stats (simplified - no position/activity sync needed for this simple version)
         console.log(
-          `🔄 Pet ${serverPet.id} synced: hunger=${serverPet.hungerLevel}, activity=${serverPet.currentActivity}, pos=(${serverPet.x},${serverPet.y})`
+          `🔄 Pet ${serverPet.id} synced: hunger=${serverPet.hunger}, happiness=${serverPet.happiness}, cleanliness=${serverPet.cleanliness}`
         )
       }
     })
 
+    // If new pets were created and no active pet, set the newest one as active
+    if (newPetsCreated.length > 0) {
+      const currentActivePet = petManager.getActivePet()
+      if (!currentActivePet && newPetsCreated.length > 0) {
+        const newestPetId = newPetsCreated[newPetsCreated.length - 1]
+        petManager.setActivePet(newestPetId)
+        console.log(`🎯 Set newest pet ${newestPetId} as active`)
+
+        if (this.gameUI && this.gameUI.showNotification) {
+          this.gameUI.showNotification(`🎯 Switched to new pet: ${newestPetId}`)
+        }
+      }
+      console.log(
+        `🆕 Created ${newPetsCreated.length} new pets: [${newPetsCreated.join(
+          ', '
+        )}]`
+      )
+    }
+
     console.log(
       `✅ Pet sync completed. Total pets: ${petManager.getAllPets().length}`
     )
+
+    // Force UI update after pet sync
+    if (this.gameUI && this.gameUI.updateUI) {
+      this.gameUI.updateUI()
+      console.log('🎨 Forced UI update after pet sync')
+    }
   }
 
   // ===== STATE CALLBACKS SETUP =====
@@ -273,78 +291,12 @@ export class ColyseusClient {
           useUserStore.getState().setNomToken(current)
         })
 
-        // Inventory sync
-        $(player).foodInventory.onChange(() => {
-          this.syncInventoryFromServer(player.foodInventory)
+        // Simple inventory sync for new schema
+        $(player).inventory.onChange(() => {
+          console.log('📦 Inventory changed on server')
         })
       }
     })
-
-    // Food drops sync
-    $(state).droppedFood.onAdd((food: any, foodId: string) => {
-      console.log('🍎 Food added:', foodId)
-      this.addFoodToScene(foodId, food)
-    })
-
-    $(state).droppedFood.onRemove((_food: any, foodId: string) => {
-      console.log('🗑️ Food removed:', foodId)
-      this.removeFoodFromScene(foodId)
-    })
-  }
-
-  // ===== INVENTORY MANAGEMENT =====
-
-  private updateLocalInventory(amount: number, operation: 'add' | 'subtract') {
-    const petManager = this.getPetManager()
-    if (petManager?.feedingSystem) {
-      if (operation === 'add') {
-        petManager.feedingSystem.foodInventory += amount
-      } else {
-        petManager.feedingSystem.foodInventory = Math.max(
-          0,
-          petManager.feedingSystem.foodInventory - amount
-        )
-      }
-      console.log(
-        `📦 Inventory ${operation}: ${petManager.feedingSystem.foodInventory}`
-      )
-    }
-  }
-
-  private setLocalInventory(amount: number) {
-    const petManager = this.getPetManager()
-    if (petManager?.feedingSystem) {
-      petManager.feedingSystem.foodInventory = amount
-      console.log(`📦 Inventory set to: ${amount}`)
-    }
-  }
-
-  private syncInventoryFromServer(serverInventory: any) {
-    let total = 0
-    if (serverInventory?.size) {
-      serverInventory.forEach((item: any) => {
-        total += item.quantity || 0
-      })
-    }
-    this.setLocalInventory(total)
-  }
-
-  // ===== FOOD MANAGEMENT =====
-
-  private addFoodToScene(foodId: string, food: any) {
-    const petManager = this.getPetManager()
-    if (petManager) {
-      petManager.addSharedFoodFromServer(foodId, food)
-      console.log('🍎 Added food to scene:', foodId)
-    }
-  }
-
-  private removeFoodFromScene(foodId: string) {
-    const petManager = this.getPetManager()
-    if (petManager) {
-      petManager.removeSharedFoodByServerId(foodId)
-      console.log('🗑️ Removed food from scene:', foodId)
-    }
   }
 
   // ===== UTILITY METHODS =====
@@ -384,5 +336,37 @@ export class ColyseusClient {
     this.scene.time.delayedCall(delay, () => {
       if (textObj) textObj.destroy()
     })
+  }
+
+  // ===== SIMPLE API METHODS FOR UI =====
+
+  // Purchase item from store
+  purchaseItem(itemType: string, itemName: string, quantity: number = 1) {
+    this.sendMessage('purchase-item', { itemType, itemName, quantity })
+  }
+
+  // Feed pet
+  feedPet(petId: string, foodType: string) {
+    this.sendMessage('feed-pet', { petId, foodType })
+  }
+
+  // Play with pet
+  playWithPet(petId: string) {
+    this.sendMessage('play-pet', { petId })
+  }
+
+  // Clean pet
+  cleanPet(petId: string) {
+    this.sendMessage('clean-pet', { petId })
+  }
+
+  // Get store catalog
+  getStoreCatalog() {
+    this.sendMessage('get-store-catalog', {})
+  }
+
+  // Get player inventory
+  getInventory() {
+    this.sendMessage('get-inventory', {})
   }
 }

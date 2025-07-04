@@ -188,42 +188,6 @@ export class PetManager {
     }
   }
 
-  // Sync pet activity with server
-  syncPetActivityWithServer(
-    petId: string,
-    activity: string,
-    speed?: number,
-    x?: number,
-    y?: number
-  ): void {
-    if (this.colyseusClient?.isConnected()) {
-      this.colyseusClient.sendMessage('pet-activity', {
-        petId: petId,
-        activity: activity,
-        speed: speed,
-        x: x,
-        y: y
-      })
-    }
-  }
-
-  // Sync pet chase state with server
-  syncPetChaseWithServer(
-    petId: string,
-    targetX: number,
-    targetY: number,
-    isChasing: boolean
-  ): void {
-    if (this.colyseusClient?.isConnected()) {
-      this.colyseusClient.sendMessage('pet-chase', {
-        petId: petId,
-        targetX: targetX,
-        targetY: targetY,
-        isChasing: isChasing
-      })
-    }
-  }
-
   // Add food from server
   addSharedFoodFromServer(foodId: string, serverFood: any): void {
     console.log('🍎 Adding shared food from server:', foodId, serverFood)
@@ -352,14 +316,9 @@ export class PetManager {
         Math.abs(currentX - previousX) > 5 || Math.abs(currentY - previousY) > 5
       const activityChanged = currentActivity !== previousActivity
 
+      // Removed server sync for simplified version
       if (activityChanged || positionChanged) {
-        this.syncPetActivityWithServer(
-          petData.id,
-          currentActivity,
-          petData.pet.speed,
-          currentX,
-          currentY
-        )
+        console.log(`🔄 Pet ${petData.id} activity/position changed locally`)
       }
     }
   }
@@ -652,13 +611,8 @@ export class PetManager {
 
           petData.pet.startChasing(closestFood.x, closestFood.y)
 
-          // Sync chase state with server
-          this.syncPetChaseWithServer(
-            petData.id,
-            closestFood.x,
-            closestFood.y,
-            true
-          )
+          // Removed server sync for simplified version
+          console.log(`🏃 Pet ${petData.id} started chasing food locally`)
 
           console.log(
             `🏃 Pet ${petData.id} started chasing closest shared food at (${
