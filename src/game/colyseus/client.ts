@@ -176,13 +176,24 @@ export class ColyseusClient {
     console.log('🐕 Pets sync:', message)
 
     const petManager = this.getPetManager()
-    if (!petManager || !message.pets) return
+    if (!petManager) {
+      console.warn('⚠️ PetManager not found - cannot sync pets')
+      return
+    }
+
+    if (!message.pets || !Array.isArray(message.pets)) {
+      console.log('📝 No pets to sync or invalid pets data')
+      return
+    }
 
     // Get current local pets
     const localPets = new Set(
       petManager.getAllPets().map((petData: any) => petData.id)
     )
     const serverPets = new Set(message.pets.map((pet: any) => pet.id))
+
+    console.log(`🔄 Local pets: [${Array.from(localPets).join(', ')}]`)
+    console.log(`🔄 Server pets: [${Array.from(serverPets).join(', ')}]`)
 
     // Remove pets that don't exist on server
     for (const localPetId of localPets) {
@@ -198,16 +209,27 @@ export class ColyseusClient {
 
       // Create pet if it doesn't exist locally
       if (!localPetData) {
-        console.log(`➕ Creating new pet ${serverPet.id}`)
+        console.log(
+          `➕ Creating new pet ${serverPet.id} at (${serverPet.x}, ${serverPet.y})`
+        )
         const x = serverPet.x || 400
         const y = serverPet.y || 300
         localPetData = petManager.createPet(serverPet.id, x, y)
+
+        if (!localPetData) {
+          console.error(`❌ Failed to create pet ${serverPet.id}`)
+          return
+        }
       }
 
       if (localPetData) {
         // Update pet properties
-        localPetData.pet.currentActivity = serverPet.currentActivity
-        localPetData.pet.speed = serverPet.speed
+        if (serverPet.currentActivity) {
+          localPetData.pet.currentActivity = serverPet.currentActivity
+        }
+        if (serverPet.speed !== undefined) {
+          localPetData.pet.speed = serverPet.speed
+        }
 
         // Update position if provided
         if (serverPet.x !== undefined && serverPet.y !== undefined) {
@@ -220,13 +242,19 @@ export class ColyseusClient {
         }
 
         // Update activity
-        localPetData.pet.setActivity(serverPet.currentActivity)
+        if (serverPet.currentActivity) {
+          localPetData.pet.setActivity(serverPet.currentActivity)
+        }
 
         console.log(
-          `🔄 Pet ${serverPet.id} synced: hunger=${serverPet.hungerLevel}, activity=${serverPet.currentActivity}`
+          `🔄 Pet ${serverPet.id} synced: hunger=${serverPet.hungerLevel}, activity=${serverPet.currentActivity}, pos=(${serverPet.x},${serverPet.y})`
         )
       }
     })
+
+    console.log(
+      `✅ Pet sync completed. Total pets: ${petManager.getAllPets().length}`
+    )
   }
 
   // ===== STATE CALLBACKS SETUP =====
@@ -323,13 +351,19 @@ export class ColyseusClient {
 
   private getPetManager() {
     const gameScene = this.scene as any
+    console.log('🔍 Getting PetManager from scene:', gameScene)
+
     if (
       gameScene.getPetManager &&
       typeof gameScene.getPetManager === 'function'
     ) {
-      return gameScene.getPetManager()
+      const petManager = gameScene.getPetManager()
+      console.log('✅ PetManager found:', petManager)
+      return petManager
+    } else {
+      console.warn('⚠️ getPetManager method not found on scene')
+      return null
     }
-    return null
   }
 
   private requestPlayerState() {
