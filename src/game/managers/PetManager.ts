@@ -296,6 +296,44 @@ export class PetManager {
     return false
   }
 
+  // Combined buy and drop food operation - more reliable than separate calls
+  buyAndDropFood(x: number, y?: number, foodId: string = 'hamburger'): boolean {
+    const activePet = this.getActivePet()
+    if (!activePet) {
+      console.log('❌ No active pet for buyAndDropFood')
+      return false
+    }
+
+    // Check if we already have food in inventory
+    if (activePet.feedingSystem.foodInventory > 0) {
+      console.log('🍔 Using existing food from inventory')
+      this.dropFood(x, y)
+      return true
+    }
+
+    // Try to buy food first
+    const purchased = this.buyFood(foodId)
+    if (purchased) {
+      console.log('🛒 Food purchased successfully, now dropping')
+
+      // For both online and offline mode, ensure we can drop the food
+      // In online mode, we trust the server response and allow immediate drop
+      if (this.colyseusClient?.isConnected()) {
+        // Online mode: temporarily increase inventory to allow drop
+        // Server will sync the correct state later
+        activePet.feedingSystem.foodInventory += 1
+        this.dropFood(x, y)
+      } else {
+        // Offline mode: inventory is already updated by buyFood
+        this.dropFood(x, y)
+      }
+      return true
+    }
+
+    console.log('❌ Failed to buy food for dropping')
+    return false
+  }
+
   dropFood(x: number, y?: number): void {
     const activePet = this.getActivePet()
     if (activePet && activePet.feedingSystem.foodInventory > 0) {

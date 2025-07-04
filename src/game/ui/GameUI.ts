@@ -154,10 +154,10 @@ export class GameUI {
     // Food icon click handler
     this.foodIcon.on('pointerdown', () => {
       const currentPrice = gameConfigManager.getFoodPrice('hamburger')
-      if (
-        this.petManager.getFoodInventory() > 0 ||
-        useUserStore.getState().nomToken >= currentPrice
-      ) {
+      const hasInventory = this.petManager.getFoodInventory() > 0
+      const hasTokens = useUserStore.getState().nomToken >= currentPrice
+
+      if (hasInventory || hasTokens) {
         this.isDroppingFood = true
         this.foodIcon.setAlpha(0.6)
         this.foodPriceText.setAlpha(0.6)
@@ -256,16 +256,18 @@ export class GameUI {
       // Set timer to actually drop food if no second click comes
       dropTimeout = this.scene.time.delayedCall(DOUBLE_CLICK_THRESHOLD, () => {
         if (pendingDrop && this.isDroppingFood) {
-          // Actually drop the food now
-          const canBuy = this.petManager.buyFood()
-          if (!canBuy) {
+          // Use combined buy and drop operation for better reliability
+          const success = this.petManager.buyAndDropFood(
+            pendingDrop.x,
+            pendingDrop.y
+          )
+          if (!success) {
             this.showNotification(
               'You do not have enough NOM tokens!',
               pendingDrop.x,
               pendingDrop.y
             )
           } else {
-            this.petManager.dropFood(pendingDrop.x, pendingDrop.y)
             this.updateUI()
           }
         }
