@@ -95,9 +95,9 @@ export class FeedingSystem {
     if (this.colyseusClient && this.colyseusClient.isConnected()) {
       console.log('🌐 Sending purchase request to server')
 
-      this.colyseusClient.sendMessage('food-purchase', {
-        foodId,
-        price: foodPrice,
+      this.colyseusClient.sendMessage('buy_food', {
+        itemType: 'food',
+        itemName: 'hamburger',
         quantity: 1
       })
 

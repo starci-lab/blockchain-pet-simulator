@@ -27,7 +27,10 @@ export class ColyseusClient {
     try {
       console.log('🔄 Connecting to Colyseus:', backendUrl)
 
-      this.room = await client.joinOrCreate('game', { name: 'Pet Game' })
+      this.room = await client.joinOrCreate('game', {
+        name: 'Pet Game',
+        addressWallet: useUserStore.getState().addressWallet
+      })
 
       console.log('✅ Connected to Colyseus!')
       statusText.setText('✅ Connected!')
@@ -48,15 +51,21 @@ export class ColyseusClient {
   }
 
   sendMessage(type: string, data: any) {
-    if (this.room && this.isConnected()) {
-      console.log(`📤 Sending: ${type}`, data)
-      try {
-        this.room.send(type, data)
-      } catch (error) {
-        console.error('❌ Failed to send message:', error)
-      }
-    } else {
+    if (!this.room) {
+      console.warn('⚠️ Cannot send message - room is null')
+      return
+    }
+
+    if (!this.isConnected()) {
       console.warn('⚠️ Cannot send message - not connected')
+      return
+    }
+
+    console.log(`📤 Sending: ${type}`, data)
+    try {
+      this.room.send(type, data)
+    } catch (error) {
+      console.error('❌ Failed to send message:', error)
     }
   }
 
@@ -167,14 +176,33 @@ export class ColyseusClient {
   private handlePlayerSync(message: any) {
     console.log('👤 Player sync:', message)
 
+    // Update tokens if provided
     if (message.tokens !== undefined) {
-      useUserStore.getState().setNomToken(message.tokens)
-      console.log(`💰 Synced tokens: ${message.tokens}`)
+      const currentTokens = useUserStore.getState().nomToken
+      if (currentTokens !== message.tokens) {
+        useUserStore.getState().setNomToken(message.tokens)
+        console.log(`💰 Tokens synced: ${currentTokens} -> ${message.tokens}`)
+
+        // Update UI to reflect token change
+        if (this.gameUI && this.gameUI.updateUI) {
+          this.gameUI.updateUI()
+        }
+      }
     }
 
     // Update inventory summary if provided
     if (message.inventory) {
       console.log(`📦 Inventory synced:`, message.inventory)
+
+      // Update UI to reflect inventory changes
+      if (this.gameUI && this.gameUI.updateUI) {
+        this.gameUI.updateUI()
+      }
+    }
+
+    // Update any other player data
+    if (message.playerData) {
+      console.log('📊 Player data synced:', message.playerData)
     }
   }
 
@@ -283,20 +311,59 @@ export class ColyseusClient {
 
     const $ = getStateCallbacks(this.room!)
 
+    console.log('🔧 Setting up state callbacks...')
+
     // Player tokens sync
     $(state).players.onAdd((player: any, playerId: string) => {
+      console.log(`👤 Player added: ${playerId}`)
+
       if (this.room && playerId === this.room.sessionId) {
+        console.log('✅ Setting up callbacks for current player')
+
+        // Listen for token changes
         $(player).listen('tokens', (current: number, previous: number) => {
           console.log(`💰 Tokens changed: ${previous} -> ${current}`)
           useUserStore.getState().setNomToken(current)
+
+          // Update UI immediately
+          if (this.gameUI && this.gameUI.updateUI) {
+            this.gameUI.updateUI()
+            console.log('🎨 UI updated due to token change')
+          }
         })
 
-        // Simple inventory sync for new schema
+        // Listen for inventory changes
         $(player).inventory.onChange(() => {
           console.log('📦 Inventory changed on server')
+          // Request fresh player state when inventory changes
+          this.requestPlayerState()
+        })
+
+        // Listen for any other player property changes
+        $(player).onChange(() => {
+          console.log('🔄 Player state changed on server')
+          // Optionally request full player sync
+          this.requestPlayerState()
         })
       }
     })
+
+    // Listen for player removal
+    $(state).players.onRemove((_player: any, playerId: string) => {
+      console.log(`👋 Player removed: ${playerId}`)
+    })
+
+    console.log('✅ State callbacks setup completed')
+
+    // Request initial player state after callbacks are set up
+    setTimeout(() => {
+      if (this.isConnected()) {
+        this.requestPlayerState()
+        console.log('📤 Requested initial player state')
+      } else {
+        console.warn('⚠️ Cannot request initial state - not connected')
+      }
+    }, 2000) // Increase delay to ensure connection is stable
   }
 
   // ===== UTILITY METHODS =====
@@ -319,7 +386,13 @@ export class ColyseusClient {
   }
 
   private requestPlayerState() {
-    this.sendMessage('request-player-state', {})
+    console.log('📤 Requesting player state from server...')
+    this.sendMessage('request_player_state', {})
+
+    // Don't send too many messages at once - add delay
+    setTimeout(() => {
+      this.sendMessage('request_pets_state', {})
+    }, 500)
   }
 
   private showConnectionStatus(text: string) {
@@ -342,31 +415,50 @@ export class ColyseusClient {
 
   // Purchase item from store
   purchaseItem(itemType: string, itemName: string, quantity: number = 1) {
-    this.sendMessage('purchase-item', { itemType, itemName, quantity })
+    this.sendMessage('buy_food', { itemType, itemName, quantity })
   }
 
   // Feed pet
   feedPet(petId: string, foodType: string) {
-    this.sendMessage('feed-pet', { petId, foodType })
+    this.sendMessage('feed_pet', { petId, foodType })
   }
 
   // Play with pet
   playWithPet(petId: string) {
-    this.sendMessage('play-pet', { petId })
+    this.sendMessage('play_with_pet', { petId })
   }
 
   // Clean pet
   cleanPet(petId: string) {
-    this.sendMessage('clean-pet', { petId })
+    this.sendMessage('clean_pet', { petId })
   }
 
   // Get store catalog
   getStoreCatalog() {
-    this.sendMessage('get-store-catalog', {})
+    this.sendMessage('get_store_catalog', {})
   }
 
   // Get player inventory
   getInventory() {
-    this.sendMessage('get-inventory', {})
+    this.sendMessage('get_inventory', {})
+  }
+
+  // ===== SYNC METHODS =====
+
+  // Force sync all state from server
+  public forceSyncState() {
+    console.log('🔄 Force syncing all state from server...')
+    this.requestPlayerState()
+
+    // Add delays between requests to avoid overwhelming the connection
+    setTimeout(() => {
+      this.sendMessage('get_store_catalog', {})
+    }, 1000)
+
+    setTimeout(() => {
+      this.sendMessage('get_inventory', {})
+    }, 1500)
+
+    console.log('📤 Sync requests sent')
   }
 }
