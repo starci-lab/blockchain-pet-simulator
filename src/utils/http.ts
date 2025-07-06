@@ -1,6 +1,10 @@
 import { envConfig } from '@/configs/env'
 import { ROUTES } from '@/constants/routes'
-import { setAccessTokenToLS, setRefreshTokenToLS } from '@/utils/auth'
+import {
+  setAccessTokenToLS,
+  setAddressWalletToLS,
+  setRefreshTokenToLS
+} from '@/utils/auth'
 import type { AxiosError, AxiosInstance } from 'axios'
 import axios from 'axios'
 
@@ -36,6 +40,7 @@ export class Http {
           const data = response.data
           this.accessToken = data.access_token
           this.refreshToken = data.refresh_token
+          setAddressWalletToLS(data.wallet_address)
           setAccessTokenToLS(this.accessToken)
           setRefreshTokenToLS(this.refreshToken)
         }
