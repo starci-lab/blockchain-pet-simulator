@@ -79,7 +79,7 @@ export class PetManager {
     // Notify server about new pet creation if connected
     if (this.colyseusClient?.isConnected()) {
       console.log(`📤 Sending create-pet message to server for ${petId}`)
-      this.colyseusClient.sendMessage('create-pet', {
+      this.colyseusClient.sendMessage('create_pet', {
         petId: petId,
         x: x,
         y: y,
@@ -99,7 +99,7 @@ export class PetManager {
     // Notify server about pet removal if connected
     if (this.colyseusClient?.isConnected()) {
       console.log(`📤 Sending remove-pet message to server for ${petId}`)
-      this.colyseusClient.sendMessage('remove-pet', {
+      this.colyseusClient.sendMessage('remove_pet', {
         petId: petId
       })
     }

@@ -319,7 +319,7 @@ export class ColyseusClient {
   }
 
   private requestPlayerState() {
-    this.sendMessage('request-player-state', {})
+    this.sendMessage('request_player_state', {})
   }
 
   private showConnectionStatus(text: string) {
@@ -342,31 +342,31 @@ export class ColyseusClient {
 
   // Purchase item from store
   purchaseItem(itemType: string, itemName: string, quantity: number = 1) {
-    this.sendMessage('purchase-item', { itemType, itemName, quantity })
+    this.sendMessage('buy_food', { itemType, itemName, quantity })
   }
 
   // Feed pet
   feedPet(petId: string, foodType: string) {
-    this.sendMessage('feed-pet', { petId, foodType })
+    this.sendMessage('feed_pet', { petId, foodType })
   }
 
   // Play with pet
   playWithPet(petId: string) {
-    this.sendMessage('play-pet', { petId })
+    this.sendMessage('play_with_pet', { petId })
   }
 
   // Clean pet
   cleanPet(petId: string) {
-    this.sendMessage('clean-pet', { petId })
+    this.sendMessage('clean_pet', { petId })
   }
 
   // Get store catalog
   getStoreCatalog() {
-    this.sendMessage('get-store-catalog', {})
+    this.sendMessage('get_store_catalog', {})
   }
 
   // Get player inventory
   getInventory() {
-    this.sendMessage('get-inventory', {})
+    this.sendMessage('get_inventory', {})
   }
 }
