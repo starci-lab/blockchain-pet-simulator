@@ -1,5 +1,5 @@
 import { SceneName } from '@/constants/scene'
-import { loadChogAssets } from '@/game/load'
+import { loadChogAssets, loadBackgroundAssets } from '@/game/load'
 import Phaser from 'phaser'
 import { GameUI } from '@/game/ui/GameUI'
 import { ColyseusClient } from '@/game/colyseus/client'
@@ -21,17 +21,19 @@ export class GameScene extends Phaser.Scene {
   constructor() {
     super({ key: SceneName.Gameplay })
   }
-
   preload() {
     loadChogAssets(this)
+    loadBackgroundAssets(this)
 
     // Load food assets
     this.load.image('hamburger', './src/assets/images/food/hambuger.png')
   }
-
   async create() {
     // Disable browser context menu on right click for the whole scene
     this.input.mouse?.disableContextMenu()
+
+    // Add background image
+    this.createBackground()
 
     // Initialize game configuration first
     console.log('🎮 Initializing game configuration...')
@@ -184,5 +186,37 @@ export class GameScene extends Phaser.Scene {
   // Force reset all pets (emergency method)
   forceResetPets(): void {
     this.petManager.forceResetAllPets()
+  } // Create background image
+  private createBackground() {
+    const cameraWidth = this.cameras.main.width
+    const cameraHeight = this.cameras.main.height
+
+    try {
+      // Try to load your custom background
+      const background = this.add.image(0, 0, 'game-background')
+      background.setOrigin(0, 0) // Set origin to top-left
+      background.setDisplaySize(cameraWidth, cameraHeight) // Scale to fit camera
+      background.setDepth(-100) // Put background behind everything
+
+      console.log('✅ Custom background loaded successfully')
+    } catch {
+      // Fallback: create a gradient background
+      this.createGradientBackground()
+    }
+  }
+
+  private createGradientBackground() {
+    const cameraWidth = this.cameras.main.width
+    const cameraHeight = this.cameras.main.height
+
+    // Create a simple gradient background as fallback
+    const graphics = this.add.graphics()
+
+    // Sky gradient (light blue to white)
+    graphics.fillGradientStyle(0x87ceeb, 0x87ceeb, 0xe0f6ff, 0xe0f6ff)
+    graphics.fillRect(0, 0, cameraWidth, cameraHeight)
+    graphics.setDepth(-100)
+
+    console.log('✅ Gradient background created as fallback')
   }
 }

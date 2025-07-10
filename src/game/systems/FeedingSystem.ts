@@ -87,14 +87,25 @@ export class FeedingSystem {
   }
 
   // ===== FOOD PURCHASE =====
-
   buyFood(foodId: string = 'hamburger'): boolean {
     console.log(`🛒 Buying food: ${foodId}`)
     const foodPrice = gameConfigManager.getFoodPrice(foodId)
 
     if (this.colyseusClient && this.colyseusClient.isConnected()) {
-      console.log('🌐 Sending purchase request to server')
+      console.log(
+        '🌐 Checking tokens before sending purchase request to server'
+      )
 
+      // Check if player has enough tokens before sending to server
+      const currentTokens = useUserStore.getState().nomToken
+      if (currentTokens < foodPrice) {
+        console.log(
+          `❌ Not enough tokens: need ${foodPrice}, have ${currentTokens}`
+        )
+        return false
+      }
+
+      console.log('💰 Tokens sufficient, sending purchase request to server')
       this.colyseusClient.sendMessage('buy_food', {
         itemType: 'food',
         itemName: 'hamburger',
@@ -108,7 +119,9 @@ export class FeedingSystem {
       const spendToken = useUserStore.getState().spendToken
       if (spendToken(foodPrice)) {
         this.foodInventory += 1
-        console.log(`✅ Purchase successful: ${foodId} for ${foodPrice} tokens`)
+        console.log(
+          `✅ Purchase successful: ${foodId} for ${foodPrice} tokens`
+        )
         return true
       } else {
         console.log(`❌ Not enough tokens: need ${foodPrice}`)

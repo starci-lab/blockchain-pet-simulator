@@ -3,7 +3,10 @@ import { FeedingSystem } from '@/game/systems/FeedingSystem'
 import { MovementSystem } from '@/game/systems/MovementSystem'
 import { ActivitySystem } from '@/game/systems/ActivitySystem'
 import { ColyseusClient } from '@/game/colyseus/client'
-import { GamePositioning, GAME_MECHANICS } from '@/game/constants/gameConstants'
+import {
+  GamePositioning,
+  GAME_MECHANICS,
+} from '@/game/constants/gameConstants'
 
 export interface PetData {
   id: string
@@ -313,7 +316,8 @@ export class PetManager {
       const currentY = petData.pet.sprite.y
 
       const positionChanged =
-        Math.abs(currentX - previousX) > 5 || Math.abs(currentY - previousY) > 5
+        Math.abs(currentX - previousX) > 5 ||
+        Math.abs(currentY - previousY) > 5
       const activityChanged = currentActivity !== previousActivity
 
       // Removed server sync for simplified version
@@ -346,9 +350,7 @@ export class PetManager {
       console.log('🍔 Using existing food from inventory')
       this.dropFood(x, y)
       return true
-    }
-
-    // Try to buy food first
+    } // Try to buy food first
     const purchased = this.buyFood(foodId)
     if (purchased) {
       console.log('🛒 Food purchased successfully, now dropping')
@@ -915,7 +917,9 @@ export class PetManager {
 
     // If pet is currently chasing, don't interrupt
     if (petData.pet.isChasing) {
-      console.log(`⚠️ Pet ${petData.id} already chasing, not forcing new chase`)
+      console.log(
+        `⚠️ Pet ${petData.id} already chasing, not forcing new chase`
+      )
       return
     }
 
