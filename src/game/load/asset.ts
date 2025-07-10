@@ -14,3 +14,12 @@ export const loadChogAssets = (scene: Phaser.Scene) => {
   scene.load.atlas('dog-chew', dogChewImg, dogChewJson)
   scene.load.atlas('dog-walk', dogWalkImg, dogWalkJson)
 }
+
+// Load background assets
+export const loadBackgroundAssets = (scene: Phaser.Scene) => {
+  // Load your custom background image
+  scene.load.image(
+    'game-background',
+    './src/assets/images/backgrounds/game-bg.svg'
+  )
+}
