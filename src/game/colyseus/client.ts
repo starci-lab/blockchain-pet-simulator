@@ -7,15 +7,25 @@ export class ColyseusClient {
   private scene: Phaser.Scene
   private stateCallbacksSetup = false
   private gameUI: any // Reference to GameUI for notifications
+  private lastClickPosition: { x: number ;y: number } | null = null // Track last click position
 
   constructor(scene: Phaser.Scene, gameUI?: any) {
     this.scene = scene
     this.gameUI = gameUI
+    this.setupClickTracking()
   }
 
   // Method to set GameUI reference after initialization
   setGameUI(gameUI: any) {
     this.gameUI = gameUI
+  }
+
+  // Setup click tracking to capture cursor positions
+  private setupClickTracking() {
+    // Track all pointer down events to store the last click position
+    this.scene.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      this.lastClickPosition = { x: pointer.x, y: pointer.y }
+    })
   }
 
   // ===== CONNECTION MANAGEMENT =====
@@ -139,16 +149,10 @@ export class ColyseusClient {
         useUserStore.getState().setNomToken(message.currentTokens)
         console.log(`💰 Tokens updated: ${message.currentTokens}`)
       }
-
-      // Show success notification
-      if (this.gameUI && this.gameUI.showNotification) {
-        this.gameUI.showNotification(`✅ ${message.message}`)
-      }
     } else {
-      // Show failure notification
-      if (this.gameUI && this.gameUI.showNotification) {
-        this.gameUI.showNotification(`❌ ${message.message}`)
-      }
+      const x = this.lastClickPosition?.x
+      const y = this.lastClickPosition?.y
+      this.gameUI.showNotification(`❌ ${message.message}`, x, y)
     }
   }
 
@@ -282,7 +286,9 @@ export class ColyseusClient {
         console.log(`🎯 Set newest pet ${newestPetId} as active`)
 
         if (this.gameUI && this.gameUI.showNotification) {
-          this.gameUI.showNotification(`🎯 Switched to new pet: ${newestPetId}`)
+          this.gameUI.showNotification(
+            `🎯 Switched to new pet: ${newestPetId}`
+          )
         }
       }
       console.log(
