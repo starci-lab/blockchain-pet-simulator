@@ -1,5 +1,5 @@
 import { SceneName } from '@/constants/scene'
-import { loadChogAssets, loadBackgroundAssets } from '@/game/load'
+import { loadChogAssets, loadBackgroundAssets, loadFoodAssets } from '@/game/load'
 import Phaser from 'phaser'
 import { GameUI } from '@/game/ui/GameUI'
 import { ColyseusClient } from '@/game/colyseus/client'
@@ -8,7 +8,6 @@ import { PetManager } from '@/game/managers/PetManager'
 import { gameConfigManager } from '@/game/configs/gameConfig'
 import { GamePositioning } from '@/game/constants/gameConstants'
 import RexUIPlugin from 'phaser3-rex-plugins/templates/ui/ui-plugin.js'
-
 const BACKEND_URL = 'ws://localhost:3002'
 
 export class GameScene extends Phaser.Scene {
@@ -24,9 +23,7 @@ export class GameScene extends Phaser.Scene {
   preload() {
     loadChogAssets(this)
     loadBackgroundAssets(this)
-
-    // Load food assets
-    this.load.image('hamburger', './src/assets/images/food/hambuger.png')
+    loadFoodAssets(this)
   }
   async create() {
     // Disable browser context menu on right click for the whole scene
