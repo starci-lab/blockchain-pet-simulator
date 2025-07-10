@@ -29,15 +29,12 @@ const PhaserPetGame = ({ publicKey, signMessage }: PhaserPetGameProps) => {
       console.log('❌ Skipping game initialization')
       return
     }
-
     console.log('🎮 Starting Phaser game initialization...')
-
     const config: Phaser.Types.Core.GameConfig = {
       type: Phaser.AUTO,
       width: window.innerWidth,
       height: 120,
       parent: gameRef.current,
-      backgroundColor: '#87CEEB',
       scene: GameScene,
       plugins: {
         scene: [
@@ -146,7 +143,6 @@ const PhaserPetGame = ({ publicKey, signMessage }: PhaserPetGameProps) => {
     }
     handleSignMessage()
   }, [publicKey, signMessage])
-
   return (
     <div
       style={{
@@ -157,7 +153,6 @@ const PhaserPetGame = ({ publicKey, signMessage }: PhaserPetGameProps) => {
         height: '120px',
         zIndex: 1000,
         border: 'none',
-        backgroundColor: '#87CEEB'
       }}
     >
       {!isUserAuthenticated && (
