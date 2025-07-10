@@ -111,8 +111,6 @@ function App() {
           signMessage={(message) =>
             wallet?.signMessage(message) || Promise.resolve('')
           }
-          speed={speed}
-          activity={activity}
         />
       </div>
     </>
