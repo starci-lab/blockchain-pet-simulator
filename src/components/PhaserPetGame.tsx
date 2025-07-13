@@ -41,6 +41,7 @@ const PhaserPetGame = ({ publicKey, signMessage }: PhaserPetGameProps) => {
       height: 120,
       parent: gameRef.current,
       scene: GameScene,
+      transparent: true,
       plugins: {
         scene: [
           {
@@ -148,7 +149,8 @@ const PhaserPetGame = ({ publicKey, signMessage }: PhaserPetGameProps) => {
         width: "100vw",
         height: "120px",
         zIndex: 1000,
-        border: "none"
+        border: "none",
+        background: "transparent"
       }}
     >
       {!isUserAuthenticated && (
@@ -160,7 +162,8 @@ const PhaserPetGame = ({ publicKey, signMessage }: PhaserPetGameProps) => {
             height: "100%",
             color: "white",
             fontSize: "16px",
-            fontWeight: "bold"
+            fontWeight: "bold",
+            background: "transparent"
           }}
         >
           Authenticating...
@@ -171,7 +174,8 @@ const PhaserPetGame = ({ publicKey, signMessage }: PhaserPetGameProps) => {
         style={{
           width: "100%",
           height: "100%",
-          display: isUserAuthenticated ? "block" : "none"
+          display: isUserAuthenticated ? "block" : "none",
+          background: "transparent"
         }}
       />
     </div>

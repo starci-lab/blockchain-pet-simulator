@@ -2,7 +2,7 @@ import { SceneName } from "@/constants/scene";
 import {
   loadChogAssets,
   loadBackgroundAssets,
-  loadFoodAssets,
+  loadFoodAssets
 } from "@/game/load";
 import Phaser from "phaser";
 import { GameUI } from "@/game/ui/GameUI";
@@ -26,7 +26,7 @@ export class GameScene extends Phaser.Scene {
   }
   preload() {
     loadChogAssets(this);
-    loadBackgroundAssets(this);
+    // loadBackgroundAssets(this);
     loadFoodAssets(this);
   }
   async create() {
@@ -34,7 +34,7 @@ export class GameScene extends Phaser.Scene {
     this.input.mouse?.disableContextMenu();
 
     // Add background image
-    this.createBackground();
+    // this.createBackground();
 
     // Initialize game configuration first
     console.log("🎮 Initializing game configuration...");
