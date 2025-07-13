@@ -1,35 +1,40 @@
-import { useEffect, useRef, useState } from 'react'
-import Phaser from 'phaser'
-import http from '@/utils/http'
-import { ROUTES } from '@/constants/routes'
-import { GameScene } from '@/game/scenes/GameScene'
-import RexUIPlugin from 'phaser3-rex-plugins/templates/ui/ui-plugin.js'
-import { useUserStore } from '@/store/userStore'
+import { useEffect, useRef, useState } from "react";
+import Phaser from "phaser";
+import http from "@/utils/http";
+import { ROUTES } from "@/constants/routes";
+import { GameScene } from "@/game/scenes/GameScene";
+import RexUIPlugin from "phaser3-rex-plugins/templates/ui/ui-plugin.js";
+import { useUserStore } from "@/store/userStore";
 
 interface PhaserPetGameProps {
-  publicKey: string
-  signMessage?: (message: string) => string | Promise<string>
+  publicKey: string;
+  signMessage?: (message: string) => string | Promise<string>;
 }
 
 const PhaserPetGame = ({ publicKey, signMessage }: PhaserPetGameProps) => {
-  const gameRef = useRef<HTMLDivElement>(null)
-  const phaserGameRef = useRef<Phaser.Game | null>(null)
-  const sceneRef = useRef<GameScene | null>(null)
-  const [isUserAuthenticated, setIsUserAuthenticated] = useState(false)
-  const [isGameInitialized, setIsGameInitialized] = useState(false)
+  const gameRef = useRef<HTMLDivElement>(null);
+  const phaserGameRef = useRef<Phaser.Game | null>(null);
+  const sceneRef = useRef<GameScene | null>(null);
+
+  const [isGameInitialized, setIsGameInitialized] = useState(false);
+  const addressWallet = useUserStore((state) => state.addressWallet);
+  const setAddressWallet = useUserStore((state) => state.setAddressWallet);
+  const [isUserAuthenticated, setIsUserAuthenticated] = useState(
+    !!addressWallet
+  );
 
   useEffect(() => {
-    console.log('🔍 Game initialization check:', {
+    console.log("🔍 Game initialization check:", {
       gameRef: !!gameRef.current,
       isUserAuthenticated,
       isGameInitialized
-    })
+    });
 
     if (!gameRef.current || !isUserAuthenticated || isGameInitialized) {
-      console.log('❌ Skipping game initialization')
-      return
+      console.log("❌ Skipping game initialization");
+      return;
     }
-    console.log('🎮 Starting Phaser game initialization...')
+    console.log("🎮 Starting Phaser game initialization...");
     const config: Phaser.Types.Core.GameConfig = {
       type: Phaser.AUTO,
       width: window.innerWidth,
@@ -39,147 +44,138 @@ const PhaserPetGame = ({ publicKey, signMessage }: PhaserPetGameProps) => {
       plugins: {
         scene: [
           {
-            key: 'rexUI',
+            key: "rexUI",
             plugin: RexUIPlugin,
-            mapping: 'rexUI'
+            mapping: "rexUI"
           }
         ]
       }
-    }
+    };
 
     try {
-      phaserGameRef.current = new Phaser.Game(config)
-      console.log('✅ Phaser Game created successfully')
+      phaserGameRef.current = new Phaser.Game(config);
+      console.log("✅ Phaser Game created successfully");
 
       setTimeout(() => {
         sceneRef.current =
-          (phaserGameRef.current?.scene.getScene('gameplay') as GameScene) ||
-          null
+          (phaserGameRef.current?.scene.getScene("gameplay") as GameScene) ||
+          null;
 
         if (sceneRef.current) {
-          console.log('✅ GameScene loaded successfully')
-          setIsGameInitialized(true) // Only set after GameScene is loaded
+          console.log("✅ GameScene loaded successfully");
+          setIsGameInitialized(true); // Only set after GameScene is loaded
         } else {
-          console.error('❌ Failed to get GameScene')
+          console.error("❌ Failed to get GameScene");
           // Retry after a longer delay
           setTimeout(() => {
             sceneRef.current =
               (phaserGameRef.current?.scene.getScene(
-                'gameplay'
-              ) as GameScene) || null
+                "gameplay"
+              ) as GameScene) || null;
             if (sceneRef.current) {
-              console.log('✅ GameScene loaded successfully (retry)')
-              setIsGameInitialized(true)
+              console.log("✅ GameScene loaded successfully (retry)");
+              setIsGameInitialized(true);
             } else {
-              console.error('❌ GameScene still not available after retry')
+              console.error("❌ GameScene still not available after retry");
             }
-          }, 1000)
+          }, 1000);
         }
-      }, 500)
+      }, 500);
     } catch (error) {
-      console.error('❌ Failed to create Phaser Game:', error)
+      console.error("❌ Failed to create Phaser Game:", error);
     }
 
     const handleResize = () => {
       if (phaserGameRef.current) {
-        phaserGameRef.current.scale.resize(window.innerWidth, 120)
+        phaserGameRef.current.scale.resize(window.innerWidth, 120);
       }
-    }
+    };
 
-    window.addEventListener('resize', handleResize)
+    window.addEventListener("resize", handleResize);
 
     return () => {
-      window.removeEventListener('resize', handleResize)
+      window.removeEventListener("resize", handleResize);
       if (phaserGameRef.current) {
-        phaserGameRef.current.destroy(true)
-        phaserGameRef.current = null
+        phaserGameRef.current.destroy(true);
+        phaserGameRef.current = null;
       }
-    }
-  }, [isUserAuthenticated])
+    };
+  }, [isUserAuthenticated]);
 
   useEffect(() => {
-    console.log('🔐 Authentication check:', {
+    if (addressWallet) {
+      setIsUserAuthenticated(true);
+      return;
+    }
+    setIsUserAuthenticated(false);
+    console.log("🔐 Authentication check:", {
       signMessage: !!signMessage,
       publicKey: !!publicKey
-    })
+    });
 
     if (!signMessage || !publicKey) {
-      console.log('✅ No authentication needed, setting authenticated = true')
-      setIsUserAuthenticated(true) // No authentication needed
-      return
+      return;
     }
 
-    console.log('🔐 Starting authentication process...')
     const handleSignMessage = async () => {
       try {
-        const response = await http.get(ROUTES.getMessage)
-        console.log('Message to Sign Response:', response.data)
-        const messageToSign = response.data.message
-        console.log('Signed Message:', messageToSign)
-        const signedMessage = await signMessage(messageToSign)
-        if (!signedMessage || signedMessage === '') {
-          console.error('Signed message is empty or invalid')
-          setIsUserAuthenticated(false)
-          return
+        const response = await http.get(ROUTES.getMessage);
+        const messageToSign = response.data.message;
+        const signedMessage = await signMessage(messageToSign);
+        if (!signedMessage || signedMessage === "") {
+          return;
         }
 
         const verifyResponse = await http.post(ROUTES.verify, {
           message: messageToSign,
           address: publicKey,
           signature: signedMessage
-        })
-        console.log('Verification Response:', verifyResponse.data)
-        // Save state user to zustand store
-        useUserStore
-          .getState()
-          .setAddressWallet(verifyResponse.data.wallet_address)
+        });
 
-        console.log('✅ Authentication completed successfully!')
-        setIsUserAuthenticated(true) // Authentication completed
+        setAddressWallet(verifyResponse.data.wallet_address);
       } catch (error) {
-        console.error('Error signing message:', error)
-        setIsUserAuthenticated(false)
+        // ignore
       }
-    }
-    handleSignMessage()
-  }, [publicKey, signMessage])
+    };
+    handleSignMessage();
+  }, [publicKey, signMessage, addressWallet, setAddressWallet]);
   return (
     <div
       style={{
-        position: 'fixed',
+        position: "fixed",
         bottom: 0,
         left: 0,
-        width: '100vw',
-        height: '120px',
+        width: "100vw",
+        height: "120px",
         zIndex: 1000,
-        border: 'none',
+        border: "none"
       }}
     >
       {!isUserAuthenticated && (
         <div
           style={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            height: '100%',
-            color: 'white',
-            fontSize: '16px',
-            fontWeight: 'bold'
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            height: "100%",
+            color: "white",
+            fontSize: "16px",
+            fontWeight: "bold"
           }}
         >
-          Đang xác thực người dùng...
+          Authenticating...
         </div>
       )}
       <div
         ref={gameRef}
         style={{
-          width: '100%',
-          height: '100%',
-          display: isUserAuthenticated ? 'block' : 'none'
+          width: "100%",
+          height: "100%",
+          display: isUserAuthenticated ? "block" : "none"
         }}
       />
     </div>
-  )
-}
+  );
+};
 
-export default PhaserPetGame
+export default PhaserPetGame;
