@@ -2,7 +2,7 @@ import { SceneName } from "@/constants/scene";
 import {
   loadChogAssets,
   loadBackgroundAssets,
-  loadFoodAssets
+  loadFoodAssets,
 } from "@/game/load";
 import Phaser from "phaser";
 import { GameUI } from "@/game/ui/GameUI";
