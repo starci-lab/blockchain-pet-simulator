@@ -11,7 +11,6 @@
     "strict": true,
     "declaration": true,
     "declarationDir": "./dist",
-    "outDir": "./dist-types",
     "emitDeclarationOnly": true,
     "types": ["vite/client"],
     "resolveJsonModule": true,

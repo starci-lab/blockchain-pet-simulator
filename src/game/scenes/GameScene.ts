@@ -12,7 +12,7 @@ import { PetManager } from "@/game/managers/PetManager";
 import { gameConfigManager } from "@/game/configs/gameConfig";
 import { GamePositioning } from "@/game/constants/gameConstants";
 import RexUIPlugin from "phaser3-rex-plugins/templates/ui/ui-plugin.js";
-const BACKEND_URL = "https://vuichoi.starci.net/socket";
+const BACKEND_URL = import.meta.env.VITE_BASE_SOCKET || "ws://localhost:3002";
 
 export class GameScene extends Phaser.Scene {
   rexUI!: RexUIPlugin;

@@ -1,271 +1,308 @@
-import { GameRoomState } from '@/game/schema/ChatSchema'
-import { Room, Client, getStateCallbacks } from 'colyseus.js'
-import { useUserStore } from '@/store/userStore'
+import { GameRoomState } from "@/game/schema/ChatSchema";
+import { Room, Client, getStateCallbacks } from "colyseus.js";
+import { useUserStore } from "@/store/userStore";
 
 export class ColyseusClient {
-  public room: Room<GameRoomState> | null = null
-  private scene: Phaser.Scene
-  private stateCallbacksSetup = false
-  private gameUI: any // Reference to GameUI for notifications
-  private lastClickPosition: { x: number ;y: number } | null = null // Track last click position
+  public room: Room<GameRoomState> | null = null;
+  private scene: Phaser.Scene;
+  private stateCallbacksSetup = false;
+  private gameUI: any; // Reference to GameUI for notifications
+  private lastClickPosition: { x: number; y: number } | null = null; // Track last click position
 
   constructor(scene: Phaser.Scene, gameUI?: any) {
-    this.scene = scene
-    this.gameUI = gameUI
-    this.setupClickTracking()
+    this.scene = scene;
+    this.gameUI = gameUI;
+    this.setupClickTracking();
   }
 
   // Method to set GameUI reference after initialization
   setGameUI(gameUI: any) {
-    this.gameUI = gameUI
+    this.gameUI = gameUI;
   }
 
   // Setup click tracking to capture cursor positions
   private setupClickTracking() {
     // Track all pointer down events to store the last click position
-    this.scene.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-      this.lastClickPosition = { x: pointer.x, y: pointer.y }
-    })
+    this.scene.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
+      this.lastClickPosition = { x: pointer.x, y: pointer.y };
+    });
   }
 
   // ===== CONNECTION MANAGEMENT =====
 
   async connect(backendUrl: string) {
-    const statusText = this.showConnectionStatus('Connecting...')
-    const client = new Client(backendUrl)
+    const statusText = this.showConnectionStatus("Connecting...");
+    const client = new Client(backendUrl);
 
     try {
-      console.log('🔄 Connecting to Colyseus:', backendUrl)
+      console.log("🔄 Connecting to Colyseus:", backendUrl);
 
-      this.room = await client.joinOrCreate('game', {
-        name: 'Pet Game',
+      this.room = await client.joinOrCreate("game", {
+        name: "Pet Game",
         addressWallet: useUserStore.getState().addressWallet
-      })
+      });
 
-      console.log('✅ Connected to Colyseus!')
-      statusText.setText('✅ Connected!')
-      statusText.setStyle({ color: '#00ff00' })
+      console.log("✅ Connected to Colyseus!");
+      statusText.setText("✅ Connected!");
+      statusText.setStyle({ color: "#00ff00" });
 
-      this.setupEventListeners()
-      this.hideStatusAfterDelay(statusText, 3000)
+      this.setupEventListeners();
+      this.hideStatusAfterDelay(statusText, 3000);
     } catch (error) {
-      console.error('❌ Connection failed:', error)
-      statusText.setText('❌ Connection failed!')
-      statusText.setStyle({ color: '#ff0000' })
-      this.room = null
+      console.error("❌ Connection failed:", error);
+      statusText.setText("❌ Connection failed!");
+      statusText.setStyle({ color: "#ff0000" });
+      this.room = null;
     }
   }
 
   isConnected(): boolean {
-    return !!this.room
+    return !!this.room;
   }
 
   sendMessage(type: string, data: any) {
     if (!this.room) {
-      console.warn('⚠️ Cannot send message - room is null')
-      return
+      console.warn("⚠️ Cannot send message - room is null");
+      return;
     }
 
     if (!this.isConnected()) {
-      console.warn('⚠️ Cannot send message - not connected')
-      return
+      console.warn("⚠️ Cannot send message - not connected");
+      return;
     }
 
-    console.log(`📤 Sending: ${type}`, data)
+    console.log(`📤 Sending: ${type}`, data);
     try {
-      this.room.send(type, data)
+      this.room.send(type, data);
     } catch (error) {
-      console.error('❌ Failed to send message:', error)
+      console.error("❌ Failed to send message:", error);
     }
   }
 
   // ===== EVENT LISTENERS SETUP =====
 
   private setupEventListeners() {
-    if (!this.room) return
+    if (!this.room) return;
 
     // State changes
     this.room.onStateChange((state) => {
-      console.log('🔄 State changed')
-      this.setupStateCallbacks(state)
-    })
+      console.log("🔄 State changed");
+      this.setupStateCallbacks(state);
+    });
 
     // Message handling
-    this.room.onMessage('*', (type, message) => {
-      console.log('📨 Message:', type, message)
-      if (typeof type === 'string') {
-        this.handleMessage(type, message)
+    this.room.onMessage("*", (type, message) => {
+      console.log("📨 Message:", type, message);
+      if (typeof type === "string") {
+        this.handleMessage(type, message);
       }
-    })
+    });
 
     // Connection events
     this.room.onError((code, message) => {
-      console.error('❌ Room error:', code, message)
-    })
+      console.error("❌ Room error:", code, message);
+    });
 
     this.room.onLeave((code) => {
-      console.log('👋 Left room:', code)
-    })
+      console.log("👋 Left room:", code);
+    });
   }
 
   // ===== MESSAGE HANDLING =====
 
   private handleMessage(type: string, message: any) {
     switch (type) {
-      case 'purchase-response':
-        this.handlePurchaseResponse(message)
-        break
+      case "purchase-response":
+        this.handlePurchaseResponse(message);
+        break;
 
-      case 'feed-pet-response':
-      case 'play-pet-response':
-      case 'clean-pet-response':
-        this.handlePetActionResponse(message)
-        break
+      case "feed-pet-response":
+      case "play-pet-response":
+      case "clean-pet-response":
+        this.handlePetActionResponse(message);
+        break;
 
-      case 'player-state-sync':
-        this.handlePlayerSync(message)
-        break
+      case "player-state-sync":
+        this.handlePlayerSync(message);
+        break;
 
-      case 'pets-state-sync':
-        this.handlePetsSync(message)
-        break
+      case "pets-state-sync":
+        this.handlePetsSync(message);
+        break;
 
-      case 'welcome':
-        this.requestPlayerState()
-        break
+      case "buy-pet-response":
+        this.handleBuyPetResponse(message);
+        break;
+
+      case "welcome":
+        this.requestPlayerState();
+        break;
 
       default:
         // Other messages can be handled here
-        break
+        break;
+    }
+  }
+
+  // Handle buy-pet-response from server: update tokens and sync pets
+  private handleBuyPetResponse(message: any) {
+    console.log("🐾 Buy pet response:", message);
+
+    if (message.success) {
+      // Update tokens if provided
+      if (message.currentTokens !== undefined) {
+        useUserStore.getState().setNomToken(message.currentTokens);
+        console.log(`💰 Tokens updated: ${message.currentTokens}`);
+      }
+
+      // Sync pets if provided
+      if (message.pets && Array.isArray(message.pets)) {
+        this.handlePetsSync({ pets: message.pets });
+      } else {
+        // Fallback: force request pets state from server
+        this.sendMessage("request_pets_state", {});
+      }
+
+      // Show notification if needed
+      if (this.gameUI && this.gameUI.showNotification) {
+        this.gameUI.showNotification("🎉 You bought a new pet!");
+      }
+    } else {
+      // Show error notification at last click position
+      const x = this.lastClickPosition?.x;
+      const y = this.lastClickPosition?.y;
+      if (this.gameUI && this.gameUI.showNotification) {
+        this.gameUI.showNotification(`❌ ${message.message}`, x, y);
+      }
     }
   }
 
   private handlePurchaseResponse(message: any) {
-    console.log('🛒 Purchase response:', message)
+    console.log("🛒 Purchase response:", message);
 
     if (message.success) {
       // Update tokens from server
       if (message.currentTokens !== undefined) {
-        useUserStore.getState().setNomToken(message.currentTokens)
-        console.log(`💰 Tokens updated: ${message.currentTokens}`)
+        useUserStore.getState().setNomToken(message.currentTokens);
+        console.log(`💰 Tokens updated: ${message.currentTokens}`);
       }
     } else {
-      const x = this.lastClickPosition?.x
-      const y = this.lastClickPosition?.y
-      this.gameUI.showNotification(`❌ ${message.message}`, x, y)
+      const x = this.lastClickPosition?.x;
+      const y = this.lastClickPosition?.y;
+      this.gameUI.showNotification(`❌ ${message.message}`, x, y);
     }
   }
 
   private handlePetActionResponse(message: any) {
-    console.log('🐕 Pet action response:', message)
+    console.log("🐕 Pet action response:", message);
 
     if (message.success) {
       // Show success notification
       if (this.gameUI && this.gameUI.showNotification) {
-        this.gameUI.showNotification(`✅ ${message.message}`)
+        this.gameUI.showNotification(`✅ ${message.message}`);
       }
 
       // Update pet stats if provided
       if (message.petStats) {
-        console.log('📊 Pet stats updated:', message.petStats)
+        console.log("📊 Pet stats updated:", message.petStats);
       }
     } else {
       // Show failure notification
       if (this.gameUI && this.gameUI.showNotification) {
-        this.gameUI.showNotification(`❌ ${message.message}`)
+        this.gameUI.showNotification(`❌ ${message.message}`);
       }
     }
   }
 
   private handlePlayerSync(message: any) {
-    console.log('👤 Player sync:', message)
+    console.log("👤 Player sync:", message);
 
     // Update tokens if provided
     if (message.tokens !== undefined) {
-      const currentTokens = useUserStore.getState().nomToken
+      const currentTokens = useUserStore.getState().nomToken;
       if (currentTokens !== message.tokens) {
-        useUserStore.getState().setNomToken(message.tokens)
-        console.log(`💰 Tokens synced: ${currentTokens} -> ${message.tokens}`)
+        useUserStore.getState().setNomToken(message.tokens);
+        console.log(`💰 Tokens synced: ${currentTokens} -> ${message.tokens}`);
 
         // Update UI to reflect token change
         if (this.gameUI && this.gameUI.updateUI) {
-          this.gameUI.updateUI()
+          this.gameUI.updateUI();
         }
       }
     }
 
     // Update inventory summary if provided
     if (message.inventory) {
-      console.log(`📦 Inventory synced:`, message.inventory)
+      console.log(`📦 Inventory synced:`, message.inventory);
 
       // Update UI to reflect inventory changes
       if (this.gameUI && this.gameUI.updateUI) {
-        this.gameUI.updateUI()
+        this.gameUI.updateUI();
       }
     }
 
     // Update any other player data
     if (message.playerData) {
-      console.log('📊 Player data synced:', message.playerData)
+      console.log("📊 Player data synced:", message.playerData);
     }
   }
 
   private handlePetsSync(message: any) {
-    console.log('🐕 Pets sync:', message)
+    console.log("🐕 Pets sync:", message);
 
-    const petManager = this.getPetManager()
+    const petManager = this.getPetManager();
     if (!petManager) {
-      console.warn('⚠️ PetManager not found - cannot sync pets')
-      return
+      console.warn("⚠️ PetManager not found - cannot sync pets");
+      return;
     }
 
     if (!message.pets || !Array.isArray(message.pets)) {
-      console.log('📝 No pets to sync or invalid pets data')
-      return
+      console.log("📝 No pets to sync or invalid pets data");
+      return;
     }
 
     // Get current local pets
     const localPets = new Set(
       petManager.getAllPets().map((petData: any) => petData.id)
-    )
-    const serverPets = new Set(message.pets.map((pet: any) => pet.id))
+    );
+    const serverPets = new Set(message.pets.map((pet: any) => pet.id));
 
-    console.log(`🔄 Local pets: [${Array.from(localPets).join(', ')}]`)
-    console.log(`🔄 Server pets: [${Array.from(serverPets).join(', ')}]`)
+    console.log(`🔄 Local pets: [${Array.from(localPets).join(", ")}]`);
+    console.log(`🔄 Server pets: [${Array.from(serverPets).join(", ")}]`);
 
     // Track if we create any new pets
-    let newPetsCreated: string[] = []
+    let newPetsCreated: string[] = [];
 
     // Remove pets that don't exist on server
     for (const localPetId of localPets) {
       if (!serverPets.has(localPetId)) {
-        console.log(`🗑️ Removing pet ${localPetId} (not on server)`)
-        petManager.removePet(localPetId)
+        console.log(`🗑️ Removing pet ${localPetId} (not on server)`);
+        petManager.removePet(localPetId);
       }
     }
 
     // Add or update pets from server
     message.pets.forEach((serverPet: any) => {
-      let localPetData = petManager.getPet(serverPet.id)
+      let localPetData = petManager.getPet(serverPet.id);
 
       // Create pet if it doesn't exist locally
       if (!localPetData) {
-        console.log(`➕ Creating new pet ${serverPet.id}`)
-        const x = 400
-        const y = 300
-        localPetData = petManager.createPet(serverPet.id, x, y)
+        console.log(`➕ Creating new pet ${serverPet.id}`);
+        const x = 400;
+        const y = 300;
+        localPetData = petManager.createPet(serverPet.id, x, y);
 
         if (!localPetData) {
-          console.error(`❌ Failed to create pet ${serverPet.id}`)
-          return
+          console.error(`❌ Failed to create pet ${serverPet.id}`);
+          return;
         }
 
         // Track new pet creation
-        newPetsCreated.push(serverPet.id)
+        newPetsCreated.push(serverPet.id);
 
         // Show notification for new pet
         if (this.gameUI && this.gameUI.showNotification) {
-          this.gameUI.showNotification(`🎉 New pet appeared: ${serverPet.id}`)
+          this.gameUI.showNotification(`🎉 New pet appeared: ${serverPet.id}`);
         }
       }
 
@@ -273,139 +310,139 @@ export class ColyseusClient {
         // Update pet stats (simplified - no position/activity sync needed for this simple version)
         console.log(
           `🔄 Pet ${serverPet.id} synced: hunger=${serverPet.hunger}, happiness=${serverPet.happiness}, cleanliness=${serverPet.cleanliness}`
-        )
+        );
       }
-    })
+    });
 
     // If new pets were created and no active pet, set the newest one as active
     if (newPetsCreated.length > 0) {
-      const currentActivePet = petManager.getActivePet()
+      const currentActivePet = petManager.getActivePet();
       if (!currentActivePet && newPetsCreated.length > 0) {
-        const newestPetId = newPetsCreated[newPetsCreated.length - 1]
-        petManager.setActivePet(newestPetId)
-        console.log(`🎯 Set newest pet ${newestPetId} as active`)
+        const newestPetId = newPetsCreated[newPetsCreated.length - 1];
+        petManager.setActivePet(newestPetId);
+        console.log(`🎯 Set newest pet ${newestPetId} as active`);
 
         if (this.gameUI && this.gameUI.showNotification) {
           this.gameUI.showNotification(
             `🎯 Switched to new pet: ${newestPetId}`
-          )
+          );
         }
       }
       console.log(
         `🆕 Created ${newPetsCreated.length} new pets: [${newPetsCreated.join(
-          ', '
+          ", "
         )}]`
-      )
+      );
     }
 
     console.log(
       `✅ Pet sync completed. Total pets: ${petManager.getAllPets().length}`
-    )
+    );
 
     // Force UI update after pet sync
     if (this.gameUI && this.gameUI.updateUI) {
-      this.gameUI.updateUI()
-      console.log('🎨 Forced UI update after pet sync')
+      this.gameUI.updateUI();
+      console.log("🎨 Forced UI update after pet sync");
     }
   }
 
   // ===== STATE CALLBACKS SETUP =====
 
   private setupStateCallbacks(state: GameRoomState) {
-    if (this.stateCallbacksSetup) return
-    this.stateCallbacksSetup = true
+    if (this.stateCallbacksSetup) return;
+    this.stateCallbacksSetup = true;
 
-    const $ = getStateCallbacks(this.room!)
+    const $ = getStateCallbacks(this.room!);
 
-    console.log('🔧 Setting up state callbacks...')
+    console.log("🔧 Setting up state callbacks...");
 
     // Player tokens sync
     $(state).players.onAdd((player: any, playerId: string) => {
-      console.log(`👤 Player added: ${playerId}`)
+      console.log(`👤 Player added: ${playerId}`);
 
       if (this.room && playerId === this.room.sessionId) {
-        console.log('✅ Setting up callbacks for current player')
+        console.log("✅ Setting up callbacks for current player");
 
         // Listen for token changes
-        $(player).listen('tokens', (current: number, previous: number) => {
-          console.log(`💰 Tokens changed: ${previous} -> ${current}`)
-          useUserStore.getState().setNomToken(current)
+        $(player).listen("tokens", (current: number, previous: number) => {
+          console.log(`💰 Tokens changed: ${previous} -> ${current}`);
+          useUserStore.getState().setNomToken(current);
 
           // Update UI immediately
           if (this.gameUI && this.gameUI.updateUI) {
-            this.gameUI.updateUI()
-            console.log('🎨 UI updated due to token change')
+            this.gameUI.updateUI();
+            console.log("🎨 UI updated due to token change");
           }
-        })
+        });
 
         // Listen for inventory changes
         $(player).inventory.onChange(() => {
-          console.log('📦 Inventory changed on server')
+          console.log("📦 Inventory changed on server");
           // Request fresh player state when inventory changes
-          this.requestPlayerState()
-        })
+          this.requestPlayerState();
+        });
 
         // Listen for any other player property changes
         $(player).onChange(() => {
-          console.log('🔄 Player state changed on server')
+          console.log("🔄 Player state changed on server");
           // Optionally request full player sync
-          this.requestPlayerState()
-        })
+          this.requestPlayerState();
+        });
       }
-    })
+    });
 
     // Listen for player removal
     $(state).players.onRemove((_player: any, playerId: string) => {
-      console.log(`👋 Player removed: ${playerId}`)
-    })
+      console.log(`👋 Player removed: ${playerId}`);
+    });
 
-    console.log('✅ State callbacks setup completed')
+    console.log("✅ State callbacks setup completed");
 
     // Request initial player state after callbacks are set up
     setTimeout(() => {
       if (this.isConnected()) {
-        this.requestPlayerState()
-        console.log('📤 Requested initial player state')
+        this.requestPlayerState();
+        console.log("📤 Requested initial player state");
       } else {
-        console.warn('⚠️ Cannot request initial state - not connected')
+        console.warn("⚠️ Cannot request initial state - not connected");
       }
-    }, 2000) // Increase delay to ensure connection is stable
+    }, 2000); // Increase delay to ensure connection is stable
   }
 
   // ===== UTILITY METHODS =====
 
   private getPetManager() {
-    const gameScene = this.scene as any
-    console.log('🔍 Getting PetManager from scene:', gameScene)
+    const gameScene = this.scene as any;
+    console.log("🔍 Getting PetManager from scene:", gameScene);
 
     if (
       gameScene.getPetManager &&
-      typeof gameScene.getPetManager === 'function'
+      typeof gameScene.getPetManager === "function"
     ) {
-      const petManager = gameScene.getPetManager()
-      console.log('✅ PetManager found:', petManager)
-      return petManager
+      const petManager = gameScene.getPetManager();
+      console.log("✅ PetManager found:", petManager);
+      return petManager;
     } else {
-      console.warn('⚠️ getPetManager method not found on scene')
-      return null
+      console.warn("⚠️ getPetManager method not found on scene");
+      return null;
     }
   }
 
   private requestPlayerState() {
-    console.log('📤 Requesting player state from server...')
-    this.sendMessage('request_player_state', {})
+    console.log("📤 Requesting player state from server...");
+    this.sendMessage("request_player_state", {});
 
     // Don't send too many messages at once - add delay
     setTimeout(() => {
-      this.sendMessage('request_pets_state', {})
-    }, 500)
+      this.sendMessage("request_pets_state", {});
+    }, 500);
   }
 
   private showConnectionStatus(text: string) {
     return this.scene.add
       .text(10, 70, text)
-      .setStyle({ color: '#ff0000', fontSize: '12px' })
-      .setPadding(4)
+      .setStyle({ color: "#ff0000", fontSize: "12px" })
+      .setPadding(4);
   }
 
   private hideStatusAfterDelay(
@@ -413,58 +450,58 @@ export class ColyseusClient {
     delay: number
   ) {
     this.scene.time.delayedCall(delay, () => {
-      if (textObj) textObj.destroy()
-    })
+      if (textObj) textObj.destroy();
+    });
   }
 
   // ===== SIMPLE API METHODS FOR UI =====
 
   // Purchase item from store
   purchaseItem(itemType: string, itemName: string, quantity: number = 1) {
-    this.sendMessage('buy_food', { itemType, itemName, quantity })
+    this.sendMessage("buy_food", { itemType, itemName, quantity });
   }
 
   // Feed pet
   feedPet(petId: string, foodType: string) {
-    this.sendMessage('feed_pet', { petId, foodType })
+    this.sendMessage("feed_pet", { petId, foodType });
   }
 
   // Play with pet
   playWithPet(petId: string) {
-    this.sendMessage('play_with_pet', { petId })
+    this.sendMessage("play_with_pet", { petId });
   }
 
   // Clean pet
   cleanPet(petId: string) {
-    this.sendMessage('clean_pet', { petId })
+    this.sendMessage("clean_pet", { petId });
   }
 
   // Get store catalog
   getStoreCatalog() {
-    this.sendMessage('get_store_catalog', {})
+    this.sendMessage("get_store_catalog", {});
   }
 
   // Get player inventory
   getInventory() {
-    this.sendMessage('get_inventory', {})
+    this.sendMessage("get_inventory", {});
   }
 
   // ===== SYNC METHODS =====
 
   // Force sync all state from server
   public forceSyncState() {
-    console.log('🔄 Force syncing all state from server...')
-    this.requestPlayerState()
+    console.log("🔄 Force syncing all state from server...");
+    this.requestPlayerState();
 
     // Add delays between requests to avoid overwhelming the connection
     setTimeout(() => {
-      this.sendMessage('get_store_catalog', {})
-    }, 1000)
+      this.sendMessage("get_store_catalog", {});
+    }, 1000);
 
     setTimeout(() => {
-      this.sendMessage('get_inventory', {})
-    }, 1500)
+      this.sendMessage("get_inventory", {});
+    }, 1500);
 
-    console.log('📤 Sync requests sent')
+    console.log("📤 Sync requests sent");
   }
 }
