@@ -37,9 +37,9 @@ export class ColyseusClient {
     try {
       console.log("🔄 Connecting to Colyseus:", backendUrl);
 
-      this.room = await client.joinOrCreate("game", {
+      this.room = await client.joinOrCreate("single_player", {
         name: "Pet Game",
-        addressWallet: useUserStore.getState().addressWallet
+        addressWallet: useUserStore.getState().addressWallet,
       });
 
       console.log("✅ Connected to Colyseus!");
