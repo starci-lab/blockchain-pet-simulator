@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { GamePositioning } from "@/game/constants/gameConstants";
+import { GamePositioning, GAME_LAYOUT } from "@/game/constants/gameConstants";
 
 export class Pet {
   public sprite!: Phaser.GameObjects.Sprite;
@@ -15,6 +15,10 @@ export class Pet {
   public cleanlinessLevel: number = 100;
   public cleanlinessDecreaseMultiplier: number; // Tốc độ giảm riêng cho mỗi pet
 
+  // Happiness properties - thuộc tính riêng của mỗi pet
+  public happinessLevel: number = 100;
+  public happinessDecreaseMultiplier: number; // Tốc độ giảm riêng cho mỗi pet
+
   // Chasing properties
   public isChasing: boolean = false;
   public chaseTarget: { x: number; y: number } | null = null;
@@ -29,6 +33,9 @@ export class Pet {
 
     // Khởi tạo tốc độ giảm cleanliness ngẫu nhiên cho mỗi pet (0.7x - 1.3x)
     this.cleanlinessDecreaseMultiplier = 0.7 + Math.random() * 0.6;
+
+    // Khởi tạo tốc độ giảm happiness ngẫu nhiên cho mỗi pet (0.7x - 1.3x)
+    this.happinessDecreaseMultiplier = 0.7 + Math.random() * 0.6;
   }
 
   create(x: number, y?: number) {
@@ -51,7 +58,7 @@ export class Pet {
       "dog-walk",
       "chog_walk 0.aseprite"
     );
-    this.sprite.setScale(2);
+    this.sprite.setScale(GAME_LAYOUT.PET_SCALE);
 
     this.updateActivity();
   }
