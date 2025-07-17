@@ -288,8 +288,12 @@ export class ColyseusClient {
       // Create pet if it doesn't exist locally
       if (!localPetData) {
         console.log(`➕ Creating new pet ${serverPet.id}`);
-        const x = 400;
-        const y = 300;
+        const minX = 100,
+          maxX = 1200;
+        const minY = 200,
+          maxY = 500;
+        const x = Math.floor(Math.random() * (maxX - minX + 1)) + minX;
+        const y = Math.floor(Math.random() * (maxY - minY + 1)) + minY;
         localPetData = petManager.createPet(serverPet.id, x, y);
 
         if (!localPetData) {
