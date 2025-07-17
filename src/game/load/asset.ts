@@ -11,6 +11,7 @@ import dogWalkJson from "@/assets/images/Chog/chog_walk_animated.json";
 import hamburgerImg from "@/assets/images/food/hambuger.png";
 import poopImg from "@/assets/images/poop/poop.png";
 import broomImg from "@/assets/images/broom/broom.png";
+import ballImg from "@/assets/images/ball/ball.png";
 
 export const loadChogAssets = (scene: Phaser.Scene) => {
   scene.load.atlas("dog-sleep", dogSleepImg, dogSleepJson);
@@ -35,4 +36,8 @@ export const loadPoopAssets = (scene: Phaser.Scene) => {
 
 export const loadCleaningAssets = (scene: Phaser.Scene) => {
   scene.load.image("broom", broomImg);
+};
+
+export const loadToyAssets = (scene: Phaser.Scene) => {
+  scene.load.image("ball", ballImg);
 };
