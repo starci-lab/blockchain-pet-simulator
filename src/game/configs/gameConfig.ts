@@ -9,6 +9,10 @@ export interface GameConfig {
     items: CleaningItem[];
     defaultPrice: number;
   };
+  toys: {
+    items: ToyItem[];
+    defaultPrice: number;
+  };
   economy: {
     initialTokens: number;
     hungerDecreaseRate: number;
@@ -17,6 +21,7 @@ export interface GameConfig {
     foodDespawnTime: number;
     maxFoodInventory: number;
     maxCleaningInventory: number;
+    maxToyInventory: number;
   };
 }
 
@@ -34,6 +39,15 @@ export interface CleaningItem {
   name: string;
   price: number;
   cleanlinessRestore: number;
+  texture: string;
+  rarity?: "common" | "rare" | "epic";
+}
+
+export interface ToyItem {
+  id: string;
+  name: string;
+  price: number;
+  happinessRestore: number;
   texture: string;
   rarity?: "common" | "rare" | "epic";
 }
@@ -79,6 +93,18 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
     ],
     defaultPrice: 10,
   },
+  toys: {
+    items: [
+      {
+        id: "ball",
+        name: "Ball",
+        price: 8,
+        happinessRestore: 25,
+        texture: "ball",
+      },
+    ],
+    defaultPrice: 8,
+  },
   economy: {
     initialTokens: 100,
     hungerDecreaseRate: 2,
@@ -87,6 +113,7 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
     foodDespawnTime: 20000,
     maxFoodInventory: 10,
     maxCleaningInventory: 5,
+    maxToyInventory: 5,
   },
 };
 
@@ -164,6 +191,25 @@ class GameConfigManager {
 
   getCleaningItem(cleaningId: string): CleaningItem | undefined {
     return this.config.cleaning.items.find((item) => item.id === cleaningId);
+  }
+
+  getToyPrice(toyId: string = "ball"): number {
+    const toyItem = this.config.toys.items.find(
+      (item) => item.id === toyId
+    );
+    return toyItem?.price || this.config.toys.defaultPrice;
+  }
+
+  getToyItem(toyId: string): ToyItem | undefined {
+    return this.config.toys.items.find((item) => item.id === toyId);
+  }
+
+  getToyItems(): { [key: string]: ToyItem } {
+    const toyItems: { [key: string]: ToyItem } = {};
+    this.config.toys.items.forEach(item => {
+      toyItems[item.id] = item;
+    });
+    return toyItems;
   }
 
   updateConfig(newConfig: Partial<GameConfig>) {
