@@ -58,11 +58,7 @@ export class PetManager {
       pet,
       this.colyseusClient
     );
-    const cleanlinessSystem = new CleanlinessSystem(
-      this.scene,
-      pet,
-      this.colyseusClient
-    );
+    const cleanlinessSystem = new CleanlinessSystem(this.scene, pet);
 
     const petData: PetData = {
       id: petId,
