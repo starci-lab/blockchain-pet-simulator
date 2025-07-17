@@ -1,5 +1,5 @@
 import { Pet } from "../entities/Pet";
-import { GAME_MECHANICS } from "../constants/gameConstants";
+import { GAME_MECHANICS, GAME_LAYOUT } from "../constants/gameConstants";
 import { gameConfigManager } from "@/game/configs/gameConfig";
 import { useUserStore } from "@/store/userStore";
 
@@ -94,7 +94,7 @@ export class CleanlinessSystem {
 
     // Create poop sprite
     const poop = this.scene.add.sprite(petX, petY - 5, "poop");
-    poop.setScale(0.1); // Smaller scale for poop
+    poop.setScale(GAME_LAYOUT.POOP_SCALE); // Use constant for poop scale
     poop.setAlpha(0.9);
 
     // Create shadow
