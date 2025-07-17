@@ -9,6 +9,7 @@ export class InputManager {
   private shopUI: any;
   private isDroppingFood = false;
   private isUsingBroom = false;
+  private isUsingBall = false;
   private dropHintText?: Phaser.GameObjects.Text;
 
   constructor(
@@ -61,6 +62,18 @@ export class InputManager {
       if (this.dropHintText) this.dropHintText.setVisible(false);
 
       console.log("🚪 Exited broom mode");
+    };
+
+    // Helper function to exit ball mode
+    const exitBallMode = () => {
+      this.isUsingBall = false;
+      this.shopUI.setBallUseState(false);
+      this.scene.input.setDefaultCursor(
+        "url(/assets/images/cursor/navigation_nw.png), pointer"
+      );
+      if (this.dropHintText) this.dropHintText.setVisible(false);
+
+      console.log("🚪 Exited ball mode");
     };
 
     // Set up food icon click callback
@@ -135,6 +148,42 @@ export class InputManager {
       }
     });
 
+    // Set up ball icon click callback
+    this.shopUI.setOnBallIconClick(() => {
+      this.isUsingBall = true;
+      this.shopUI.setBallUseState(true);
+
+      // Change cursor to ball icon
+      this.scene.input.setDefaultCursor(
+        "url(./src/assets/images/ball/ball.png), pointer"
+      );
+
+      // Show usage hint text
+      if (!this.dropHintText) {
+        this.dropHintText = this.scene.add
+          .text(
+            this.scene.cameras.main.width / 2,
+            10,
+            "Click to throw ball for pet to play, double click to cancel",
+            {
+              fontSize: "10px",
+              color: "#fff",
+              fontFamily: UI_FONT,
+              stroke: "#000",
+              strokeThickness: 3,
+              align: "center",
+            }
+          )
+          .setOrigin(0.5, 0);
+      } else {
+        this.dropHintText.setText(
+          "Click to throw ball for pet to play, double click to cancel"
+        );
+        this.dropHintText.setY(20);
+        this.dropHintText.setVisible(true);
+      }
+    });
+
     this.scene.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
       // Handle broom usage
       if (this.isUsingBroom) {
@@ -198,6 +247,64 @@ export class InputManager {
             } else {
               this.notificationUI.showNotification(
                 "🧹 Bought broom! No poop found at this location",
+                pointer.x,
+                pointer.y
+              );
+            }
+          } else {
+            this.notificationUI.showNotification(
+              "You do not have enough NOM tokens!",
+              pointer.x,
+              pointer.y
+            );
+          }
+        }
+
+        return;
+      }
+
+      // Handle ball usage
+      if (this.isUsingBall) {
+        // Check if clicking on ball icon (ignore)
+        const ballIconBounds = this.shopUI.getBallIcon().getBounds();
+        if (
+          Phaser.Geom.Rectangle.Contains(ballIconBounds, pointer.x, pointer.y)
+        ) {
+          return;
+        }
+
+        const currentTime = Date.now();
+        const timeDiff = currentTime - lastClickTime;
+        lastClickTime = currentTime;
+
+        if (timeDiff < DOUBLE_CLICK_THRESHOLD) {
+          // Double click detected - exit ball mode
+          exitBallMode();
+          return;
+        }
+
+        // Single click - try to throw ball at clicked location
+        const hasInventory = this.petManager.getToyInventory() > 0;
+
+        if (hasInventory) {
+          // Use ball at clicked location
+          const success = this.petManager.useBall(pointer.x, pointer.y);
+          if (success) {
+            this.notificationUI.showNotification(
+              "🎾 Ball thrown! Pet will play with it!",
+              pointer.x,
+              pointer.y
+            );
+          }
+        } else {
+          // Try to buy ball first
+          const success = this.petManager.buyBall();
+          if (success) {
+            // Use ball immediately after buying
+            const ballUsed = this.petManager.useBall(pointer.x, pointer.y);
+            if (ballUsed) {
+              this.notificationUI.showNotification(
+                "🎾 Bought ball and threw it! Pet will play!",
                 pointer.x,
                 pointer.y
               );
