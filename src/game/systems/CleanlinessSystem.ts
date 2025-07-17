@@ -1,5 +1,7 @@
 import { Pet } from "../entities/Pet";
 import { GAME_MECHANICS } from "../constants/gameConstants";
+import { gameConfigManager } from "@/game/configs/gameConfig";
+import { useUserStore } from "@/store/userStore";
 
 // Cleanliness states
 export const CleanlinessState = {
@@ -21,10 +23,11 @@ export function getCleanlinessState(
 }
 
 export class CleanlinessSystem {
-  // Public properties - chỉ quản lý poop objects, cleanliness thuộc về Pet
+  // Public properties - quản lý poop objects và cleaning inventory
   public poopObjects: Phaser.GameObjects.Sprite[] = [];
   public poopShadows: Phaser.GameObjects.Ellipse[] = [];
   public poopTimers: Phaser.Time.TimerEvent[] = [];
+  public cleaningInventory: number = 0; // Số lượng broom có trong inventory
 
   // Private properties
   private lastCleanlinessUpdate: number = 0;
@@ -184,6 +187,53 @@ export class CleanlinessSystem {
       return true;
     }
     return false;
+  }
+
+  // ===== CLEANING MANAGEMENT =====
+
+  buyBroom(broomId: string = "broom"): boolean {
+    const price = gameConfigManager.getCleaningPrice(broomId);
+    const userState = useUserStore.getState();
+
+    if (userState.spendToken(price)) {
+      this.cleaningInventory += 1;
+
+      console.log(
+        `🧹 Bought ${broomId} for ${price} tokens. Inventory: ${this.cleaningInventory}`
+      );
+      return true;
+    }
+
+    console.log(
+      `❌ Not enough tokens to buy ${broomId}. Need: ${price}, Have: ${userState.nomToken}`
+    );
+    return false;
+  }
+
+  useBroom(): boolean {
+    if (this.cleaningInventory > 0) {
+      this.cleaningInventory -= 1;
+
+      // Increase pet's cleanliness significantly when using broom
+      this.pet.cleanlinessLevel = Math.min(100, this.pet.cleanlinessLevel + 30);
+
+      // Clean all nearby poop automatically
+      this.cleanAllPoop();
+
+      console.log(
+        `🧹 Used broom! Cleanliness: ${this.pet.cleanlinessLevel}%, Inventory: ${this.cleaningInventory}`
+      );
+      return true;
+    }
+
+    console.log("❌ No brooms in inventory");
+    return false;
+  }
+
+  private cleanAllPoop(): void {
+    while (this.poopObjects.length > 0) {
+      this.removePoopAtIndex(0);
+    }
   }
 
   // ===== CLEANUP =====
