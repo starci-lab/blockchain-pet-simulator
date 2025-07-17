@@ -1,4 +1,3 @@
-import type { ColyseusClient } from "@/game/colyseus/client";
 import { Pet } from "../entities/Pet";
 import { GAME_MECHANICS } from "../constants/gameConstants";
 
@@ -22,8 +21,7 @@ export function getCleanlinessState(
 }
 
 export class CleanlinessSystem {
-  // Public properties
-  public cleanlinessLevel: number = 100;
+  // Public properties - chỉ quản lý poop objects, cleanliness thuộc về Pet
   public poopObjects: Phaser.GameObjects.Sprite[] = [];
   public poopShadows: Phaser.GameObjects.Ellipse[] = [];
   public poopTimers: Phaser.Time.TimerEvent[] = [];
@@ -33,12 +31,10 @@ export class CleanlinessSystem {
   private lastPoopCheck: number = 0;
   private scene: Phaser.Scene;
   private pet: Pet;
-  private colyseusClient: ColyseusClient;
 
-  constructor(scene: Phaser.Scene, pet: Pet, colyseusClient: ColyseusClient) {
+  constructor(scene: Phaser.Scene, pet: Pet) {
     this.scene = scene;
     this.pet = pet;
-    this.colyseusClient = colyseusClient;
   }
 
   // ===== UPDATE LOOP =====
@@ -53,25 +49,27 @@ export class CleanlinessSystem {
     if (!this.lastCleanlinessUpdate) this.lastCleanlinessUpdate = now;
 
     const elapsed = (now - this.lastCleanlinessUpdate) / 1000;
-    const decreaseRate = GAME_MECHANICS.CLEANLINESS_DECREASE_PER_HOUR / 3600;
+    const decreaseRate =
+      (GAME_MECHANICS.CLEANLINESS_DECREASE_PER_HOUR / 3600) *
+      this.pet.cleanlinessDecreaseMultiplier;
 
     if (elapsed > 0) {
-      this.cleanlinessLevel = Math.max(
+      this.pet.cleanlinessLevel = Math.max(
         0,
-        this.cleanlinessLevel - decreaseRate * elapsed
+        this.pet.cleanlinessLevel - decreaseRate * elapsed
       );
       this.lastCleanlinessUpdate = now;
     }
   }
 
   private checkPoopOpportunity() {
-    const cleanlinessState = getCleanlinessState(this.cleanlinessLevel);
+    const cleanlinessState = getCleanlinessState(this.pet.cleanlinessLevel);
     const shouldPoop =
       !this.pet.isChasing &&
       this.pet.currentActivity !== "chew" &&
       (cleanlinessState === CleanlinessState.Dirty ||
         cleanlinessState === CleanlinessState.Filthy) &&
-      this.cleanlinessLevel < GAME_MECHANICS.POOP_THRESHOLD;
+      this.pet.cleanlinessLevel < GAME_MECHANICS.POOP_THRESHOLD;
 
     if (shouldPoop) {
       const now = this.scene.time.now;
@@ -131,7 +129,7 @@ export class CleanlinessSystem {
     this.poopTimers.push(despawnTimer);
 
     // Reduce cleanliness level when pooping
-    this.cleanlinessLevel = Math.max(0, this.cleanlinessLevel - 5);
+    this.pet.cleanlinessLevel = Math.max(0, this.pet.cleanlinessLevel - 5);
   }
 
   private removePoopAtIndex(index: number) {
@@ -181,7 +179,7 @@ export class CleanlinessSystem {
       this.removePoopAtIndex(poopIndex);
 
       // Increase cleanliness when cleaning poop
-      this.cleanlinessLevel = Math.min(100, this.cleanlinessLevel + 10);
+      this.pet.cleanlinessLevel = Math.min(100, this.pet.cleanlinessLevel + 10);
 
       return true;
     }
@@ -203,10 +201,10 @@ export class CleanlinessSystem {
   // ===== GETTERS =====
 
   getCleanlinessLevel(): number {
-    return this.cleanlinessLevel;
+    return this.pet.cleanlinessLevel;
   }
 
   getCleanlinessState(): CleanlinessState {
-    return getCleanlinessState(this.cleanlinessLevel);
+    return getCleanlinessState(this.pet.cleanlinessLevel);
   }
 }
