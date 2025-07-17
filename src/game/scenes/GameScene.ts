@@ -2,7 +2,8 @@ import { SceneName } from "@/constants/scene";
 import {
   loadChogAssets,
   loadBackgroundAssets,
-  loadFoodAssets
+  loadFoodAssets,
+  loadPoopAssets,
 } from "@/game/load";
 import Phaser from "phaser";
 import { GameUI } from "@/game/ui/GameUI";
@@ -28,6 +29,7 @@ export class GameScene extends Phaser.Scene {
     loadChogAssets(this);
     // loadBackgroundAssets(this);
     loadFoodAssets(this);
+    loadPoopAssets(this);
   }
   async create() {
     // Disable browser context menu on right click for the whole scene
