@@ -61,10 +61,10 @@ export class Pet {
         { key: "dog-walk", frame: "chog_walk 4.aseprite" },
         { key: "dog-walk", frame: "chog_walk 5.aseprite" },
         { key: "dog-walk", frame: "chog_walk 6.aseprite" },
-        { key: "dog-walk", frame: "chog_walk 7.aseprite" }
+        { key: "dog-walk", frame: "chog_walk 7.aseprite" },
       ],
       frameRate: 8,
-      repeat: -1
+      repeat: -1,
     });
 
     // Sleep animations
@@ -76,10 +76,10 @@ export class Pet {
         { key: "dog-sleep", frame: "chog_sleep 2.aseprite" },
         { key: "dog-sleep", frame: "chog_sleep 3.aseprite" },
         { key: "dog-sleep", frame: "chog_sleep 4.aseprite" },
-        { key: "dog-sleep", frame: "chog_sleep 5.aseprite" }
+        { key: "dog-sleep", frame: "chog_sleep 5.aseprite" },
       ],
       frameRate: 3,
-      repeat: 14
+      repeat: 14,
     });
 
     this.scene.anims.create({
@@ -90,10 +90,10 @@ export class Pet {
         { key: "dog-sleep", frame: "chog_sleep 2.aseprite" },
         { key: "dog-sleep", frame: "chog_sleep 3.aseprite" },
         { key: "dog-sleep", frame: "chog_sleep 4.aseprite" },
-        { key: "dog-sleep", frame: "chog_sleep 5.aseprite" }
+        { key: "dog-sleep", frame: "chog_sleep 5.aseprite" },
       ],
       frameRate: 3,
-      repeat: -1
+      repeat: -1,
     });
 
     // Play animations
@@ -114,10 +114,10 @@ export class Pet {
         { key: "dog-play", frame: "chog_idleplay 11.aseprite" },
         { key: "dog-play", frame: "chog_idleplay 12.aseprite" },
         { key: "dog-play", frame: "chog_idleplay 13.aseprite" },
-        { key: "dog-play", frame: "chog_idleplay 14.aseprite" }
+        { key: "dog-play", frame: "chog_idleplay 14.aseprite" },
       ],
       frameRate: 10,
-      repeat: 1
+      repeat: 1,
     });
 
     this.scene.anims.create({
@@ -137,10 +137,10 @@ export class Pet {
         { key: "dog-play", frame: "chog_idleplay 11.aseprite" },
         { key: "dog-play", frame: "chog_idleplay 12.aseprite" },
         { key: "dog-play", frame: "chog_idleplay 13.aseprite" },
-        { key: "dog-play", frame: "chog_idleplay 14.aseprite" }
+        { key: "dog-play", frame: "chog_idleplay 14.aseprite" },
       ],
       frameRate: 10,
-      repeat: -1
+      repeat: -1,
     });
 
     // Chew animations
@@ -152,10 +152,10 @@ export class Pet {
         { key: "dog-chew", frame: "chog_chew 2.aseprite" },
         { key: "dog-chew", frame: "chog_chew 3.aseprite" },
         { key: "dog-chew", frame: "chog_chew 4.aseprite" },
-        { key: "dog-chew", frame: "chog_chew 5.aseprite" }
+        { key: "dog-chew", frame: "chog_chew 5.aseprite" },
       ],
       frameRate: 6,
-      repeat: 1
+      repeat: 1,
     });
 
     this.scene.anims.create({
@@ -166,10 +166,10 @@ export class Pet {
         { key: "dog-chew", frame: "chog_chew 2.aseprite" },
         { key: "dog-chew", frame: "chog_chew 3.aseprite" },
         { key: "dog-chew", frame: "chog_chew 4.aseprite" },
-        { key: "dog-chew", frame: "chog_chew 5.aseprite" }
+        { key: "dog-chew", frame: "chog_chew 5.aseprite" },
       ],
       frameRate: 6,
-      repeat: -1
+      repeat: -1,
     });
   }
 
