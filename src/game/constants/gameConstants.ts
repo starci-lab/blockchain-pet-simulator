@@ -10,6 +10,12 @@ export const GAME_LAYOUT = {
   FOOD_WIDTH: 30, // Food sprite width (approximate)
   FOOD_HEIGHT: 30, // Food sprite height (approximate)
   FOOD_SCALE: 1.5, // Food sprite scale multiplier
+  BALL_WIDTH: 20, // Ball sprite width (approximate)
+  BALL_HEIGHT: 20, // Ball sprite height (approximate)
+  BALL_SCALE: 0.01, // Ball sprite scale multiplier
+  POOP_WIDTH: 25, // Poop sprite width (approximate)
+  POOP_HEIGHT: 25, // Poop sprite height (approximate)
+  POOP_SCALE: 0.1, // Poop sprite scale multiplier
 } as const;
 
 // Calculated constants based on layout
@@ -28,6 +34,22 @@ export const CALCULATED_CONSTANTS = {
   },
   get SCALED_FOOD_HEIGHT() {
     return GAME_LAYOUT.FOOD_HEIGHT * GAME_LAYOUT.FOOD_SCALE;
+  },
+
+  // Ball dimensions after scaling
+  get SCALED_BALL_WIDTH() {
+    return GAME_LAYOUT.BALL_WIDTH * GAME_LAYOUT.BALL_SCALE;
+  },
+  get SCALED_BALL_HEIGHT() {
+    return GAME_LAYOUT.BALL_HEIGHT * GAME_LAYOUT.BALL_SCALE;
+  },
+
+  // Poop dimensions after scaling
+  get SCALED_POOP_WIDTH() {
+    return GAME_LAYOUT.POOP_WIDTH * GAME_LAYOUT.POOP_SCALE;
+  },
+  get SCALED_POOP_HEIGHT() {
+    return GAME_LAYOUT.POOP_HEIGHT * GAME_LAYOUT.POOP_SCALE;
   },
 } as const;
 
@@ -48,6 +70,12 @@ export const GAME_MECHANICS = {
   POOP_CHECK_INTERVAL: 5000, // Interval between poop opportunity checks (ms)
   POOP_THRESHOLD: 50, // Cleanliness level below which pet may poop
   POOP_DESPAWN_TIME: 60000, // Time before poop auto-despawns (ms) - 1 minute
+
+  // Happiness system constants
+  HAPPINESS_UPDATE_INTERVAL: 5000, // Interval between happiness updates (ms)
+  HAPPINESS_DECREASE_RATE: 20.0, // Happiness decrease per update (increased from 0.2)
+  HAPPINESS_INCREASE_AMOUNT: 25, // Happiness gained when playing with ball
+  BALL_LIFETIME: 30000, // Time before ball auto-despawns (ms) - 30 seconds
 } as const;
 
 // Helper functions for game positioning
@@ -76,6 +104,25 @@ export const GamePositioning = {
     return cameraHeight - GAME_LAYOUT.FOOD_GROUND_OFFSET;
   },
 
+  // Get ball drop Y position (ball drops slightly above final position)
+  getBallDropY(cameraHeight: number): number {
+    return (
+      cameraHeight -
+      GAME_LAYOUT.FOOD_GROUND_OFFSET -
+      GAME_LAYOUT.FOOD_DROP_HEIGHT
+    );
+  },
+
+  // Get ball final Y position (ball sits on ground)
+  getBallFinalY(cameraHeight: number): number {
+    return cameraHeight - GAME_LAYOUT.FOOD_GROUND_OFFSET;
+  },
+
+  // Get poop spawn Y position (poop sits on ground)
+  getPoopY(cameraHeight: number): number {
+    return cameraHeight - GAME_LAYOUT.FOOD_GROUND_OFFSET;
+  },
+
   // Get pet boundary limits
   getPetBoundaries(cameraWidth: number) {
     const halfWidth = CALCULATED_CONSTANTS.SCALED_PET_WIDTH / 2;
@@ -95,6 +142,26 @@ export const GamePositioning = {
       maxX: cameraWidth - halfWidth,
     };
     // console.log(`Food boundaries: [${bounds.minX.toFixed(1)}, ${bounds.maxX.toFixed(1)}], camera: ${cameraWidth}`)
+    return bounds;
+  },
+
+  // Get ball boundary limits
+  getBallBoundaries(cameraWidth: number) {
+    const halfWidth = CALCULATED_CONSTANTS.SCALED_BALL_WIDTH / 2;
+    const bounds = {
+      minX: halfWidth,
+      maxX: cameraWidth - halfWidth,
+    };
+    return bounds;
+  },
+
+  // Get poop boundary limits
+  getPoopBoundaries(cameraWidth: number) {
+    const halfWidth = CALCULATED_CONSTANTS.SCALED_POOP_WIDTH / 2;
+    const bounds = {
+      minX: halfWidth,
+      maxX: cameraWidth - halfWidth,
+    };
     return bounds;
   },
 } as const;
