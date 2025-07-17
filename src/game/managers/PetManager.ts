@@ -1,17 +1,19 @@
 import { Pet } from "@/game/entities/Pet";
 import { FeedingSystem } from "@/game/systems/FeedingSystem";
+import { CleanlinessSystem } from "@/game/systems/CleanlinessSystem";
 import { MovementSystem } from "@/game/systems/MovementSystem";
 import { ActivitySystem } from "@/game/systems/ActivitySystem";
 import { ColyseusClient } from "@/game/colyseus/client";
 import {
   GamePositioning,
-  GAME_MECHANICS
+  GAME_MECHANICS,
 } from "@/game/constants/gameConstants";
 
 export interface PetData {
   id: string;
   pet: Pet;
   feedingSystem: FeedingSystem;
+  cleanlinessSystem: CleanlinessSystem;
   movementSystem: MovementSystem;
   activitySystem: ActivitySystem;
 }
@@ -56,12 +58,19 @@ export class PetManager {
       pet,
       this.colyseusClient
     );
+    const cleanlinessSystem = new CleanlinessSystem(
+      this.scene,
+      pet,
+      this.colyseusClient
+    );
+
     const petData: PetData = {
       id: petId,
       pet,
       feedingSystem,
+      cleanlinessSystem,
       movementSystem,
-      activitySystem
+      activitySystem,
     };
     pet.onStopChasing = () => {
       this.releaseFoodTarget(petId);
@@ -94,7 +103,7 @@ export class PetManager {
         petType,
         isBuyPet: true,
         x,
-        y
+        y,
       });
     }
   }
@@ -108,13 +117,14 @@ export class PetManager {
     if (this.colyseusClient?.isConnected()) {
       console.log(`📤 Sending remove-pet message to server for ${petId}`);
       this.colyseusClient.sendMessage("remove_pet", {
-        petId: petId
+        petId: petId,
       });
     }
 
     // Cleanup pet and systems
     petData.pet.destroy();
     petData.feedingSystem.destroy();
+    petData.cleanlinessSystem.destroy();
 
     this.pets.delete(petId);
 
@@ -314,6 +324,7 @@ export class PetManager {
       // Update activity and feeding
       petData.activitySystem.update();
       petData.feedingSystem.update();
+      petData.cleanlinessSystem.update();
 
       // Sync with server if activity or position changed significantly
       const currentActivity = petData.pet.currentActivity;
@@ -425,9 +436,9 @@ export class PetManager {
           scaleX: 1.7,
           scaleY: 1.2,
           duration: 100,
-          yoyo: true
+          yoyo: true,
         });
-      }
+      },
     });
 
     // Add shadow effect
@@ -444,7 +455,7 @@ export class PetManager {
       scaleX: 1.3,
       alpha: 0.5,
       duration: 500,
-      ease: "Power2.easeOut"
+      ease: "Power2.easeOut",
     });
 
     this.sharedDroppedFood.push(food as any);
@@ -514,7 +525,7 @@ export class PetManager {
       ease: "Power2.easeIn",
       onComplete: () => {
         food.destroy();
-      }
+      },
     });
 
     this.scene.tweens.add({
@@ -523,7 +534,7 @@ export class PetManager {
       duration: 300,
       onComplete: () => {
         shadow.destroy();
-      }
+      },
     });
 
     // Remove from arrays
@@ -759,14 +770,14 @@ export class PetManager {
       isActive: petData.id === this.activePetId,
       hungerLevel: petData.feedingSystem.hungerLevel,
       currentActivity: petData.pet.currentActivity,
-      foodInventory: petData.feedingSystem.foodInventory
+      foodInventory: petData.feedingSystem.foodInventory,
     }));
 
     return {
       activePetId: this.activePetId,
       totalPets: this.pets.size,
       pets: stats,
-      totalFoodInventory: this.getFoodInventory()
+      totalFoodInventory: this.getFoodInventory(),
     };
   }
   // Cleanup all pets
@@ -780,6 +791,7 @@ export class PetManager {
     for (const petData of this.pets.values()) {
       petData.pet.destroy();
       petData.feedingSystem.destroy();
+      petData.cleanlinessSystem.destroy();
     }
     this.pets.clear();
     this.activePetId = null;
@@ -811,7 +823,7 @@ export class PetManager {
       callback: () => {
         this.performSafetyCheck();
       },
-      loop: true
+      loop: true,
     });
   }
 
