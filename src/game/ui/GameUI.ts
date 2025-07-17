@@ -1,5 +1,6 @@
 import { PetManager } from "@/game/managers/PetManager";
 import { FeedingUI } from "./components/FeedingUI";
+import { CleanlinessUI } from "./components/CleanlinessUI";
 import { TokenUI } from "./components/TokenUI";
 import { ShopUI } from "./components/ShopUI";
 import { NotificationUI } from "./components/NotificationUI";
@@ -14,6 +15,7 @@ export class GameUI {
 
   // UI Components
   private feedingUI: FeedingUI;
+  private cleanlinessUI: CleanlinessUI;
   private tokenUI: TokenUI;
   private shopUI: ShopUI;
   private notificationUI: NotificationUI;
@@ -30,6 +32,7 @@ export class GameUI {
     // Initialize UI components
     this.notificationUI = new NotificationUI(scene);
     this.feedingUI = new FeedingUI(scene, petManager);
+    this.cleanlinessUI = new CleanlinessUI(scene, petManager);
     this.tokenUI = new TokenUI(scene);
     this.shopUI = new ShopUI(scene, petManager, this.notificationUI);
     this.petShopModal = new PetShopModal(
@@ -50,6 +53,7 @@ export class GameUI {
 
     // Create all UI components
     this.feedingUI.create();
+    this.cleanlinessUI.create();
     this.tokenUI.create();
     this.shopUI.create();
     this.createBuyPetButton();
@@ -82,7 +86,7 @@ export class GameUI {
         color: "#ffffff",
         fontStyle: "bold",
         fontFamily: "monospace",
-        align: "center"
+        align: "center",
       })
       .setOrigin(0.5);
 
@@ -111,6 +115,7 @@ export class GameUI {
   // Update all UI components
   updateUI() {
     this.feedingUI.update();
+    this.cleanlinessUI.update();
     this.tokenUI.update();
     this.shopUI.updateTokenUI();
     this.shopUI.updatePriceDisplay();
