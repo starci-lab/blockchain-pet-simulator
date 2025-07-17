@@ -759,6 +759,28 @@ export class PetManager {
     return activePet?.feedingSystem.foodInventory || 0;
   }
 
+  // Cleaning management methods
+  buyBroom(broomId: string = "broom"): boolean {
+    const activePet = this.getActivePet();
+    if (activePet) {
+      return activePet.cleanlinessSystem.buyBroom(broomId);
+    }
+    return false;
+  }
+
+  useBroom(): boolean {
+    const activePet = this.getActivePet();
+    if (activePet) {
+      return activePet.cleanlinessSystem.useBroom();
+    }
+    return false;
+  }
+
+  getCleaningInventory(): number {
+    const activePet = this.getActivePet();
+    return activePet?.cleanlinessSystem.cleaningInventory || 0;
+  }
+
   // Get stats for UI
   getPetStats() {
     const stats = this.getAllPets().map((petData) => ({
