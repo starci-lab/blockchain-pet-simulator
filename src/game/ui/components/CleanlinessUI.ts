@@ -63,27 +63,29 @@ export class CleanlinessUI {
   }
 
   private createPetCleanlinessUI(petData: PetData, index: number) {
-    const yOffset = 100 + index * 25; // 25px between each pet's UI
+    // Horizontal layout: each pet gets space horizontally
+    const baseX = 10 + index * 200; // 200px spacing between each pet's UI horizontally
+    const baseY = 100; // Fixed Y position for all pets
 
     // Pet name text
     const nameText = this.scene.add.text(
-      10,
-      yOffset,
+      baseX,
+      baseY,
       `Pet ${petData.id.slice(-4)}:`, // Show last 4 characters of ID
       {
-        fontSize: "14px",
+        fontSize: "12px", // Smaller font for horizontal layout
         color: "#666666",
         backgroundColor: "transparent",
         padding: { x: UI_PADDING, y: 2 },
       }
     );
 
-    // Cleanliness bar for this pet
+    // Cleanliness bar for this pet (positioned below the name)
     const cleanlinessBar = this.scene.add
       .rectangle(
-        90, // Position after the name text
-        yOffset + 7, // Center with text
-        petData.pet.cleanlinessLevel || 100,
+        baseX, // Align with name text
+        baseY + 20, // Position below name text
+        Math.max(petData.pet.cleanlinessLevel || 100, 10), // Minimum width of 10px
         8,
         0x00aaff // Light blue color for cleanliness
       )
@@ -102,7 +104,9 @@ export class CleanlinessUI {
       const elements = this.petCleanlinessElements.get(petData.id);
       if (elements && petData.pet) {
         const cleanlinessLevel = petData.pet.cleanlinessLevel;
-        elements.cleanlinessBar.setSize(cleanlinessLevel, 8);
+        // Set minimum width to ensure bar is always visible
+        const barWidth = Math.max(cleanlinessLevel, 10);
+        elements.cleanlinessBar.setSize(barWidth, 8);
 
         // Change color based on cleanliness level
         let color = 0x00aaff; // Blue for clean
