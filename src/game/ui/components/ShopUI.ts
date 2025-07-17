@@ -19,8 +19,11 @@ export class ShopUI {
   private foodPriceText!: Phaser.GameObjects.Text;
   private broomIcon!: Phaser.GameObjects.Image;
   private broomPriceText!: Phaser.GameObjects.Text;
+  private ballIcon!: Phaser.GameObjects.Image;
+  private ballPriceText!: Phaser.GameObjects.Text;
   private onFoodIconClick?: () => void;
   private onBroomIconClick?: () => void;
+  private onBallIconClick?: () => void;
 
   constructor(
     scene: Phaser.Scene,
@@ -144,6 +147,48 @@ export class ShopUI {
       }
     });
 
+    // Ball icon
+    const ballIconX = iconX - 120; // Position to the left of broom icon
+    const ballIconY = iconY;
+    this.ballIcon = this.scene.add
+      .image(ballIconX, ballIconY, "ball")
+      .setDisplaySize(FOOD_ICON_SIZE, FOOD_ICON_SIZE)
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true });
+
+    // Ball price
+    const ballPrice = gameConfigManager.getToyPrice("ball");
+    this.ballPriceText = this.scene.add
+      .text(ballIconX, ballIconY + 22, ballPrice.toString(), {
+        fontSize: "14px",
+        color: TOKEN_TEXT_COLOR,
+        fontStyle: "bold",
+        fontFamily: UI_FONT,
+      })
+      .setOrigin(0.5, 0);
+
+    // Ball coin icon
+    this.scene.add
+      .text(ballIconX + 16, ballIconY + 22, "🪙", { fontSize: "14px" })
+      .setOrigin(0.5, 0);
+
+    // Ball icon click handler
+    this.ballIcon.on("pointerdown", () => {
+      const currentPrice = gameConfigManager.getToyPrice("ball");
+      const hasInventory = this.petManager.getToyInventory() > 0;
+      const hasTokens = useUserStore.getState().nomToken >= currentPrice;
+
+      if (hasInventory || hasTokens) {
+        if (this.onBallIconClick) {
+          this.onBallIconClick();
+        }
+      } else {
+        this.notificationUI.showNotification(
+          "You do not have enough NOM tokens!"
+        );
+      }
+    });
+
     console.log("✅ Mini Shop created successfully");
   }
 
@@ -161,6 +206,10 @@ export class ShopUI {
       const currentPrice = gameConfigManager.getCleaningPrice("broom");
       this.broomPriceText.setText(currentPrice.toString());
     }
+    if (this.ballPriceText) {
+      const currentPrice = gameConfigManager.getToyPrice("ball");
+      this.ballPriceText.setText(currentPrice.toString());
+    }
   }
 
   setFoodDropState(isDropping: boolean) {
@@ -173,6 +222,11 @@ export class ShopUI {
     this.broomPriceText.setAlpha(isUsing ? 0.6 : 1);
   }
 
+  setBallUseState(isUsing: boolean) {
+    this.ballIcon.setAlpha(isUsing ? 0.6 : 1);
+    this.ballPriceText.setAlpha(isUsing ? 0.6 : 1);
+  }
+
   setOnFoodIconClick(callback: () => void) {
     this.onFoodIconClick = callback;
   }
@@ -181,11 +235,19 @@ export class ShopUI {
     this.onBroomIconClick = callback;
   }
 
+  setOnBallIconClick(callback: () => void) {
+    this.onBallIconClick = callback;
+  }
+
   getFoodIcon() {
     return this.foodIcon;
   }
 
   getBroomIcon() {
     return this.broomIcon;
+  }
+
+  getBallIcon() {
+    return this.ballIcon;
   }
 }
