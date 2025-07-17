@@ -1,12 +1,14 @@
 import { Pet } from "@/game/entities/Pet";
 import { FeedingSystem } from "@/game/systems/FeedingSystem";
 import { CleanlinessSystem } from "@/game/systems/CleanlinessSystem";
+import { HappinessSystem } from "@/game/systems/HappinessSystem";
 import { MovementSystem } from "@/game/systems/MovementSystem";
 import { ActivitySystem } from "@/game/systems/ActivitySystem";
 import { ColyseusClient } from "@/game/colyseus/client";
 import {
   GamePositioning,
   GAME_MECHANICS,
+  GAME_LAYOUT,
 } from "@/game/constants/gameConstants";
 
 export interface PetData {
@@ -14,6 +16,7 @@ export interface PetData {
   pet: Pet;
   feedingSystem: FeedingSystem;
   cleanlinessSystem: CleanlinessSystem;
+  happinessSystem: HappinessSystem;
   movementSystem: MovementSystem;
   activitySystem: ActivitySystem;
 }
@@ -29,8 +32,16 @@ export class PetManager {
   private sharedFoodShadows: Phaser.GameObjects.Ellipse[] = [];
   private sharedFoodTimers: Phaser.Time.TimerEvent[] = [];
 
+  // Shared ball pool for all pets
+  private sharedDroppedBalls: Phaser.GameObjects.Sprite[] = [];
+  private sharedBallShadows: Phaser.GameObjects.Ellipse[] = [];
+  private sharedBallTimers: Phaser.Time.TimerEvent[] = [];
+
   // Track which pet is chasing which food to prevent conflicts
   private foodTargets: Map<Phaser.GameObjects.Sprite, string> = new Map(); // food -> petId
+
+  // Track which pet is chasing which ball to prevent conflicts
+  private ballTargets: Map<Phaser.GameObjects.Sprite, string> = new Map(); // ball -> petId
 
   // Safety timer to prevent pets getting stuck
   private safetyTimer?: Phaser.Time.TimerEvent;
@@ -59,12 +70,14 @@ export class PetManager {
       this.colyseusClient
     );
     const cleanlinessSystem = new CleanlinessSystem(this.scene, pet);
+    const happinessSystem = new HappinessSystem(this.scene, pet);
 
     const petData: PetData = {
       id: petId,
       pet,
       feedingSystem,
       cleanlinessSystem,
+      happinessSystem,
       movementSystem,
       activitySystem,
     };
@@ -212,7 +225,7 @@ export class PetManager {
       serverFood.y,
       "hamburger"
     );
-    foodSprite.setScale(0.5);
+    foodSprite.setScale(GAME_LAYOUT.FOOD_SCALE);
 
     // Create shadow
     const shadow = this.scene.add.ellipse(
@@ -301,7 +314,7 @@ export class PetManager {
       // Update movement
       const movementResult = petData.movementSystem.update();
 
-      // Check if pet reached shared food
+      // Check if pet reached shared food or ball
       if (
         movementResult &&
         "reachedTarget" in movementResult &&
@@ -309,18 +322,28 @@ export class PetManager {
         movementResult.targetX !== undefined &&
         movementResult.targetY !== undefined
       ) {
-        // Try to eat from shared food pool instead of individual food
-        this.checkSharedFoodEating(
+        // Try to eat from shared food pool
+        const ateFood = this.checkSharedFoodEating(
           petData,
           movementResult.targetX,
           movementResult.targetY
         );
+
+        // If didn't eat food, try to play with shared ball
+        if (!ateFood) {
+          this.checkSharedBallPlaying(
+            petData,
+            movementResult.targetX,
+            movementResult.targetY
+          );
+        }
       }
 
       // Update activity and feeding
       petData.activitySystem.update();
       petData.feedingSystem.update();
       petData.cleanlinessSystem.update();
+      petData.happinessSystem.update();
 
       // Sync with server if activity or position changed significantly
       const currentActivity = petData.pet.currentActivity;
@@ -417,7 +440,7 @@ export class PetManager {
       GamePositioning.getFoodDropY(cameraHeight),
       "hamburger"
     );
-    food.setScale(1.5);
+    food.setScale(GAME_LAYOUT.FOOD_SCALE);
     food.setAlpha(0.9);
 
     // Add drop animation effect
@@ -570,11 +593,187 @@ export class PetManager {
     console.log("Shared food removed at index:", index);
   }
 
+  // Remove shared ball at specific index
+  private removeSharedBallAtIndex(index: number): void {
+    if (index < 0 || index >= this.sharedDroppedBalls.length) return;
+
+    const ball = this.sharedDroppedBalls[index];
+    const shadow = this.sharedBallShadows[index];
+    const timer = this.sharedBallTimers[index];
+
+    // Check if any pet was chasing this specific ball
+    const chasingPetId = this.ballTargets.get(ball);
+    let wasBeingChased = false;
+    let chasingPetData: PetData | undefined;
+
+    if (chasingPetId) {
+      chasingPetData = this.pets.get(chasingPetId);
+      if (
+        chasingPetData &&
+        chasingPetData.pet.isChasing &&
+        chasingPetData.pet.chaseTarget
+      ) {
+        const distance = Phaser.Math.Distance.Between(
+          chasingPetData.pet.chaseTarget.x,
+          chasingPetData.pet.chaseTarget.y,
+          ball.x,
+          ball.y
+        );
+        wasBeingChased = distance < 10;
+      }
+    }
+
+    // Remove from ball targets tracking
+    this.ballTargets.delete(ball);
+
+    // Destroy game objects
+    ball.destroy();
+    timer?.destroy();
+
+    // Fade out shadow
+    this.scene.tweens.add({
+      targets: shadow,
+      alpha: 0,
+      duration: 300,
+      onComplete: () => {
+        shadow.destroy();
+      },
+    });
+
+    // Remove from arrays
+    this.sharedDroppedBalls.splice(index, 1);
+    this.sharedBallShadows.splice(index, 1);
+    this.sharedBallTimers.splice(index, 1);
+
+    // Handle pet that was chasing this ball
+    if (wasBeingChased && chasingPetData) {
+      console.log(
+        `🎾 Pet ${chasingPetData.id} was chasing ball that disappeared, handling gracefully`
+      );
+
+      // Stop chasing immediately and increase happiness (played with ball)
+      chasingPetData.pet.stopChasing();
+      chasingPetData.pet.happinessLevel +=
+        GAME_MECHANICS.HAPPINESS_INCREASE_AMOUNT;
+      chasingPetData.pet.happinessLevel = Math.min(
+        100,
+        chasingPetData.pet.happinessLevel
+      );
+
+      // Quick transition to avoid stuttering
+      this.scene.time.delayedCall(30, () => {
+        if (
+          chasingPetData.pet.happinessLevel < 100 &&
+          this.sharedDroppedBalls.length > 0
+        ) {
+          console.log(
+            `🔄 Pet ${chasingPetData.id} looking for another ball after playing`
+          );
+          this.checkPetShouldChaseBalls(chasingPetData);
+        } else {
+          console.log(
+            `🚶 Pet ${chasingPetData.id} returning to walk mode after playing`
+          );
+          chasingPetData.pet.isUserControlled = false;
+          chasingPetData.pet.setActivity("walk");
+        }
+      });
+    }
+
+    console.log("Shared ball removed at index:", index);
+  }
+
+  // Drop shared ball for all pets to chase
+  private dropSharedBall(x: number, _y?: number): void {
+    const cameraHeight = this.scene.cameras.main.height;
+    const cameraWidth = this.scene.cameras.main.width;
+    const ballFinalY = GamePositioning.getFoodFinalY(cameraHeight); // Use same Y as food
+
+    // Clamp ball position to pet boundaries
+    const petBounds = GamePositioning.getPetBoundaries(cameraWidth);
+    const clampedX = Phaser.Math.Clamp(x, petBounds.minX, petBounds.maxX);
+
+    console.log(
+      `🎾 Dropping ball: requested x=${x}, clamped x=${clampedX}, pet bounds=[${petBounds.minX}, ${petBounds.maxX}], finalY=${ballFinalY}`
+    );
+
+    const ball = this.scene.add.sprite(
+      clampedX,
+      GamePositioning.getFoodDropY(cameraHeight),
+      "ball"
+    );
+    ball.setScale(GAME_LAYOUT.BALL_SCALE);
+    ball.setAlpha(0.9);
+
+    // Add drop animation effect
+    this.scene.tweens.add({
+      targets: ball,
+      y: ballFinalY,
+      duration: 500,
+      ease: "Bounce.easeOut",
+      onComplete: () => {
+        this.scene.tweens.add({
+          targets: ball,
+          scaleX: GAME_LAYOUT.BALL_SCALE * 1.13,
+          scaleY: GAME_LAYOUT.BALL_SCALE * 0.8,
+          duration: 100,
+          yoyo: true,
+        });
+      },
+    });
+
+    // Add shadow effect
+    const shadow = this.scene.add.ellipse(
+      clampedX,
+      ballFinalY + 15,
+      20,
+      8,
+      0x000000,
+      0.3
+    );
+    this.scene.tweens.add({
+      targets: shadow,
+      scaleX: { from: 0.5, to: 1 },
+      scaleY: { from: 0.5, to: 1 },
+      duration: 500,
+      ease: "Power2",
+    });
+
+    this.sharedDroppedBalls.push(ball);
+    this.sharedBallShadows.push(shadow);
+
+    // Create timer to auto-despawn ball after 30s
+    const despawnTimer = this.scene.time.delayedCall(
+      GAME_MECHANICS.BALL_LIFETIME,
+      () => {
+        const currentBallIndex = this.sharedDroppedBalls.indexOf(ball);
+        if (currentBallIndex !== -1) {
+          this.removeSharedBallAtIndex(currentBallIndex);
+          console.log("Shared ball auto-despawned after 30 seconds");
+        }
+      }
+    );
+    this.sharedBallTimers.push(despawnTimer);
+
+    // Notify all pets about new ball
+    this.notifyPetsAboutBalls();
+
+    console.log(`Dropped shared ball at (${clampedX}, ${ballFinalY})`);
+  }
+
   // Notify all pets about new food available
   private notifyPetsAboutFood(): void {
     for (const petData of this.pets.values()) {
       // Check if pet should start chasing the new food
       this.checkPetShouldChaseSharedFood(petData);
+    }
+  }
+
+  // Notify all pets about new balls available
+  private notifyPetsAboutBalls(): void {
+    for (const petData of this.pets.values()) {
+      // Check if pet should start chasing the new ball
+      this.checkPetShouldChaseBalls(petData);
     }
   }
 
@@ -642,6 +841,69 @@ export class PetManager {
     }
   }
 
+  // Check if a specific pet should chase shared balls
+  private checkPetShouldChaseBalls(petData: PetData): void {
+    if (this.sharedDroppedBalls.length === 0) return;
+    if (petData.pet.isChasing || petData.pet.currentActivity === "chew") return;
+
+    // Check happiness level - pets chase balls when happiness is low
+    const happinessLevel = petData.pet.happinessLevel;
+    const needsHappiness = happinessLevel < 80; // Need happiness boost
+
+    console.log(
+      `🔍 Checking ball chase for Pet ${petData.id}: happiness=${happinessLevel}%, needs happiness=${needsHappiness}`
+    );
+
+    if (needsHappiness) {
+      // Find ball that is not being chased by another pet
+      const availableBalls = this.sharedDroppedBalls.filter(
+        (ball) => !this.ballTargets.has(ball)
+      );
+
+      console.log(
+        `🎾 Available balls count: ${availableBalls.length}/${this.sharedDroppedBalls.length}`
+      );
+
+      if (availableBalls.length > 0) {
+        // Find closest available ball
+        let closestBall: Phaser.GameObjects.Sprite | null = null;
+        let closestDistance = Infinity;
+
+        for (const ball of availableBalls) {
+          const distance = Phaser.Math.Distance.Between(
+            petData.pet.sprite.x,
+            petData.pet.sprite.y,
+            ball.x,
+            ball.y
+          );
+          if (distance < closestDistance) {
+            closestDistance = distance;
+            closestBall = ball;
+          }
+        }
+
+        if (closestBall) {
+          // Mark this ball as being chased by this pet
+          this.ballTargets.set(closestBall, petData.id);
+
+          petData.pet.startChasing(closestBall.x, closestBall.y);
+
+          console.log(`🏃 Pet ${petData.id} started chasing ball locally`);
+
+          console.log(
+            `🏃 Pet ${petData.id} started chasing closest shared ball at (${
+              closestBall.x
+            }, ${closestBall.y}), distance: ${closestDistance.toFixed(1)}`
+          );
+        }
+      } else {
+        console.log(
+          `⚠️ Pet ${petData.id} wants to chase ball but all balls are being chased`
+        );
+      }
+    }
+  }
+
   // Check if pet can eat shared food
   checkSharedFoodEating(petData: PetData, x: number, y: number): boolean {
     // Find and remove food from shared pool
@@ -675,6 +937,48 @@ export class PetManager {
 
       // Handle post-eating behavior
       this.handlePetPostEating(petData);
+
+      return true;
+    }
+
+    return false;
+  }
+
+  // Check if pet can play with shared ball
+  checkSharedBallPlaying(petData: PetData, x: number, y: number): boolean {
+    // Find and remove ball from shared pool
+    const ballIndex = this.sharedDroppedBalls.findIndex(
+      (ball) => Phaser.Math.Distance.Between(ball.x, ball.y, x, y) < 40
+    );
+
+    if (ballIndex !== -1) {
+      console.log(
+        `🎾 Pet ${petData.id} is playing with ball at index ${ballIndex}`
+      );
+
+      // Release ball target for this pet
+      this.releaseBallTarget(petData.id);
+
+      // Remove ball from shared pool
+      this.removeSharedBallAtIndex(ballIndex);
+
+      // Increase pet's happiness
+      const oldHappiness = petData.pet.happinessLevel;
+      petData.pet.happinessLevel = Math.min(
+        100,
+        petData.pet.happinessLevel + GAME_MECHANICS.HAPPINESS_INCREASE_AMOUNT
+      );
+
+      console.log(
+        `📈 Pet ${petData.id} happiness: ${oldHappiness} → ${petData.pet.happinessLevel}`
+      );
+
+      // Stop chasing and switch to play animation
+      petData.pet.stopChasing();
+      petData.pet.setActivity("idleplay");
+
+      // Handle post-playing behavior
+      this.handlePetPostPlaying(petData);
 
       return true;
     }
@@ -781,12 +1085,45 @@ export class PetManager {
     return activePet?.cleanlinessSystem.cleaningInventory || 0;
   }
 
+  // Happiness/Toy management methods
+  buyBall(_ballId: string = "ball"): boolean {
+    const activePet = this.getActivePet();
+    if (activePet) {
+      return activePet.happinessSystem.buyBall();
+    }
+    return false;
+  }
+
+  useBall(x: number, y: number): boolean {
+    const activePet = this.getActivePet();
+    if (activePet && activePet.happinessSystem.toyInventory > 0) {
+      activePet.happinessSystem.toyInventory--;
+      this.dropSharedBall(x, y);
+      return true;
+    } else {
+      // Try to buy ball first
+      const success = this.buyBall();
+      if (success) {
+        this.dropSharedBall(x, y);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  getToyInventory(): number {
+    const activePet = this.getActivePet();
+    return activePet?.happinessSystem.toyInventory || 0;
+  }
+
   // Get stats for UI
   getPetStats() {
     const stats = this.getAllPets().map((petData) => ({
       id: petData.id,
       isActive: petData.id === this.activePetId,
       hungerLevel: petData.feedingSystem.hungerLevel,
+      cleanlinessLevel: petData.pet.cleanlinessLevel,
+      happinessLevel: petData.pet.happinessLevel,
       currentActivity: petData.pet.currentActivity,
       foodInventory: petData.feedingSystem.foodInventory,
     }));
@@ -796,6 +1133,8 @@ export class PetManager {
       totalPets: this.pets.size,
       pets: stats,
       totalFoodInventory: this.getFoodInventory(),
+      totalCleaningInventory: this.getCleaningInventory(),
+      totalToyInventory: this.getToyInventory(),
     };
   }
   // Cleanup all pets
@@ -810,6 +1149,7 @@ export class PetManager {
       petData.pet.destroy();
       petData.feedingSystem.destroy();
       petData.cleanlinessSystem.destroy();
+      petData.happinessSystem.destroy();
     }
     this.pets.clear();
     this.activePetId = null;
@@ -996,5 +1336,52 @@ export class PetManager {
         `😔 Pet ${petData.id} no available food, returning to walk mode`
       );
     }
+  }
+
+  private releaseBallTarget(petId: string): void {
+    for (const [ball, chasingPetId] of this.ballTargets.entries()) {
+      if (chasingPetId === petId) {
+        this.ballTargets.delete(ball);
+        console.log(`Pet ${petId} released ball target`);
+        break;
+      }
+    }
+  }
+
+  private handlePetPostPlaying(petData: PetData): void {
+    console.log(
+      `⚽ Pet ${petData.id} started playing, will check for next action in 2 seconds`
+    );
+
+    // Force ensure pet is in correct state
+    petData.pet.isUserControlled = true; // Temporarily user controlled while playing
+
+    // Use fixed timer instead of animation event for reliability
+    this.scene.time.delayedCall(2000, () => {
+      // Force check and reset pet state regardless of current activity
+      if (
+        petData.pet.currentActivity === "idleplay" ||
+        petData.pet.isUserControlled
+      ) {
+        // Check if pet should continue chasing more balls or return to auto walk
+        if (
+          petData.pet.happinessLevel < 100 &&
+          this.sharedDroppedBalls.length > 0
+        ) {
+          // Reset state before checking for more balls
+          petData.pet.isUserControlled = false;
+          petData.pet.isChasing = false;
+          petData.pet.chaseTarget = null;
+
+          // Check for more balls to chase
+          this.checkPetShouldChaseBalls(petData);
+        } else {
+          // Force return to auto walk mode
+          this.forceReturnToWalk(petData);
+        }
+      } else {
+        this.forceReturnToWalk(petData);
+      }
+    });
   }
 }
