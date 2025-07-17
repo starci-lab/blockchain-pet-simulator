@@ -11,6 +11,10 @@ export class Pet {
   public lastEdgeHit: string = "";
   public groundY: number = 0; // Ground line Y position
 
+  // Cleanliness properties - thuộc tính riêng của mỗi pet
+  public cleanlinessLevel: number = 100;
+  public cleanlinessDecreaseMultiplier: number; // Tốc độ giảm riêng cho mỗi pet
+
   // Chasing properties
   public isChasing: boolean = false;
   public chaseTarget: { x: number; y: number } | null = null;
@@ -22,6 +26,9 @@ export class Pet {
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
+
+    // Khởi tạo tốc độ giảm cleanliness ngẫu nhiên cho mỗi pet (0.7x - 1.3x)
+    this.cleanlinessDecreaseMultiplier = 0.7 + Math.random() * 0.6;
   }
 
   create(x: number, y?: number) {
