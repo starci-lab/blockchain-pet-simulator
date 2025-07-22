@@ -34,10 +34,10 @@ export class InputManager {
     const DOUBLE_CLICK_THRESHOLD = 300; // ms
 
     // Helper function to exit all modes except the specified one
-    const exitAllModesExcept = (excludeMode?: 'food' | 'broom' | 'ball') => {
-      if (excludeMode !== 'food') exitFoodDropMode();
-      if (excludeMode !== 'broom') exitBroomMode();
-      if (excludeMode !== 'ball') exitBallMode();
+    const exitAllModesExcept = (excludeMode?: "food" | "broom" | "ball") => {
+      if (excludeMode !== "food") exitFoodDropMode();
+      if (excludeMode !== "broom") exitBroomMode();
+      if (excludeMode !== "ball") exitBallMode();
     };
 
     // Helper function to exit food dropping mode
@@ -85,8 +85,8 @@ export class InputManager {
 
     // Set up food icon click callback
     this.shopUI.setOnFoodIconClick(() => {
-      exitAllModesExcept('food'); // Exit all previous modes except food
-      
+      exitAllModesExcept("food"); // Exit all previous modes except food
+
       this.isDroppingFood = true;
       this.shopUI.setFoodDropState(true);
 
@@ -123,8 +123,8 @@ export class InputManager {
 
     // Set up broom icon click callback
     this.shopUI.setOnBroomIconClick(() => {
-      exitAllModesExcept('broom'); // Exit all previous modes except broom
-      
+      exitAllModesExcept("broom"); // Exit all previous modes except broom
+
       this.isUsingBroom = true;
       this.shopUI.setBroomUseState(true);
 
@@ -161,8 +161,8 @@ export class InputManager {
 
     // Set up ball icon click callback
     this.shopUI.setOnBallIconClick(() => {
-      exitAllModesExcept('ball'); // Exit all previous modes except ball
-      
+      exitAllModesExcept("ball"); // Exit all previous modes except ball
+
       this.isUsingBall = true;
       this.shopUI.setBallUseState(true);
 
@@ -242,8 +242,8 @@ export class InputManager {
             );
           }
         } else {
-          // Try to buy broom first
-          const success = this.petManager.buyBroom();
+          // Try to buy cleaning item first
+          const success = this.petManager.buyCleaning();
           if (success) {
             // Try to clean poop immediately after buying
             const cleaned = this.cleanPoopAtLocation(pointer.x, pointer.y);
@@ -253,13 +253,13 @@ export class InputManager {
                 activePet.cleanlinessSystem.cleaningInventory--;
               }
               this.notificationUI.showNotification(
-                "🧹 Bought broom and cleaned poop!",
+                "🧹 Bought brush and cleaned poop!",
                 pointer.x,
                 pointer.y
               );
             } else {
               this.notificationUI.showNotification(
-                "🧹 Bought broom! No poop found at this location",
+                "🧹 Bought brush! No poop found at this location",
                 pointer.x,
                 pointer.y
               );
