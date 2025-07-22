@@ -37,11 +37,18 @@ export class CleanlinessSystem {
   private scene: Phaser.Scene;
   private pet: Pet;
   private colyseusClient: ColyseusClient;
+  private petId: string;
 
-  constructor(scene: Phaser.Scene, pet: Pet, colyseusClient: ColyseusClient) {
+  constructor(
+    scene: Phaser.Scene,
+    pet: Pet,
+    colyseusClient: ColyseusClient,
+    petId: string
+  ) {
     this.scene = scene;
     this.pet = pet;
     this.colyseusClient = colyseusClient;
+    this.petId = petId;
   }
 
   // ===== UPDATE LOOP =====
@@ -187,6 +194,16 @@ export class CleanlinessSystem {
 
       // Increase cleanliness when cleaning poop
       this.cleanlinessLevel = Math.min(100, this.cleanlinessLevel + 10);
+
+      // Send cleaned pet event to server if connected
+      if (this.colyseusClient && this.colyseusClient.isConnected()) {
+        const userStore = useUserStore.getState();
+        this.colyseusClient.cleanedPet({
+          cleanliness_level: this.cleanlinessLevel,
+          pet_id: this.petId,
+          owner_id: userStore.addressWallet || "unknown",
+        });
+      }
 
       return true;
     }

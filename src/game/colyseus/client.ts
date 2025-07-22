@@ -496,6 +496,29 @@ export class ColyseusClient {
     this.sendMessage("get_inventory", {});
   }
 
+  // Handle pet eating food
+  eatedFood(data: { hunger_level: number; pet_id: string; owner_id: string }) {
+    this.sendMessage("eated_food", data);
+  }
+
+  // Handle pet being cleaned
+  cleanedPet(data: {
+    cleanliness_level: number;
+    pet_id: string;
+    owner_id: string;
+  }) {
+    this.sendMessage("cleaned_pet", data);
+  }
+
+  // Handle pet playing
+  playedPet(data: {
+    happiness_level: number;
+    pet_id: string;
+    owner_id: string;
+  }) {
+    this.sendMessage("played_pet", data);
+  }
+
   // ===== SYNC METHODS =====
 
   // Force sync all state from server

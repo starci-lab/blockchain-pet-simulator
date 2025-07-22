@@ -38,11 +38,18 @@ export class FeedingSystem {
   private scene: Phaser.Scene;
   private pet: Pet;
   private colyseusClient: ColyseusClient;
+  private petId: string;
 
-  constructor(scene: Phaser.Scene, pet: Pet, colyseusClient: ColyseusClient) {
+  constructor(
+    scene: Phaser.Scene,
+    pet: Pet,
+    colyseusClient: ColyseusClient,
+    petId: string
+  ) {
     this.scene = scene;
     this.pet = pet;
     this.colyseusClient = colyseusClient;
+    this.petId = petId;
   }
 
   // ===== UPDATE LOOP =====
@@ -225,6 +232,16 @@ export class FeedingSystem {
     if (foodIndex !== -1) {
       this.removeFoodAtIndex(foodIndex);
       this.hungerLevel = Math.min(100, this.hungerLevel + recovery);
+
+      // Send eated food event to server if connected
+      if (this.colyseusClient && this.colyseusClient.isConnected()) {
+        const userStore = useUserStore.getState();
+        this.colyseusClient.eatedFood({
+          hunger_level: this.hungerLevel,
+          pet_id: this.petId,
+          owner_id: userStore.addressWallet || "unknown",
+        });
+      }
 
       this.pet.stopChasing();
       this.pet.setActivity("chew");

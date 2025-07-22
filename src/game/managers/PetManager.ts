@@ -78,17 +78,20 @@ export class PetManager {
     const feedingSystem = new FeedingSystem(
       this.scene,
       pet,
-      this.colyseusClient
+      this.colyseusClient,
+      petId
     );
     const cleanlinessSystem = new CleanlinessSystem(
       this.scene,
       pet,
-      this.colyseusClient
+      this.colyseusClient,
+      petId
     );
     const happinessSystem = new HappinessSystem(
       this.scene,
       pet,
-      this.colyseusClient
+      this.colyseusClient,
+      petId
     );
 
     const petData: PetData = {
@@ -731,11 +734,8 @@ export class PetManager {
 
       // Stop chasing immediately and increase happiness (played with ball)
       chasingPetData.pet.stopChasing();
-      chasingPetData.happinessSystem.happinessLevel +=
-        GAME_MECHANICS.HAPPINESS_INCREASE_AMOUNT;
-      chasingPetData.happinessSystem.happinessLevel = Math.min(
-        100,
-        chasingPetData.happinessSystem.happinessLevel
+      chasingPetData.happinessSystem.playWithBall(
+        GAME_MECHANICS.HAPPINESS_INCREASE_AMOUNT
       );
 
       // Quick transition to avoid stuttering

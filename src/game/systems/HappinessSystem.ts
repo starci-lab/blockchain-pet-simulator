@@ -33,11 +33,18 @@ export class HappinessSystem {
   private scene: Phaser.Scene;
   private pet: Pet;
   private colyseusClient: ColyseusClient;
+  private petId: string;
 
-  constructor(scene: Phaser.Scene, pet: Pet, colyseusClient: ColyseusClient) {
+  constructor(
+    scene: Phaser.Scene,
+    pet: Pet,
+    colyseusClient: ColyseusClient,
+    petId: string
+  ) {
     this.scene = scene;
     this.pet = pet;
     this.colyseusClient = colyseusClient;
+    this.petId = petId;
   }
 
   // ===== UPDATE LOOP =====
@@ -105,6 +112,26 @@ export class HappinessSystem {
         `❌ Not enough tokens to buy ball. Need: ${ballPrice}, Have: ${userStore.nomToken}`
       );
       return false;
+    }
+  }
+
+  // ===== PLAY MECHANICS =====
+
+  playWithBall(happinessIncrease: number = 25): void {
+    // Increase happiness level
+    this.happinessLevel = Math.min(
+      100,
+      this.happinessLevel + happinessIncrease
+    );
+
+    // Send played pet event to server if connected
+    if (this.colyseusClient && this.colyseusClient.isConnected()) {
+      const userStore = useUserStore.getState();
+      this.colyseusClient.playedPet({
+        happiness_level: this.happinessLevel,
+        pet_id: this.petId,
+        owner_id: userStore.addressWallet || "unknown",
+      });
     }
   }
 
