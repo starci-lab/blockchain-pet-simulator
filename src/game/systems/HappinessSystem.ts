@@ -25,6 +25,7 @@ export function getHappinessState(happinessLevel: number): HappinessState {
 export class HappinessSystem {
   // Public properties - chỉ quản lý toy inventory, balls được quản lý bởi PetManager
   public toyInventory: number = 0; // Số lượng ball có trong inventory
+  public happinessLevel: number = 100; // Happiness level similar to hungerLevel in FeedingSystem
 
   // Private properties
   private lastHappinessUpdate: number = 0;
@@ -53,10 +54,10 @@ export class HappinessSystem {
     this.lastHappinessUpdate = now;
 
     // Giảm happiness level theo thời gian với multiplier riêng cho mỗi pet
-    this.pet.happinessLevel -=
+    this.happinessLevel -=
       GAME_MECHANICS.HAPPINESS_DECREASE_RATE *
       this.pet.happinessDecreaseMultiplier;
-    this.pet.happinessLevel = Math.max(0, this.pet.happinessLevel);
+    this.happinessLevel = Math.max(0, this.happinessLevel);
   }
 
   // ===== INVENTORY MANAGEMENT =====
@@ -71,16 +72,6 @@ export class HappinessSystem {
       return true;
     }
     return false;
-  }
-
-  // ===== PUBLIC UTILITIES =====
-
-  getHappinessLevel(): number {
-    return this.pet.happinessLevel;
-  }
-
-  getHappinessState(): HappinessState {
-    return getHappinessState(this.pet.happinessLevel);
   }
 
   // ===== CLEANUP =====

@@ -12,11 +12,9 @@ export class Pet {
   public groundY: number = 0; // Ground line Y position
 
   // Cleanliness properties - thuộc tính riêng của mỗi pet
-  public cleanlinessLevel: number = 100;
   public cleanlinessDecreaseMultiplier: number; // Tốc độ giảm riêng cho mỗi pet
 
   // Happiness properties - thuộc tính riêng của mỗi pet
-  public happinessLevel: number = 100;
   public happinessDecreaseMultiplier: number; // Tốc độ giảm riêng cho mỗi pet
 
   // Chasing properties
