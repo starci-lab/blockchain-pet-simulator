@@ -84,11 +84,7 @@ export class HappinessSystem {
       }
 
       console.log("💰 Tokens sufficient, sending purchase request to server");
-      this.colyseusClient.sendMessage("buy_food", {
-        itemType: "toys",
-        itemName: "ball",
-        quantity: 1,
-      });
+      this.colyseusClient.purchaseItem("toys", "ball", 1);
 
       return true; // Server will handle validation and update inventory
     } else {

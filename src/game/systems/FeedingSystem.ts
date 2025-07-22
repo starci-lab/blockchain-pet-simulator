@@ -106,11 +106,7 @@ export class FeedingSystem {
       }
 
       console.log("💰 Tokens sufficient, sending purchase request to server");
-      this.colyseusClient.sendMessage("buy_food", {
-        itemType: "food",
-        itemName: "hamburger",
-        quantity: 1,
-      });
+      this.colyseusClient.purchaseItem("food", foodId, 1);
 
       return true; // Server will handle validation and update inventory
     } else {

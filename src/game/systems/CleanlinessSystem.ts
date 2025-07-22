@@ -214,11 +214,7 @@ export class CleanlinessSystem {
       }
 
       console.log("💰 Tokens sufficient, sending purchase request to server");
-      this.colyseusClient.sendMessage("buy_food", {
-        itemType: "cleaning",
-        itemName: cleaningId,
-        quantity: 1,
-      });
+      this.colyseusClient.purchaseItem("cleaning", cleaningId, 1);
 
       return true; // Server will handle validation and update inventory
     } else {
