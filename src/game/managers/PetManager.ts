@@ -68,6 +68,11 @@ export class PetManager {
       this.handlePetClick(petId);
     });
 
+    // Set right-click callback to show pet details
+    pet.setOnPetRightClicked(() => {
+      this.handlePetRightClick(petId);
+    });
+
     const movementSystem = new MovementSystem(pet, this.scene);
     const activitySystem = new ActivitySystem(pet);
     const feedingSystem = new FeedingSystem(
@@ -202,13 +207,20 @@ export class PetManager {
         gameScene.gameUI.updateUI();
         console.log("🎨 UI updated after pet switch");
       }
+    }
+  }
 
-      // Show notification if available
-      if (gameScene.gameUI && gameScene.gameUI.showNotification) {
-        gameScene.gameUI.showNotification(`🎯 Switched to pet: ${petId}`);
+  // Handle pet right-click to show details modal
+  private handlePetRightClick(petId: string): void {
+    console.log(`🖱️ Pet ${petId} right-clicked - showing details`);
+
+    const petData = this.pets.get(petId);
+    if (petData) {
+      // Notify GameUI to show pet details modal
+      const gameScene = this.scene as any;
+      if (gameScene.gameUI && gameScene.gameUI.showPetDetailsModal) {
+        gameScene.gameUI.showPetDetailsModal(petData);
       }
-    } else {
-      console.warn(`❌ Failed to switch to pet: ${petId}`);
     }
   }
 
@@ -711,17 +723,17 @@ export class PetManager {
 
       // Stop chasing immediately and increase happiness (played with ball)
       chasingPetData.pet.stopChasing();
-      chasingPetData.pet.happinessLevel +=
+      chasingPetData.happinessSystem.happinessLevel +=
         GAME_MECHANICS.HAPPINESS_INCREASE_AMOUNT;
-      chasingPetData.pet.happinessLevel = Math.min(
+      chasingPetData.happinessSystem.happinessLevel = Math.min(
         100,
-        chasingPetData.pet.happinessLevel
+        chasingPetData.happinessSystem.happinessLevel
       );
 
       // Quick transition to avoid stuttering
       this.scene.time.delayedCall(30, () => {
         if (
-          chasingPetData.pet.happinessLevel < 100 &&
+          chasingPetData.happinessSystem.happinessLevel < 100 &&
           this.sharedDroppedBalls.length > 0
         ) {
           console.log(
@@ -905,7 +917,7 @@ export class PetManager {
     if (petData.pet.isChasing || petData.pet.currentActivity === "chew") return;
 
     // Check happiness level - pets chase balls when happiness is low
-    const happinessLevel = petData.pet.happinessLevel;
+    const happinessLevel = petData.happinessSystem.happinessLevel;
     const needsHappiness = happinessLevel < 80; // Need happiness boost
 
     console.log(
@@ -1021,14 +1033,15 @@ export class PetManager {
       this.removeSharedBallAtIndex(ballIndex);
 
       // Increase pet's happiness
-      const oldHappiness = petData.pet.happinessLevel;
-      petData.pet.happinessLevel = Math.min(
+      const oldHappiness = petData.happinessSystem.happinessLevel;
+      petData.happinessSystem.happinessLevel = Math.min(
         100,
-        petData.pet.happinessLevel + GAME_MECHANICS.HAPPINESS_INCREASE_AMOUNT
+        petData.happinessSystem.happinessLevel +
+          GAME_MECHANICS.HAPPINESS_INCREASE_AMOUNT
       );
 
       console.log(
-        `📈 Pet ${petData.id} happiness: ${oldHappiness} → ${petData.pet.happinessLevel}`
+        `📈 Pet ${petData.id} happiness: ${oldHappiness} → ${petData.happinessSystem.happinessLevel}`
       );
 
       // Stop chasing and switch to play animation
@@ -1180,8 +1193,8 @@ export class PetManager {
       id: petData.id,
       isActive: petData.id === this.activePetId,
       hungerLevel: petData.feedingSystem.hungerLevel,
-      cleanlinessLevel: petData.pet.cleanlinessLevel,
-      happinessLevel: petData.pet.happinessLevel,
+      cleanlinessLevel: petData.cleanlinessSystem.cleanlinessLevel,
+      happinessLevel: petData.happinessSystem.happinessLevel,
       currentActivity: petData.pet.currentActivity,
       foodInventory: petData.feedingSystem.foodInventory,
     }));
@@ -1423,7 +1436,7 @@ export class PetManager {
       ) {
         // Check if pet should continue chasing more balls or return to auto walk
         if (
-          petData.pet.happinessLevel < 100 &&
+          petData.happinessSystem.happinessLevel < 100 &&
           this.sharedDroppedBalls.length > 0
         ) {
           // Reset state before checking for more balls

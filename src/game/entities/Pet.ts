@@ -26,6 +26,7 @@ export class Pet {
 
   // Callback for when pet is clicked (to notify PetManager to switch active pet)
   public onPetClicked?: () => void;
+  public onPetRightClicked?: () => void;
 
   private scene: Phaser.Scene;
 
@@ -63,10 +64,19 @@ export class Pet {
 
     // Make pet clickable to switch active pet
     this.sprite.setInteractive();
-    this.sprite.on("pointerdown", () => {
-      console.log(`🖱️ Pet clicked`);
-      if (this.onPetClicked) {
-        this.onPetClicked();
+    this.sprite.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
+      console.log(`🖱️ Pet clicked with button: ${pointer.button}`);
+
+      if (pointer.button === 0) {
+        // Left click
+        if (this.onPetClicked) {
+          this.onPetClicked();
+        }
+      } else if (pointer.button === 2) {
+        // Right click
+        if (this.onPetRightClicked) {
+          this.onPetRightClicked();
+        }
       }
     });
 
@@ -307,6 +317,11 @@ export class Pet {
   // Set callback for when pet is clicked
   setOnPetClicked(callback: () => void): void {
     this.onPetClicked = callback;
+  }
+
+  // Set callback for when pet is right-clicked
+  setOnPetRightClicked(callback: () => void): void {
+    this.onPetRightClicked = callback;
   }
 
   // Cleanup method
