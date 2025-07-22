@@ -52,6 +52,13 @@ export interface ToyItem {
   rarity?: "common" | "rare" | "epic";
 }
 
+// API response interface
+interface ApiStoreItem {
+  name: string;
+  type: string;
+  cost_nom: number;
+}
+
 // Default local config (fallback)
 export const DEFAULT_GAME_CONFIG: GameConfig = {
   food: {
@@ -59,34 +66,40 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
       {
         id: "hamburger",
         name: "Hamburger",
-        price: 5,
+        price: 10,
         hungerRestore: 15,
         texture: "hamburger",
       },
       {
         id: "apple",
         name: "Apple",
-        price: 3,
+        price: 5,
         hungerRestore: 10,
         texture: "apple",
       },
       {
-        id: "bone",
-        name: "Bone",
-        price: 5,
-        hungerRestore: 12,
-        texture: "bone",
+        id: "fish",
+        name: "Fish",
+        price: 15,
+        hungerRestore: 20,
+        texture: "fish",
       },
-      // More items will be loaded from API
     ],
-    defaultPrice: 5,
+    defaultPrice: 10,
   },
   cleaning: {
     items: [
       {
-        id: "broom",
-        name: "Broom",
-        price: 10,
+        id: "soap",
+        name: "Soap",
+        price: 8,
+        cleanlinessRestore: 15,
+        texture: "soap",
+      },
+      {
+        id: "brush",
+        name: "Brush",
+        price: 12,
         cleanlinessRestore: 20,
         texture: "broom",
       },
@@ -98,12 +111,19 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
       {
         id: "ball",
         name: "Ball",
-        price: 8,
+        price: 20,
         happinessRestore: 25,
         texture: "ball",
       },
+      {
+        id: "rope",
+        name: "Rope",
+        price: 15,
+        happinessRestore: 20,
+        texture: "rope",
+      },
     ],
-    defaultPrice: 8,
+    defaultPrice: 17,
   },
   economy: {
     initialTokens: 100,
@@ -129,10 +149,10 @@ class GameConfigManager {
       console.log("📥 Loaded game config from API:", response.data);
 
       // Transform API response to match our GameConfig format
-      const storeItems = response.data;
+      const storeItems: ApiStoreItem[] = response.data;
       const foodItems: FoodItem[] = storeItems
-        .filter((item: any) => item.type === "food")
-        .map((item: any) => ({
+        .filter((item: ApiStoreItem) => item.type === "food")
+        .map((item: ApiStoreItem) => ({
           id: item.name.toLowerCase().replace(" ", "_"),
           name: item.name,
           price: item.cost_nom,
@@ -182,7 +202,7 @@ class GameConfigManager {
     return this.config.food.items.find((item) => item.id === foodId);
   }
 
-  getCleaningPrice(cleaningId: string = "broom"): number {
+  getCleaningPrice(cleaningId: string = "brush"): number {
     const cleaningItem = this.config.cleaning.items.find(
       (item) => item.id === cleaningId
     );
@@ -194,9 +214,7 @@ class GameConfigManager {
   }
 
   getToyPrice(toyId: string = "ball"): number {
-    const toyItem = this.config.toys.items.find(
-      (item) => item.id === toyId
-    );
+    const toyItem = this.config.toys.items.find((item) => item.id === toyId);
     return toyItem?.price || this.config.toys.defaultPrice;
   }
 
@@ -206,7 +224,7 @@ class GameConfigManager {
 
   getToyItems(): { [key: string]: ToyItem } {
     const toyItems: { [key: string]: ToyItem } = {};
-    this.config.toys.items.forEach(item => {
+    this.config.toys.items.forEach((item) => {
       toyItems[item.id] = item;
     });
     return toyItems;
