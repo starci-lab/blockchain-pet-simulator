@@ -26,14 +26,14 @@ export class FeedingUI {
         fontSize: "16px",
         color: "#333333",
         backgroundColor: "transparent", // Không cần nền
-        padding: { x: UI_PADDING, y: 4 }
+        padding: { x: UI_PADDING, y: 4 },
       }
     );
 
     // Không vẽ thanh nền hunger (đỏ) để nền trong suốt
     this.hungerBar = this.scene.add
       .rectangle(
-        10,
+        10, // X position - leftmost
         40,
         activePet?.feedingSystem.hungerLevel || 100,
         10,

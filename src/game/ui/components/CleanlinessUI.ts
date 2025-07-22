@@ -1,4 +1,4 @@
-import { PetManager, type PetData } from "@/game/managers/PetManager";
+import { PetManager } from "@/game/managers/PetManager";
 
 const UI_PADDING = 8;
 
@@ -6,13 +6,7 @@ export class CleanlinessUI {
   private scene: Phaser.Scene;
   private petManager: PetManager;
   private cleanlinessLabel!: Phaser.GameObjects.Text;
-  private petCleanlinessElements: Map<
-    string,
-    {
-      nameText: Phaser.GameObjects.Text;
-      cleanlinessBar: Phaser.GameObjects.Rectangle;
-    }
-  > = new Map();
+  private cleanlinessBar!: Phaser.GameObjects.Rectangle;
 
   constructor(scene: Phaser.Scene, petManager: PetManager) {
     this.scene = scene;
@@ -21,8 +15,8 @@ export class CleanlinessUI {
 
   create() {
     this.cleanlinessLabel = this.scene.add.text(
-      10,
-      70, // Position below hunger bar (hunger is at y=40)
+      150, // X position - middle
+      10, // Same Y as Food label
       "Cleanliness:",
       {
         fontSize: "16px",
@@ -32,106 +26,44 @@ export class CleanlinessUI {
       }
     );
 
-    // Create cleanliness UI for all existing pets
-    this.updateAllPetElements();
+    const activePet = this.petManager.getActivePet();
+    this.cleanlinessBar = this.scene.add
+      .rectangle(
+        150, // X position - middle
+        40, // Same Y as hunger bar
+        activePet?.cleanlinessSystem.cleanlinessLevel || 100,
+        10,
+        0x4caf50 // Green color for clean
+      )
+      .setOrigin(0, 0.5);
   }
 
   update() {
-    this.updateAllPetElements();
-    this.updatePetBars();
-  }
+    const activePet = this.petManager.getActivePet();
 
-  private updateAllPetElements() {
-    const allPets = this.petManager.getAllPets();
+    if (this.cleanlinessBar && activePet) {
+      const cleanlinessLevel = activePet.cleanlinessSystem.cleanlinessLevel;
+      this.cleanlinessBar.setSize(cleanlinessLevel, 10);
 
-    // Remove UI elements for pets that no longer exist
-    for (const [petId, elements] of this.petCleanlinessElements) {
-      const petStillExists = allPets.some((petData) => petData.id === petId);
-      if (!petStillExists) {
-        elements.nameText.destroy();
-        elements.cleanlinessBar.destroy();
-        this.petCleanlinessElements.delete(petId);
+      // Color coding based on cleanliness level
+      let barColor: number;
+      if (cleanlinessLevel >= 80) {
+        barColor = 0x4caf50; // Green - Very Clean
+      } else if (cleanlinessLevel >= 60) {
+        barColor = 0x8bc34a; // Light Green - Clean
+      } else if (cleanlinessLevel >= 40) {
+        barColor = 0xffeb3b; // Yellow - Neutral
+      } else if (cleanlinessLevel >= 20) {
+        barColor = 0xff9800; // Orange - Dirty
+      } else {
+        barColor = 0xf44336; // Red - Very Dirty
       }
+      this.cleanlinessBar.setFillStyle(barColor);
     }
-
-    // Create UI elements for new pets
-    allPets.forEach((petData, index) => {
-      if (!this.petCleanlinessElements.has(petData.id)) {
-        this.createPetCleanlinessUI(petData, index);
-      }
-    });
-  }
-
-  private createPetCleanlinessUI(petData: PetData, index: number) {
-    // Horizontal layout: each pet gets space horizontally
-    const baseX = 10 + index * 200; // 200px spacing between each pet's UI horizontally
-    const baseY = 100; // Fixed Y position for all pets
-
-    // Pet name text
-    const nameText = this.scene.add.text(
-      baseX,
-      baseY,
-      `Pet ${petData.id.slice(-4)}:`, // Show last 4 characters of ID
-      {
-        fontSize: "12px", // Smaller font for horizontal layout
-        color: "#666666",
-        backgroundColor: "transparent",
-        padding: { x: UI_PADDING, y: 2 },
-      }
-    );
-
-    // Cleanliness bar for this pet (positioned below the name)
-    const cleanlinessBar = this.scene.add
-      .rectangle(
-        baseX, // Align with name text
-        baseY + 20, // Position below name text
-        Math.max(petData.pet.cleanlinessLevel || 100, 10), // Minimum width of 10px
-        8,
-        0x00aaff // Light blue color for cleanliness
-      )
-      .setOrigin(0, 0.5);
-
-    this.petCleanlinessElements.set(petData.id, {
-      nameText,
-      cleanlinessBar,
-    });
-  }
-
-  private updatePetBars() {
-    const allPets = this.petManager.getAllPets();
-
-    allPets.forEach((petData) => {
-      const elements = this.petCleanlinessElements.get(petData.id);
-      if (elements && petData.pet) {
-        const cleanlinessLevel = petData.pet.cleanlinessLevel;
-        // Set minimum width to ensure bar is always visible
-        const barWidth = Math.max(cleanlinessLevel, 10);
-        elements.cleanlinessBar.setSize(barWidth, 8);
-
-        // Change color based on cleanliness level
-        let color = 0x00aaff; // Blue for clean
-        if (cleanlinessLevel < 30) {
-          color = 0xff4444; // Red for filthy
-        } else if (cleanlinessLevel < 50) {
-          color = 0xffaa00; // Orange for dirty
-        } else if (cleanlinessLevel < 80) {
-          color = 0xffff00; // Yellow for normal
-        }
-        elements.cleanlinessBar.setFillStyle(color);
-      }
-    });
   }
 
   destroy() {
-    // Clean up all pet UI elements
-    for (const [, elements] of this.petCleanlinessElements) {
-      elements.nameText.destroy();
-      elements.cleanlinessBar.destroy();
-    }
-    this.petCleanlinessElements.clear();
-
-    if (this.cleanlinessLabel) {
-      this.cleanlinessLabel.destroy();
-    }
+    this.cleanlinessLabel?.destroy();
+    this.cleanlinessBar?.destroy();
   }
 }
