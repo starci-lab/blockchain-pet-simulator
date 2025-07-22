@@ -2,6 +2,7 @@ import { Pet } from "../entities/Pet";
 import { GAME_MECHANICS, GAME_LAYOUT } from "../constants/gameConstants";
 import { gameConfigManager } from "@/game/configs/gameConfig";
 import { useUserStore } from "@/store/userStore";
+import type { ColyseusClient } from "@/game/colyseus/client";
 
 // Cleanliness states
 export const CleanlinessState = {
@@ -35,10 +36,12 @@ export class CleanlinessSystem {
   private lastPoopCheck: number = 0;
   private scene: Phaser.Scene;
   private pet: Pet;
+  private colyseusClient: ColyseusClient;
 
-  constructor(scene: Phaser.Scene, pet: Pet) {
+  constructor(scene: Phaser.Scene, pet: Pet, colyseusClient: ColyseusClient) {
     this.scene = scene;
     this.pet = pet;
+    this.colyseusClient = colyseusClient;
   }
 
   // ===== UPDATE LOOP =====
@@ -53,7 +56,9 @@ export class CleanlinessSystem {
     if (!this.lastCleanlinessUpdate) this.lastCleanlinessUpdate = now;
 
     const elapsed = (now - this.lastCleanlinessUpdate) / 1000;
-    const decreaseRate = (GAME_MECHANICS.CLEANLINESS_DECREASE_PER_HOUR / 3600) * this.pet.cleanlinessDecreaseMultiplier;
+    const decreaseRate =
+      (GAME_MECHANICS.CLEANLINESS_DECREASE_PER_HOUR / 3600) *
+      this.pet.cleanlinessDecreaseMultiplier;
 
     if (elapsed > 0) {
       this.cleanlinessLevel = Math.max(
@@ -190,42 +195,69 @@ export class CleanlinessSystem {
 
   // ===== CLEANING MANAGEMENT =====
 
-  buyBroom(broomId: string = "broom"): boolean {
-    const price = gameConfigManager.getCleaningPrice(broomId);
-    const userState = useUserStore.getState();
+  buyCleaning(cleaningId: string = "brush"): boolean {
+    console.log(`🛒 Buying cleaning item: ${cleaningId}`);
+    const price = gameConfigManager.getCleaningPrice(cleaningId);
 
-    if (userState.spendToken(price)) {
-      this.cleaningInventory += 1;
+    if (this.colyseusClient && this.colyseusClient.isConnected()) {
+      console.log(
+        "🌐 Checking tokens before sending purchase request to server"
+      );
+
+      // Check if player has enough tokens before sending to server
+      const currentTokens = useUserStore.getState().nomToken;
+      if (currentTokens < price) {
+        console.log(
+          `❌ Not enough tokens: need ${price}, have ${currentTokens}`
+        );
+        return false;
+      }
+
+      console.log("💰 Tokens sufficient, sending purchase request to server");
+      this.colyseusClient.sendMessage("buy_food", {
+        itemType: "cleaning",
+        itemName: cleaningId,
+        quantity: 1,
+      });
+
+      return true; // Server will handle validation and update inventory
+    } else {
+      console.log("🔌 Offline mode - using local validation");
+
+      const userState = useUserStore.getState();
+      if (userState.spendToken(price)) {
+        this.cleaningInventory += 1;
+
+        console.log(
+          `✅ Purchase successful: ${cleaningId} for ${price} tokens. Inventory: ${this.cleaningInventory}`
+        );
+        return true;
+      }
 
       console.log(
-        `🧹 Bought ${broomId} for ${price} tokens. Inventory: ${this.cleaningInventory}`
+        `❌ Not enough tokens to buy ${cleaningId}. Need: ${price}, Have: ${userState.nomToken}`
       );
-      return true;
+      return false;
     }
-
-    console.log(
-      `❌ Not enough tokens to buy ${broomId}. Need: ${price}, Have: ${userState.nomToken}`
-    );
-    return false;
   }
 
-  useBroom(): boolean {
+  useCleaning(): boolean {
     if (this.cleaningInventory > 0) {
       this.cleaningInventory -= 1;
 
-      // Increase pet's cleanliness significantly when using broom
+      // Increase pet's cleanliness significantly when using cleaning item
       this.cleanlinessLevel = Math.min(100, this.cleanlinessLevel + 30);
 
       // Clean all nearby poop automatically
       this.cleanAllPoop();
 
       console.log(
-        `🧹 Used broom! Cleanliness: ${this.cleanlinessLevel}%, Inventory: ${this.cleaningInventory}`
+        `🧹 Used cleaning item! Cleanliness: ${this.cleanlinessLevel}%, Inventory: ${this.cleaningInventory}`
       );
       return true;
     }
 
-    console.log("❌ No brooms in inventory");
+    console.log("❌ No cleaning items in inventory");
     return false;
   }
 

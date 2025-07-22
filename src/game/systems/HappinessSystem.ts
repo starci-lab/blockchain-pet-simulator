@@ -2,6 +2,7 @@ import { Pet } from "../entities/Pet";
 import { GAME_MECHANICS } from "../constants/gameConstants";
 import { gameConfigManager } from "@/game/configs/gameConfig";
 import { useUserStore } from "@/store/userStore";
+import type { ColyseusClient } from "@/game/colyseus/client";
 
 // Happiness states
 export const HappinessState = {
@@ -31,10 +32,12 @@ export class HappinessSystem {
   private lastHappinessUpdate: number = 0;
   private scene: Phaser.Scene;
   private pet: Pet;
+  private colyseusClient: ColyseusClient;
 
-  constructor(scene: Phaser.Scene, pet: Pet) {
+  constructor(scene: Phaser.Scene, pet: Pet, colyseusClient: ColyseusClient) {
     this.scene = scene;
     this.pet = pet;
+    this.colyseusClient = colyseusClient;
   }
 
   // ===== UPDATE LOOP =====
@@ -63,15 +66,50 @@ export class HappinessSystem {
   // ===== INVENTORY MANAGEMENT =====
 
   buyBall(): boolean {
+    console.log(`🛒 Buying ball`);
     const ballPrice = gameConfigManager.getToyItems().ball.price;
-    const userStore = useUserStore.getState();
 
-    if (userStore.nomToken >= ballPrice) {
-      userStore.setNomToken(userStore.nomToken - ballPrice);
-      this.toyInventory++;
-      return true;
+    if (this.colyseusClient && this.colyseusClient.isConnected()) {
+      console.log(
+        "🌐 Checking tokens before sending purchase request to server"
+      );
+
+      // Check if player has enough tokens before sending to server
+      const currentTokens = useUserStore.getState().nomToken;
+      if (currentTokens < ballPrice) {
+        console.log(
+          `❌ Not enough tokens: need ${ballPrice}, have ${currentTokens}`
+        );
+        return false;
+      }
+
+      console.log("💰 Tokens sufficient, sending purchase request to server");
+      this.colyseusClient.sendMessage("buy_food", {
+        itemType: "toys",
+        itemName: "ball",
+        quantity: 1,
+      });
+
+      return true; // Server will handle validation and update inventory
+    } else {
+      console.log("🔌 Offline mode - using local validation");
+
+      const userStore = useUserStore.getState();
+      if (userStore.nomToken >= ballPrice) {
+        userStore.setNomToken(userStore.nomToken - ballPrice);
+        this.toyInventory++;
+
+        console.log(
+          `✅ Purchase successful: ball for ${ballPrice} tokens. Inventory: ${this.toyInventory}`
+        );
+        return true;
+      }
+
+      console.log(
+        `❌ Not enough tokens to buy ball. Need: ${ballPrice}, Have: ${userStore.nomToken}`
+      );
+      return false;
     }
-    return false;
   }
 
   // ===== CLEANUP =====
