@@ -343,6 +343,12 @@ export class ColyseusClient {
       `✅ Pet sync completed. Total pets: ${petManager.getAllPets().length}`
     );
 
+    // Ensure visual states are updated after sync (especially on page reload)
+    if (petManager.updatePetVisualStates) {
+      petManager.updatePetVisualStates();
+      console.log("🎨 Updated pet visual states after sync");
+    }
+
     // Force UI update after pet sync
     if (this.gameUI && this.gameUI.updateUI) {
       this.gameUI.updateUI();

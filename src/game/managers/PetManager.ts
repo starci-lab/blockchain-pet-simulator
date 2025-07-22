@@ -62,6 +62,12 @@ export class PetManager {
     const pet = new Pet(this.scene);
     pet.createAnimations();
     pet.create(x, y);
+
+    // Set click callback with petId
+    pet.setOnPetClicked(() => {
+      this.handlePetClick(petId);
+    });
+
     const movementSystem = new MovementSystem(pet, this.scene);
     const activitySystem = new ActivitySystem(pet);
     const feedingSystem = new FeedingSystem(
@@ -87,6 +93,7 @@ export class PetManager {
     this.pets.set(petId, petData);
     if (!this.activePetId) {
       this.activePetId = petId;
+      this.updatePetVisualStates(); // Update visual states when first pet becomes active
     }
     console.log(`✅ Pet entity ${petId} created (local only)`);
     return petData;
@@ -162,9 +169,60 @@ export class PetManager {
     if (this.pets.has(petId)) {
       this.activePetId = petId;
       console.log(`🎯 Active pet changed to: ${petId}`);
+
+      // Update visual indicators for all pets
+      this.updatePetVisualStates();
+
       return true;
     }
     return false;
+  }
+
+  // Handle pet click to switch active pet
+  private handlePetClick(petId: string): void {
+    const currentActivePet = this.getActivePet();
+
+    // If clicking the same active pet, do nothing
+    if (currentActivePet && currentActivePet.id === petId) {
+      console.log(`🖱️ Pet ${petId} is already active`);
+      return;
+    }
+
+    // Switch to the clicked pet
+    const success = this.setActivePet(petId);
+    if (success) {
+      console.log(`🔄 Switched active pet to: ${petId}`);
+
+      // Update visual indicators for all pets
+      this.updatePetVisualStates();
+
+      // Notify UI to update (if GameUI is available)
+      const gameScene = this.scene as any;
+      if (gameScene.gameUI && gameScene.gameUI.updateUI) {
+        gameScene.gameUI.updateUI();
+        console.log("🎨 UI updated after pet switch");
+      }
+
+      // Show notification if available
+      if (gameScene.gameUI && gameScene.gameUI.showNotification) {
+        gameScene.gameUI.showNotification(`🎯 Switched to pet: ${petId}`);
+      }
+    } else {
+      console.warn(`❌ Failed to switch to pet: ${petId}`);
+    }
+  }
+
+  // Update visual states for all pets (highlight active pet)
+  public updatePetVisualStates(): void {
+    for (const [petId, petData] of this.pets) {
+      if (petId === this.activePetId) {
+        // Highlight active pet with a subtle glow
+        petData.pet.sprite.setTint(0xffff99); // Light yellow tint
+      } else {
+        // Remove highlight from inactive pets
+        petData.pet.sprite.clearTint();
+      }
+    }
   }
 
   // Get all pets

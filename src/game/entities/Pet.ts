@@ -26,6 +26,9 @@ export class Pet {
   // Callback for when pet stops chasing (to notify PetManager)
   public onStopChasing?: () => void;
 
+  // Callback for when pet is clicked (to notify PetManager to switch active pet)
+  public onPetClicked?: () => void;
+
   private scene: Phaser.Scene;
 
   constructor(scene: Phaser.Scene) {
@@ -59,6 +62,30 @@ export class Pet {
       "chog_walk 0.aseprite"
     );
     this.sprite.setScale(GAME_LAYOUT.PET_SCALE);
+
+    // Make pet clickable to switch active pet
+    this.sprite.setInteractive();
+    this.sprite.on("pointerdown", () => {
+      console.log(`🖱️ Pet clicked`);
+      if (this.onPetClicked) {
+        this.onPetClicked();
+      }
+    });
+
+    // Add hover effect for better UX
+    this.sprite.on("pointerover", () => {
+      // Only apply hover effect if not already active (no tint)
+      if (this.sprite.tintTopLeft === 0xffffff) {
+        this.sprite.setTint(0xdddddd); // Slightly darker when hovered
+      }
+    });
+
+    this.sprite.on("pointerout", () => {
+      // Only clear tint if it's the hover tint, not the active tint
+      if (this.sprite.tintTopLeft === 0xdddddd) {
+        this.sprite.clearTint();
+      }
+    });
 
     this.updateActivity();
   }
@@ -277,6 +304,11 @@ export class Pet {
       this.sprite.y = correctGroundY;
       this.groundY = correctGroundY; // Update stored ground Y
     }
+  }
+
+  // Set callback for when pet is clicked
+  setOnPetClicked(callback: () => void): void {
+    this.onPetClicked = callback;
   }
 
   // Cleanup method
