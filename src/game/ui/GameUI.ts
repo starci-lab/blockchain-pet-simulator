@@ -1,4 +1,4 @@
-import { PetManager } from "@/game/managers/PetManager";
+import { PetManager, type PetData } from "@/game/managers/PetManager";
 import { FeedingUI } from "./components/FeedingUI";
 import { CleanlinessUI } from "./components/CleanlinessUI";
 import { HappinessUI } from "./components/HappinessUI";
@@ -6,6 +6,7 @@ import { TokenUI } from "./components/TokenUI";
 import { ShopUI } from "./components/ShopUI";
 import { NotificationUI } from "./components/NotificationUI";
 import { PetShopModal } from "./components/PetShopModal";
+import { PetDetailsModal } from "./components/PetDetailsModal";
 import { InputManager } from "./components/InputManager";
 
 const PET_PRICE = 50; // Price to buy a new pet
@@ -22,6 +23,7 @@ export class GameUI {
   private shopUI: ShopUI;
   private notificationUI: NotificationUI;
   private petShopModal: PetShopModal;
+  private petDetailsModal: PetDetailsModal;
   private inputManager: InputManager;
 
   // UI Elements
@@ -43,6 +45,7 @@ export class GameUI {
       petManager,
       this.notificationUI
     );
+    this.petDetailsModal = new PetDetailsModal(scene, petManager);
     this.inputManager = new InputManager(
       scene,
       petManager,
@@ -124,11 +127,17 @@ export class GameUI {
     this.tokenUI.update();
     this.shopUI.updateTokenUI();
     this.shopUI.updatePriceDisplay();
+    this.petDetailsModal.update();
   }
 
   // Debug method to show pet stats
   showPetStats() {
     const stats = this.petManager.getPetStats();
     console.log("🐕 Pet Manager Stats:", stats);
+  }
+
+  // Show pet details modal
+  showPetDetailsModal(petData: PetData) {
+    this.petDetailsModal.show(petData);
   }
 }
