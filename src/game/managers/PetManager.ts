@@ -80,8 +80,16 @@ export class PetManager {
       pet,
       this.colyseusClient
     );
-    const cleanlinessSystem = new CleanlinessSystem(this.scene, pet);
-    const happinessSystem = new HappinessSystem(this.scene, pet);
+    const cleanlinessSystem = new CleanlinessSystem(
+      this.scene,
+      pet,
+      this.colyseusClient
+    );
+    const happinessSystem = new HappinessSystem(
+      this.scene,
+      pet,
+      this.colyseusClient
+    );
 
     const petData: PetData = {
       id: petId,
@@ -1135,18 +1143,18 @@ export class PetManager {
   }
 
   // Cleaning management methods
-  buyBroom(broomId: string = "broom"): boolean {
+  buyCleaning(cleaningId: string = "brush"): boolean {
     const activePet = this.getActivePet();
     if (activePet) {
-      return activePet.cleanlinessSystem.buyBroom(broomId);
+      return activePet.cleanlinessSystem.buyCleaning(cleaningId);
     }
     return false;
   }
 
-  useBroom(): boolean {
+  useCleaning(): boolean {
     const activePet = this.getActivePet();
     if (activePet) {
-      return activePet.cleanlinessSystem.useBroom();
+      return activePet.cleanlinessSystem.useCleaning();
     }
     return false;
   }
