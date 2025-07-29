@@ -8,6 +8,7 @@ import { NotificationUI } from "./components/NotificationUI";
 import { PetShopModal } from "./components/PetShopModal";
 import { PetDetailsModal } from "./components/PetDetailsModal";
 import { InputManager } from "./components/InputManager";
+import ShopModal from "./components/ShopModal";
 
 const PET_PRICE = 50; // Price to buy a new pet
 
@@ -25,9 +26,11 @@ export class GameUI {
   private petShopModal: PetShopModal;
   private petDetailsModal: PetDetailsModal;
   private inputManager: InputManager;
+  private shopModal: ShopModal;
 
   // UI Elements
   private buyPetButton!: Phaser.GameObjects.Rectangle;
+  private shopButton!: Phaser.GameObjects.Rectangle;
 
   constructor(scene: Phaser.Scene, petManager: PetManager) {
     this.scene = scene;
@@ -52,6 +55,7 @@ export class GameUI {
       this.notificationUI,
       this.shopUI
     );
+    this.shopModal = new ShopModal(scene, petManager);
   }
 
   create() {
@@ -64,6 +68,7 @@ export class GameUI {
     this.tokenUI.create();
     this.shopUI.create();
     this.createBuyPetButton();
+    this.createShopButton();
     this.inputManager.setupInputHandlers();
 
     console.log("✅ GameUI created successfully");
@@ -112,6 +117,51 @@ export class GameUI {
     });
 
     console.log("✅ Buy Pet Button created successfully");
+  }
+
+  // Shop Button
+  private createShopButton() {
+    console.log("🏪 Creating Shop Button...");
+
+    // Position button below the buy pet button
+    const buttonX = this.scene.cameras.main.width - 100;
+    const buttonY = 100; // Below the buy pet button
+    const buttonWidth = 80;
+    const buttonHeight = 30;
+
+    // Button background with modern gradient-like appearance
+    this.shopButton = this.scene.add
+      .rectangle(buttonX, buttonY, buttonWidth, buttonHeight, 0x6366f1, 0.9)
+      .setStrokeStyle(2, 0x4f46e5)
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true });
+
+    // Button text
+    this.scene.add
+      .text(buttonX, buttonY, "🏪 Shop", {
+        fontSize: "14px",
+        color: "#ffffff",
+        fontStyle: "bold",
+        fontFamily: "Segoe UI, Arial, sans-serif",
+        align: "center",
+      })
+      .setOrigin(0.5);
+
+    // Button click handler
+    this.shopButton.on("pointerdown", () => {
+      this.shopModal.show();
+    });
+
+    // Hover effects
+    this.shopButton.on("pointerover", () => {
+      this.shopButton.setFillStyle(0x7c3aed);
+    });
+
+    this.shopButton.on("pointerout", () => {
+      this.shopButton.setFillStyle(0x6366f1);
+    });
+
+    console.log("✅ Shop Button created successfully");
   }
 
   // Public method for external components (like ColyseusClient) to show notifications
