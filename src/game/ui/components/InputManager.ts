@@ -311,7 +311,7 @@ export class InputManager {
           }
         } else {
           // Try to buy ball first
-          const success = this.petManager.buyBall();
+          const success = this.petManager.buyToy();
           if (success) {
             // Use ball immediately after buying
             const ballUsed = this.petManager.useBall(pointer.x, pointer.y);

@@ -72,9 +72,15 @@ export class HappinessSystem {
 
   // ===== INVENTORY MANAGEMENT =====
 
-  buyBall(): boolean {
-    console.log(`🛒 Buying ball`);
-    const ballPrice = gameConfigManager.getToyItems().ball.price;
+  buyToy(toyId: string = "ball"): boolean {
+    const toy = gameConfigManager.getToyItem(toyId);
+    if (!toy) {
+      console.log(`❌ Toy with ID ${toyId} not found in config`);
+      return false;
+    }
+
+    console.log(`🛒 Buying toy: ${toy.name}`);
+    const toyPrice = toy.price;
 
     if (this.colyseusClient && this.colyseusClient.isConnected()) {
       console.log(
@@ -83,33 +89,33 @@ export class HappinessSystem {
 
       // Check if player has enough tokens before sending to server
       const currentTokens = useUserStore.getState().nomToken;
-      if (currentTokens < ballPrice) {
+      if (currentTokens < toyPrice) {
         console.log(
-          `❌ Not enough tokens: need ${ballPrice}, have ${currentTokens}`
+          `❌ Not enough tokens: need ${toyPrice}, have ${currentTokens}`
         );
         return false;
       }
 
       console.log("💰 Tokens sufficient, sending purchase request to server");
-      this.colyseusClient.purchaseItem("toys", "ball", 1);
+      this.colyseusClient.purchaseItem("toys", toyId, 1);
 
       return true; // Server will handle validation and update inventory
     } else {
       console.log("🔌 Offline mode - using local validation");
 
       const userStore = useUserStore.getState();
-      if (userStore.nomToken >= ballPrice) {
-        userStore.setNomToken(userStore.nomToken - ballPrice);
+      if (userStore.nomToken >= toyPrice) {
+        userStore.setNomToken(userStore.nomToken - toyPrice);
         this.toyInventory++;
 
         console.log(
-          `✅ Purchase successful: ball for ${ballPrice} tokens. Inventory: ${this.toyInventory}`
+          `✅ Purchase successful: ${toy.name} for ${toyPrice} tokens. Inventory: ${this.toyInventory}`
         );
         return true;
       }
 
       console.log(
-        `❌ Not enough tokens to buy ball. Need: ${ballPrice}, Have: ${userStore.nomToken}`
+        `❌ Not enough tokens to buy ${toy.name}. Need: ${toyPrice}, Have: ${userStore.nomToken}`
       );
       return false;
     }
@@ -130,7 +136,9 @@ export class HappinessSystem {
       this.happinessLevel + happinessIncrease
     );
     console.log(
-      `📈 Pet ${this.petId} happiness: ${oldHappiness.toFixed(1)} → ${this.happinessLevel.toFixed(1)}`
+      `📈 Pet ${this.petId} happiness: ${oldHappiness.toFixed(
+        1
+      )} → ${this.happinessLevel.toFixed(1)}`
     );
 
     // Send played pet event to server if connected

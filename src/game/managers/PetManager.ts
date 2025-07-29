@@ -1144,10 +1144,10 @@ export class PetManager {
   }
 
   // Happiness/Toy management methods
-  buyBall(_ballId: string = "ball"): boolean {
+  buyToy(toyId: string = "ball"): boolean {
     const activePet = this.getActivePet();
     if (activePet) {
-      return activePet.happinessSystem.buyBall();
+      return activePet.happinessSystem.buyToy(toyId);
     }
     return false;
   }
@@ -1160,7 +1160,7 @@ export class PetManager {
       return true;
     } else {
       // Try to buy ball first
-      const success = this.buyBall();
+      const success = this.buyToy();
       if (success) {
         this.dropSharedBall(x, y);
         return true;
