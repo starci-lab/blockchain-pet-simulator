@@ -732,9 +732,9 @@ export class PetManager {
         `🎾 Pet ${chasingPetData.id} was chasing ball that disappeared, handling gracefully`
       );
 
-      // Stop chasing immediately and increase happiness (played with ball)
+      // Stop chasing immediately and trigger the play action
       chasingPetData.pet.stopChasing();
-      chasingPetData.happinessSystem.playWithBall(
+      chasingPetData.happinessSystem.triggerPlay(
         GAME_MECHANICS.HAPPINESS_INCREASE_AMOUNT
       );
 
@@ -998,20 +998,9 @@ export class PetManager {
       // Remove food from shared pool
       this.removeSharedFoodAtIndex(foodIndex);
 
-      // Increase pet's hunger
-      const oldHunger = petData.feedingSystem.hungerLevel;
-      petData.feedingSystem.hungerLevel = Math.min(
-        100,
-        petData.feedingSystem.hungerLevel + 20
-      );
-
-      console.log(
-        `📈 Pet ${petData.id} hunger: ${oldHunger} → ${petData.feedingSystem.hungerLevel}`
-      );
-
-      // Stop chasing and switch to chew animation
+      // Stop chasing and trigger the eating process via the feeding system
       petData.pet.stopChasing();
-      petData.pet.setActivity("chew");
+      petData.feedingSystem.triggerEat("hamburger"); // Assuming "hamburger" for now
 
       // Handle post-eating behavior
       this.handlePetPostEating(petData);
@@ -1040,21 +1029,11 @@ export class PetManager {
       // Remove ball from shared pool
       this.removeSharedBallAtIndex(ballIndex);
 
-      // Increase pet's happiness
-      const oldHappiness = petData.happinessSystem.happinessLevel;
-      petData.happinessSystem.happinessLevel = Math.min(
-        100,
-        petData.happinessSystem.happinessLevel +
-          GAME_MECHANICS.HAPPINESS_INCREASE_AMOUNT
-      );
-
-      console.log(
-        `📈 Pet ${petData.id} happiness: ${oldHappiness} → ${petData.happinessSystem.happinessLevel}`
-      );
-
-      // Stop chasing and switch to play animation
+      // Stop chasing and trigger the playing process via the happiness system
       petData.pet.stopChasing();
-      petData.pet.setActivity("idleplay");
+      petData.happinessSystem.triggerPlay(
+        GAME_MECHANICS.HAPPINESS_INCREASE_AMOUNT
+      );
 
       // Handle post-playing behavior
       this.handlePetPostPlaying(petData);
@@ -1417,6 +1396,62 @@ export class PetManager {
     }
   }
 
+  // Force pet to start chasing a ball
+  private forceStartChasingBall(petData: PetData): void {
+    const happinessLevel = petData.happinessSystem.happinessLevel;
+    const needsHappiness = happinessLevel < 80;
+
+    if (!needsHappiness || this.sharedDroppedBalls.length === 0) {
+      this.forceReturnToWalk(petData);
+      console.log(
+        `🚶 Pet ${petData.id} is happy or no balls, returning to walk mode`
+      );
+      return;
+    }
+
+    if (petData.pet.isChasing) {
+      console.log(
+        `⚠️ Pet ${petData.id} already chasing, not forcing new ball chase`
+      );
+      return;
+    }
+
+    const availableBalls = this.sharedDroppedBalls.filter(
+      (ball) => !this.ballTargets.has(ball)
+    );
+
+    if (availableBalls.length > 0) {
+      let closestBall: Phaser.GameObjects.Sprite | null = null;
+      let closestDistance = Infinity;
+
+      for (const ball of availableBalls) {
+        const distance = Phaser.Math.Distance.Between(
+          petData.pet.sprite.x,
+          petData.pet.sprite.y,
+          ball.x,
+          ball.y
+        );
+        if (distance < closestDistance) {
+          closestDistance = distance;
+          closestBall = ball;
+        }
+      }
+
+      if (closestBall) {
+        this.ballTargets.set(closestBall, petData.id);
+        petData.pet.startChasing(closestBall.x, closestBall.y);
+        console.log(
+          `🚀 Pet ${petData.id} force started chasing ball at (${closestBall.x}, ${closestBall.y})`
+        );
+      }
+    } else {
+      this.forceReturnToWalk(petData);
+      console.log(
+        `😔 Pet ${petData.id} no available balls, returning to walk mode`
+      );
+    }
+  }
+
   private releaseBallTarget(petId: string): void {
     for (const [ball, chasingPetId] of this.ballTargets.entries()) {
       if (chasingPetId === petId) {
@@ -1429,36 +1464,22 @@ export class PetManager {
 
   private handlePetPostPlaying(petData: PetData): void {
     console.log(
-      `⚽ Pet ${petData.id} started playing, will check for next action in 2 seconds`
+      `⚽ Pet ${petData.id} finished playing, will check for next action in 2 seconds`
     );
 
-    // Force ensure pet is in correct state
-    petData.pet.isUserControlled = true; // Temporarily user controlled while playing
-
-    // Use fixed timer instead of animation event for reliability
+    // Use a fixed timer for reliability, similar to post-eating logic
     this.scene.time.delayedCall(2000, () => {
-      // Force check and reset pet state regardless of current activity
-      if (
-        petData.pet.currentActivity === "idleplay" ||
-        petData.pet.isUserControlled
-      ) {
-        // Check if pet should continue chasing more balls or return to auto walk
-        if (
-          petData.happinessSystem.happinessLevel < 100 &&
-          this.sharedDroppedBalls.length > 0
-        ) {
-          // Reset state before checking for more balls
-          petData.pet.isUserControlled = false;
-          petData.pet.isChasing = false;
-          petData.pet.chaseTarget = null;
+      // Check if the pet should continue chasing more balls or return to auto walk
+      if (this.sharedDroppedBalls.length > 0) {
+        // Reset state before checking for more balls, mirroring the post-eating flow
+        petData.pet.isUserControlled = false;
+        petData.pet.isChasing = false;
+        petData.pet.chaseTarget = null;
 
-          // Check for more balls to chase
-          this.checkPetShouldChaseBalls(petData);
-        } else {
-          // Force return to auto walk mode
-          this.forceReturnToWalk(petData);
-        }
+        // Use forceStartChasingBall for reliable targeting
+        this.forceStartChasingBall(petData);
       } else {
+        // No more balls, force return to auto walk mode
         this.forceReturnToWalk(petData);
       }
     });
