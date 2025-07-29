@@ -230,6 +230,22 @@ class GameConfigManager {
     return toyItems;
   }
 
+  getFoodItems(): { [key: string]: FoodItem } {
+    const foodItems: { [key: string]: FoodItem } = {};
+    this.config.food.items.forEach((item) => {
+      foodItems[item.id] = item;
+    });
+    return foodItems;
+  }
+
+  getCleaningItems(): { [key: string]: CleaningItem } {
+    const cleaningItems: { [key: string]: CleaningItem } = {};
+    this.config.cleaning.items.forEach((item) => {
+      cleaningItems[item.id] = item;
+    });
+    return cleaningItems;
+  }
+
   updateConfig(newConfig: Partial<GameConfig>) {
     this.config = { ...this.config, ...newConfig };
   }
