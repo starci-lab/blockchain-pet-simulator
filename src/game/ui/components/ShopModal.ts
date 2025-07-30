@@ -6,12 +6,11 @@ import { useUserStore } from "../../../store/userStore";
 const MODAL_STYLE = `
   position: fixed;
   top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 75%;
-  max-width: 650px;
-  height: 70%;
-  max-height: 550px;
+  right: 8%;
+  transform: translateY(-50%);
+  width: 25%;
+  max-width: 450px;
+  min-height: 200px;
   background: linear-gradient(180deg, #292929 0%, #141414 100%);
   border-radius: 21px;
   border: 0.84px solid transparent;
@@ -19,7 +18,7 @@ const MODAL_STYLE = `
   box-shadow: 0px 0px 1.43px 0px rgba(0, 0, 0, 0.25), inset 0px 1.26px 1.26px 0px rgba(154, 154, 154, 0.45);
   display: none;
   flex-direction: column;
-  padding: 21px;
+  padding: 16px;
   z-index: 100;
   color: #B3B3B3;
   font-family: 'Plus Jakarta Sans', sans-serif;
@@ -30,12 +29,12 @@ const HEADER_STYLE = `
   justify-content: center;
   align-items: center;
   width: 100%;
-  margin-bottom: 21px;
+  margin-bottom: 12px;
   position: relative;
 `;
 
 const TITLE_STYLE = `
-  font-size: 22px;
+  font-size: 12px;
   font-weight: 700;
   color: #B3B3B3;
   line-height: 1.26;
@@ -47,9 +46,9 @@ const CLOSE_BUTTON_STYLE = `
   background: #323232;
   border: none;
   color: #E95151;
-  font-size: 18px;
+  font-size: 8px;
   cursor: pointer;
-  width: 32px;
+  width: 12px;
   aspect-ratio: 1;
   border-radius: 50%;
   display: flex;
@@ -67,7 +66,7 @@ const TABS_CONTAINER_STYLE = `
   border-radius: 0;
   border: none;
   box-shadow: none;
-  padding: 14px 12px;
+  padding: 8px ;
   margin-bottom: 0;
 `;
 
@@ -76,17 +75,17 @@ const TABS_STYLE = `
   justify-content: stretch;
   align-items: stretch;
   width: 100%;
-  padding: 6px 0px;
+  padding: 4px 0px;
 `;
 
 const TAB_STYLE = `
   flex: 1;
-  padding: 13px;
+  padding: 4px;
   text-align: center;
   cursor: pointer;
   border-radius: 30px;
   font-weight: 500;
-  font-size: 20px;
+  font-size: 12px;
   color: #FFFFFF;
   background: transparent;
   border: none;
@@ -132,8 +131,6 @@ const ITEM_CARD_STYLE = `
   box-shadow: inset 0px 4.46px 5.95px 0px rgba(0, 0, 0, 0.3);
   cursor: pointer;
   transition: transform 0.2s ease;
-  width: 171.06px;
-  min-height: 150px;
 `;
 
 const ITEM_NAME_STYLE = `
@@ -157,17 +154,17 @@ const ITEM_PRICE_STYLE = `
 `;
 
 const ITEM_IMAGE_STYLE = `
-  width: 115.77px;
-  height: 115.77px;
+  width: 100%;
+  height: 100px;
   object-fit: cover;
   border-radius: 8px;
 `;
 
 const ITEMS_GRID_STYLE = `
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(171px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
   gap: 8.39px;
-  padding: 20.96px 20.96px 10px 20.96px;
+  padding: 8px;
   overflow-y: auto;
   max-height: calc(100vh - 200px);
 `;
