@@ -13,6 +13,10 @@ export interface GameConfig {
     items: ToyItem[];
     defaultPrice: number;
   };
+  pets: {
+    items: PetItem[];
+    defaultPrice: number;
+  };
   economy: {
     initialTokens: number;
     hungerDecreaseRate: number;
@@ -50,6 +54,16 @@ export interface ToyItem {
   happinessRestore: number;
   texture: string;
   rarity?: "common" | "rare" | "epic";
+}
+
+export interface PetItem {
+  id: string;
+  name: string;
+  price: number;
+  description: string;
+  texture: string;
+  rarity?: "common" | "rare" | "epic";
+  species: string;
 }
 
 // API response interface
@@ -124,6 +138,20 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
       },
     ],
     defaultPrice: 17,
+  },
+  pets: {
+    items: [
+      {
+        id: "chog",
+        name: "Chog",
+        price: 50,
+        description: "A cute and playful digital pet companion",
+        texture: "chog",
+        species: "Chog",
+        rarity: "common",
+      },
+    ],
+    defaultPrice: 50,
   },
   economy: {
     initialTokens: 100,
@@ -220,6 +248,23 @@ class GameConfigManager {
 
   getToyItem(toyId: string): ToyItem | undefined {
     return this.config.toys.items.find((item) => item.id === toyId);
+  }
+
+  getPetPrice(petId: string = "chog"): number {
+    const petItem = this.config.pets.items.find((item) => item.id === petId);
+    return petItem?.price || this.config.pets.defaultPrice;
+  }
+
+  getPetItem(petId: string): PetItem | undefined {
+    return this.config.pets.items.find((item) => item.id === petId);
+  }
+
+  getPetItems(): { [key: string]: PetItem } {
+    const petItems: { [key: string]: PetItem } = {};
+    this.config.pets.items.forEach((item) => {
+      petItems[item.id] = item;
+    });
+    return petItems;
   }
 
   getToyItems(): { [key: string]: ToyItem } {
