@@ -1,6 +1,6 @@
 import type { PetManager } from "../../managers/PetManager";
 import { gameConfigManager } from "../../configs/gameConfig";
-import type { FoodItem, ToyItem } from "../../configs/gameConfig";
+import type { FoodItem, ToyItem, PetItem } from "../../configs/gameConfig";
 import { useUserStore } from "../../../store/userStore";
 
 const MODAL_STYLE = `
@@ -291,14 +291,14 @@ export default class ShopModal {
 
   private populateItems(): void {
     this.itemsGrid.innerHTML = "";
-    let items: (FoodItem | ToyItem)[] = [];
+    let items: (FoodItem | ToyItem | PetItem)[] = [];
 
     if (this.currentCategory === "food") {
       items = Object.values(gameConfigManager.getFoodItems());
     } else if (this.currentCategory === "items") {
       items = Object.values(gameConfigManager.getToyItems());
     } else if (this.currentCategory === "pets") {
-      // TODO: Add pet items when available
+      items = Object.values(gameConfigManager.getPetItems());
     }
 
     items.forEach((item) => {
@@ -307,9 +307,15 @@ export default class ShopModal {
       itemCard.onclick = () => this.handleBuy(item);
 
       const itemImage = document.createElement("img");
-      itemImage.src = `assets/images/${
-        this.currentCategory === "food" ? "food" : "ball"
-      }/${item.texture}.png`;
+      let imagePath = "";
+      if (this.currentCategory === "food") {
+        imagePath = `assets/images/food/${item.texture}.png`;
+      } else if (this.currentCategory === "items") {
+        imagePath = `assets/images/ball/${item.texture}.png`;
+      } else if (this.currentCategory === "pets") {
+        imagePath = `assets/images/Chog/${item.texture}_idle.png`;
+      }
+      itemImage.src = imagePath;
       itemImage.style.cssText = ITEM_IMAGE_STYLE;
 
       const itemName = document.createElement("div");
@@ -328,16 +334,32 @@ export default class ShopModal {
     });
   }
 
-  private handleBuy(item: FoodItem | ToyItem): void {
+  private handleBuy(item: FoodItem | ToyItem | PetItem): void {
     const userState = useUserStore.getState();
     if (userState.nomToken >= item.price) {
       if (this.currentCategory === "food") {
-        this.petManager.buyFood(item.id);
+        const success = this.petManager.buyFood(item.id);
+        if (success) {
+          this.scene.events.emit("showNotification", `Purchased ${item.name}!`);
+        } else {
+          this.scene.events.emit("showNotification", "Failed to purchase food!");
+        }
       } else if (this.currentCategory === "items") {
-        this.petManager.buyToy(item.id);
+        const success = this.petManager.buyToy(item.id);
+        if (success) {
+          this.scene.events.emit("showNotification", `Purchased ${item.name}!`);
+        } else {
+          this.scene.events.emit("showNotification", "Failed to purchase toy!");
+        }
+      } else if (this.currentCategory === "pets") {
+        // Deduct tokens manually since existing buyPet only handles server communication
+        userState.spendToken(item.price);
+        
+        // Use existing buyPet method (sends to server)
+        this.petManager.buyPet(item.id);
+        
+        this.scene.events.emit("showNotification", `Pet ${item.name} purchase sent to server!`);
       }
-      // Add a notification
-      this.scene.events.emit("showNotification", `Purchased ${item.name}!`);
     } else {
       this.scene.events.emit("showNotification", "Not enough NOM tokens!");
     }
