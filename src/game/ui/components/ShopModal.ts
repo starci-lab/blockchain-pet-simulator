@@ -1,6 +1,12 @@
+import type { GameScene } from "../../scenes/GameScene";
 import type { PetManager } from "../../managers/PetManager";
 import { gameConfigManager } from "../../configs/gameConfig";
-import type { FoodItem, ToyItem, PetItem } from "../../configs/gameConfig";
+import type {
+  FoodItem,
+  ToyItem,
+  PetItem,
+  BackgroundItem,
+} from "../../configs/gameConfig";
 import { useUserStore } from "../../../store/userStore";
 
 const MODAL_STYLE = `
@@ -11,7 +17,7 @@ const MODAL_STYLE = `
   width: 25%;
   max-width: 450px;
   min-height: 200px;
-  background: linear-gradient(180deg, #292929 0%, #141414 100%);
+  background: linear-gradient(180deg, #1D1D1D 0%, #141414 100%);
   border-radius: 21px;
   border: 0.84px solid transparent;
   background-clip: padding-box;
@@ -133,6 +139,12 @@ const ITEM_CARD_STYLE = `
   transition: transform 0.2s ease;
 `;
 
+// Style cho card background active
+const ITEM_CARD_ACTIVE_STYLE = `
+  border: 2.5px solid #4F8CFF;
+  box-shadow: 0 0 8px 2px #4F8CFF44;
+`;
+
 const ITEM_NAME_STYLE = `
   font-size: 16px;
   font-weight: 600;
@@ -154,8 +166,8 @@ const ITEM_PRICE_STYLE = `
 `;
 
 const ITEM_IMAGE_STYLE = `
-  width: 100%;
-  height: 100px;
+  width: 48px;
+  height: 48px;
   object-fit: cover;
   border-radius: 8px;
 `;
@@ -179,15 +191,154 @@ const CONTENT_WRAPPER_STYLE = `
   flex: 1;
 `;
 
+const BALANCE_SECTION_STYLE = `
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+  padding: 16px 0px;
+  width: 100%;
+`;
+
+const BALANCE_FIELD_STYLE = `
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  flex: 1;
+`;
+
+const BALANCE_LABEL_STYLE = `
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 1.26;
+  color: #B3B3B3;
+  margin: 0;
+`;
+
+const BALANCE_VALUE_CONTAINER_STYLE = `
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 4px;
+  background: #101010;
+  border-radius: 5px;
+  width: 100%;
+`;
+
+const COIN_ICON_STYLE = `
+  width: 15.24px;
+  height: 15.24px;
+  border-radius: 50%;
+  flex-shrink: 0;
+`;
+
+const BALANCE_VALUE_STYLE = `
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 600;
+  font-size: 12px;
+  line-height: 1.26;
+  color: #EBEBEB;
+  margin: 0;
+  flex: 1;
+`;
+
+const CLAIM_BUTTON_STYLE = `
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 8px 16px;
+  width: 70px;
+  height: 38px;
+  background: #242424;
+  box-shadow: inset 0px 1px 0.5px 0px rgba(199, 199, 199, 0.19);
+  border-radius: 9.84px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+`;
+
+const CLAIM_BUTTON_TEXT_STYLE = `
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 800;
+  font-size: 10.42px;
+  line-height: 1.26;
+  color: #B3B3B3;
+  text-align: center;
+`;
+
+const DIVIDER_STYLE = `
+  width: 100%;
+  height: 1px;
+  background: rgba(179, 179, 179, 0.2);
+  margin: 8px 0;
+`;
+
+const PAGINATION_CONTAINER_STYLE = `
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 8px;
+  margin-bottom: 8px;
+`;
+
+const PAGINATION_BUTTON_STYLE = `
+  background: #323232;
+  border: none;
+  color: #B3B3B3;
+  font-size: 10px;
+  cursor: pointer;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: inset 0px 0.84px 0.42px 0px rgba(199, 199, 199, 0.19);
+  transition: all 0.2s ease;
+`;
+
+const PAGINATION_BUTTON_DISABLED_STYLE = `
+  opacity: 0.3;
+  cursor: not-allowed;
+`;
+
+const TABS_PAGINATION_CONTAINER_STYLE = `
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+`;
+
 export default class ShopModal {
-  private scene: Phaser.Scene;
+  private scene: GameScene;
   private petManager: PetManager;
   private modal: HTMLElement;
   private itemsGrid: HTMLElement;
   private tabs: { [key: string]: HTMLElement } = {};
   private currentCategory: string = "food";
+  private balanceValueElement: HTMLElement | null = null;
 
-  constructor(scene: Phaser.Scene, petManager: PetManager) {
+  // Pagination properties
+  private allTabs: string[] = ["pets", "food", "items", "backgrounds"];
+  private currentTabPage: number = 0;
+  private tabsPerPage: number = 3;
+  private tabsContainer: HTMLElement | null = null;
+  private prevButton: HTMLElement | null = null;
+  private nextButton: HTMLElement | null = null;
+
+  // State activeBackground, logic chọn/cancel background, chỉ 1 ảnh active, cập nhật UI card active
+  private activeBackground: string | null = null;
+
+  // Giả lập inventory background đã mua (bạn có thể thay bằng inventory thực tế)
+  private ownedBackgrounds: Set<string> = new Set();
+
+  constructor(scene: GameScene, petManager: PetManager) {
     this.scene = scene;
     this.petManager = petManager;
     this.modal = document.createElement("div");
@@ -215,26 +366,195 @@ export default class ShopModal {
     closeButton.onclick = () => this.hide();
     header.appendChild(closeButton);
 
+    // Divider between Store title and balance section
+    const divider = document.createElement("div");
+    divider.style.cssText = DIVIDER_STYLE;
+    this.modal.appendChild(divider);
+
+    // Balance/Earnings section
+    this.createBalanceSection();
+
     // Content wrapper that contains tabs and items grid
     const contentWrapper = document.createElement("div");
     contentWrapper.style.cssText = CONTENT_WRAPPER_STYLE;
     this.modal.appendChild(contentWrapper);
 
-    // Tabs container with styling matching Figma
-    const tabsContainer = document.createElement("div");
-    tabsContainer.style.cssText = TABS_CONTAINER_STYLE;
-    contentWrapper.appendChild(tabsContainer);
-
-    const tabsRow = document.createElement("div");
-    tabsRow.style.cssText = TABS_STYLE;
-    tabsContainer.appendChild(tabsRow);
-
-    this.tabs.pets = this.createTab(tabsRow, "Pets", "pets");
-    this.tabs.food = this.createTab(tabsRow, "Food", "food");
-    this.tabs.items = this.createTab(tabsRow, "Items", "items");
+    // Tabs container with pagination
+    this.createTabsWithPagination(contentWrapper);
 
     this.itemsGrid.style.cssText = ITEMS_GRID_STYLE;
     contentWrapper.appendChild(this.itemsGrid);
+  }
+
+  private createBalanceSection(): void {
+    const balanceSection = document.createElement("div");
+    balanceSection.style.cssText = BALANCE_SECTION_STYLE;
+    this.modal.appendChild(balanceSection);
+
+    // Balance field
+    const balanceField = document.createElement("div");
+    balanceField.style.cssText = BALANCE_FIELD_STYLE;
+    balanceSection.appendChild(balanceField);
+
+    const balanceLabel = document.createElement("div");
+    balanceLabel.textContent = "Balance";
+    balanceLabel.style.cssText = BALANCE_LABEL_STYLE;
+    balanceField.appendChild(balanceLabel);
+
+    const balanceContainer = document.createElement("div");
+    balanceContainer.style.cssText = BALANCE_VALUE_CONTAINER_STYLE;
+    balanceField.appendChild(balanceContainer);
+
+    const balanceCoinIcon = document.createElement("img");
+    balanceCoinIcon.src = "src/assets/images/coin/coin-e4dae5.png";
+    balanceCoinIcon.style.cssText = COIN_ICON_STYLE;
+    balanceContainer.appendChild(balanceCoinIcon);
+
+    const balanceValue = document.createElement("div");
+    const userState = useUserStore.getState();
+    balanceValue.textContent = `${userState.nomToken.toLocaleString()} NOM`;
+    balanceValue.style.cssText = BALANCE_VALUE_STYLE;
+    balanceContainer.appendChild(balanceValue);
+
+    // Store reference for updates
+    this.balanceValueElement = balanceValue;
+
+    // Earnings field
+    const earningsField = document.createElement("div");
+    earningsField.style.cssText = BALANCE_FIELD_STYLE;
+    balanceSection.appendChild(earningsField);
+
+    const earningsLabel = document.createElement("div");
+    earningsLabel.textContent = "Earnings";
+    earningsLabel.style.cssText = BALANCE_LABEL_STYLE;
+    earningsField.appendChild(earningsLabel);
+
+    const earningsContainer = document.createElement("div");
+    earningsContainer.style.cssText = BALANCE_VALUE_CONTAINER_STYLE;
+    earningsField.appendChild(earningsContainer);
+
+    const earningsCoinIcon = document.createElement("img");
+    earningsCoinIcon.src = "src/assets/images/coin/coin-e4dae5.png";
+    earningsCoinIcon.style.cssText = COIN_ICON_STYLE;
+    earningsContainer.appendChild(earningsCoinIcon);
+
+    const earningsValue = document.createElement("div");
+    earningsValue.textContent = "100.000 MON";
+    earningsValue.style.cssText = BALANCE_VALUE_STYLE;
+    earningsContainer.appendChild(earningsValue);
+
+    // Claim button
+    const claimButton = document.createElement("button");
+    claimButton.style.cssText = CLAIM_BUTTON_STYLE;
+    claimButton.onclick = () => this.handleClaim();
+    balanceSection.appendChild(claimButton);
+
+    const claimText = document.createElement("span");
+    claimText.textContent = "Claim";
+    claimText.style.cssText = CLAIM_BUTTON_TEXT_STYLE;
+    claimButton.appendChild(claimText);
+  }
+
+  private createTabsWithPagination(container: HTMLElement): void {
+    // Main tabs container
+    this.tabsContainer = document.createElement("div");
+    this.tabsContainer.style.cssText = TABS_CONTAINER_STYLE;
+    container.appendChild(this.tabsContainer);
+
+    // Pagination container
+    const paginationContainer = document.createElement("div");
+    paginationContainer.style.cssText = PAGINATION_CONTAINER_STYLE;
+    this.tabsContainer.appendChild(paginationContainer);
+
+    // Previous button
+    this.prevButton = document.createElement("button");
+    this.prevButton.innerHTML = "‹";
+    this.prevButton.style.cssText = PAGINATION_BUTTON_STYLE;
+    this.prevButton.onclick = () => this.previousTabPage();
+    paginationContainer.appendChild(this.prevButton);
+
+    // Tabs row container
+    const tabsPaginationContainer = document.createElement("div");
+    tabsPaginationContainer.style.cssText = TABS_PAGINATION_CONTAINER_STYLE;
+    paginationContainer.appendChild(tabsPaginationContainer);
+
+    const tabsRow = document.createElement("div");
+    tabsRow.style.cssText = TABS_STYLE;
+    tabsPaginationContainer.appendChild(tabsRow);
+
+    // Create all tabs
+    this.tabs.pets = this.createTab(tabsRow, "Pets", "pets");
+    this.tabs.food = this.createTab(tabsRow, "Food", "food");
+    this.tabs.items = this.createTab(tabsRow, "Items", "items");
+    this.tabs.backgrounds = this.createTab(
+      tabsRow,
+      "Backgrounds",
+      "backgrounds"
+    );
+
+    // Next button
+    this.nextButton = document.createElement("button");
+    this.nextButton.innerHTML = "›";
+    this.nextButton.style.cssText = PAGINATION_BUTTON_STYLE;
+    this.nextButton.onclick = () => this.nextTabPage();
+    paginationContainer.appendChild(this.nextButton);
+
+    // Initialize tab visibility
+    this.updateTabVisibility();
+  }
+
+  private updateTabVisibility(): void {
+    const startIndex = this.currentTabPage * this.tabsPerPage;
+    const endIndex = startIndex + this.tabsPerPage;
+
+    this.allTabs.forEach((tabKey, index) => {
+      const tab = this.tabs[tabKey];
+      if (tab) {
+        if (index >= startIndex && index < endIndex) {
+          tab.style.display = "block";
+        } else {
+          tab.style.display = "none";
+        }
+      }
+    });
+
+    // Update pagination buttons
+    if (this.prevButton && this.nextButton) {
+      const totalPages = Math.ceil(this.allTabs.length / this.tabsPerPage);
+
+      if (this.currentTabPage === 0) {
+        this.prevButton.style.cssText =
+          PAGINATION_BUTTON_STYLE + PAGINATION_BUTTON_DISABLED_STYLE;
+        this.prevButton.onclick = null;
+      } else {
+        this.prevButton.style.cssText = PAGINATION_BUTTON_STYLE;
+        this.prevButton.onclick = () => this.previousTabPage();
+      }
+
+      if (this.currentTabPage >= totalPages - 1) {
+        this.nextButton.style.cssText =
+          PAGINATION_BUTTON_STYLE + PAGINATION_BUTTON_DISABLED_STYLE;
+        this.nextButton.onclick = null;
+      } else {
+        this.nextButton.style.cssText = PAGINATION_BUTTON_STYLE;
+        this.nextButton.onclick = () => this.nextTabPage();
+      }
+    }
+  }
+
+  private nextTabPage(): void {
+    const totalPages = Math.ceil(this.allTabs.length / this.tabsPerPage);
+    if (this.currentTabPage < totalPages - 1) {
+      this.currentTabPage++;
+      this.updateTabVisibility();
+    }
+  }
+
+  private previousTabPage(): void {
+    if (this.currentTabPage > 0) {
+      this.currentTabPage--;
+      this.updateTabVisibility();
+    }
   }
 
   private createTab(
@@ -253,6 +573,9 @@ export default class ShopModal {
     underline.style.display = "none";
     tab.appendChild(underline);
 
+    // Initially hide all tabs, updateTabVisibility will show the correct ones
+    tab.style.display = "none";
+
     container.appendChild(tab);
     return tab;
   }
@@ -261,11 +584,20 @@ export default class ShopModal {
     this.currentCategory = category;
     this.updateActiveTab();
     this.populateItems();
+    this.updateBalance(); // Update balance when showing modal
+    this.updateTabVisibility(); // Ensure correct tab pagination is displayed
     this.modal.style.display = "flex";
   }
 
   public hide(): void {
     this.modal.style.display = "none";
+  }
+
+  private updateBalance(): void {
+    if (this.balanceValueElement) {
+      const userState = useUserStore.getState();
+      this.balanceValueElement.textContent = `${userState.nomToken.toLocaleString()} NOM`;
+    }
   }
 
   private updateActiveTab(): void {
@@ -291,9 +623,11 @@ export default class ShopModal {
 
   private populateItems(): void {
     this.itemsGrid.innerHTML = "";
-    let items: (FoodItem | ToyItem | PetItem)[] = [];
-
-    if (this.currentCategory === "food") {
+    let items: (FoodItem | ToyItem | PetItem | BackgroundItem)[] = [];
+    this.itemsGrid.style.cssText = ITEMS_GRID_STYLE;
+    if (this.currentCategory === "backgrounds") {
+      items = Object.values(gameConfigManager.getBackgroundItems());
+    } else if (this.currentCategory === "food") {
       items = Object.values(gameConfigManager.getFoodItems());
     } else if (this.currentCategory === "items") {
       items = Object.values(gameConfigManager.getToyItems());
@@ -303,8 +637,11 @@ export default class ShopModal {
 
     items.forEach((item) => {
       const itemCard = document.createElement("div");
-      itemCard.style.cssText = ITEM_CARD_STYLE;
-      itemCard.onclick = () => this.handleBuy(item);
+      const isBackground = this.currentCategory === "backgrounds";
+      const isActive = isBackground && this.activeBackground === item.texture;
+      const isOwned = isBackground && this.ownedBackgrounds.has(item.texture);
+      itemCard.style.cssText =
+        ITEM_CARD_STYLE + (isActive ? ITEM_CARD_ACTIVE_STYLE : "");
 
       const itemImage = document.createElement("img");
       let imagePath = "";
@@ -314,6 +651,8 @@ export default class ShopModal {
         imagePath = `assets/images/ball/${item.texture}.png`;
       } else if (this.currentCategory === "pets") {
         imagePath = `assets/images/Chog/${item.texture}_idle.png`;
+      } else if (this.currentCategory === "backgrounds") {
+        imagePath = `assets/images/backgrounds/${item.texture}.png`;
       }
       itemImage.src = imagePath;
       itemImage.style.cssText = ITEM_IMAGE_STYLE;
@@ -330,38 +669,83 @@ export default class ShopModal {
       itemCard.appendChild(itemName);
       itemCard.appendChild(itemPrice);
 
+      if (isBackground) {
+        if (isOwned) {
+          // Đã mua: click để chọn/cancel
+          itemCard.onclick = () => {
+            if (this.activeBackground === item.texture) {
+              this.activeBackground = null;
+              this.scene.createBackground();
+            } else {
+              this.activeBackground = item.texture;
+              this.scene.createBackground(item.texture);
+            }
+            this.populateItems();
+          };
+        } else {
+          // Chưa mua: click để mua
+          itemCard.onclick = () => this.handleBuy(item);
+        }
+      } else {
+        itemCard.onclick = () => this.handleBuy(item);
+      }
+
       this.itemsGrid.appendChild(itemCard);
     });
   }
 
-  private handleBuy(item: FoodItem | ToyItem | PetItem): void {
+  private handleBuy(item: FoodItem | ToyItem | PetItem | BackgroundItem): void {
     const userState = useUserStore.getState();
     if (userState.nomToken >= item.price) {
       if (this.currentCategory === "food") {
         const success = this.petManager.buyFood(item.id);
         if (success) {
           this.scene.events.emit("showNotification", `Purchased ${item.name}!`);
+          setTimeout(() => this.updateBalance(), 100);
         } else {
-          this.scene.events.emit("showNotification", "Failed to purchase food!");
+          this.scene.events.emit(
+            "showNotification",
+            "Failed to purchase food!"
+          );
         }
       } else if (this.currentCategory === "items") {
         const success = this.petManager.buyToy(item.id);
         if (success) {
           this.scene.events.emit("showNotification", `Purchased ${item.name}!`);
+          setTimeout(() => this.updateBalance(), 100);
         } else {
           this.scene.events.emit("showNotification", "Failed to purchase toy!");
         }
       } else if (this.currentCategory === "pets") {
-        // Deduct tokens manually since existing buyPet only handles server communication
         userState.spendToken(item.price);
-        
-        // Use existing buyPet method (sends to server)
         this.petManager.buyPet(item.id);
-        
-        this.scene.events.emit("showNotification", `Pet ${item.name} purchase sent to server!`);
+        this.scene.events.emit(
+          "showNotification",
+          `Pet ${item.name} purchase sent to server!`
+        );
+        this.updateBalance();
+      } else if (this.currentCategory === "backgrounds") {
+        userState.spendToken(item.price);
+        this.ownedBackgrounds.add(item.texture); // Đánh dấu đã mua
+        this.activeBackground = item.texture;
+        this.scene.createBackground(item.texture);
+        this.scene.events.emit(
+          "showNotification",
+          `Background ${item.name} purchased!`
+        );
+        this.updateBalance();
+        this.populateItems();
       }
     } else {
       this.scene.events.emit("showNotification", "Not enough NOM tokens!");
     }
+  }
+
+  private handleClaim(): void {
+    // Handle claim earnings functionality
+    this.scene.events.emit(
+      "showNotification",
+      "Claim functionality coming soon!"
+    );
   }
 }
