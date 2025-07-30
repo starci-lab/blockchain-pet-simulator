@@ -12,7 +12,7 @@ import hamburgerImg from "@/assets/images/food/hambuger.png";
 import poopImg from "@/assets/images/poop/poop.png";
 import broomImg from "@/assets/images/broom/broom.png";
 import ballImg from "@/assets/images/ball/ball.png";
-
+import forestBgImg from "@/assets/images/backgrounds/forest-bg.png";
 export const loadChogAssets = (scene: Phaser.Scene) => {
   scene.load.atlas("dog-sleep", dogSleepImg, dogSleepJson);
   scene.load.atlas("dog-play", dogPlayImg, dogPlayJson);
@@ -24,6 +24,7 @@ export const loadChogAssets = (scene: Phaser.Scene) => {
 export const loadBackgroundAssets = (scene: Phaser.Scene) => {
   // Load your custom background image
   scene.load.image("game-background", backgroundImg);
+  scene.load.image("forest-bg", forestBgImg);
 };
 
 export const loadFoodAssets = (scene: Phaser.Scene) => {
