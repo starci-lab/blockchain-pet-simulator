@@ -1,7 +1,6 @@
 import { PetManager, type PetData } from "@/game/managers/PetManager";
 
 export class PetDetailsModal {
-  private scene: Phaser.Scene;
   private petManager: PetManager;
   private isVisible: boolean = false;
   private currentPet: PetData | null = null;
@@ -58,8 +57,7 @@ export class PetDetailsModal {
     `,
   };
 
-  constructor(scene: Phaser.Scene, petManager: PetManager) {
-    this.scene = scene;
+  constructor(petManager: PetManager) {
     this.petManager = petManager;
   }
 

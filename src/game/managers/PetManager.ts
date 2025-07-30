@@ -88,7 +88,6 @@ export class PetManager {
       petId
     );
     const happinessSystem = new HappinessSystem(
-      this.scene,
       pet,
       this.colyseusClient,
       petId

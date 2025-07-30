@@ -30,18 +30,15 @@ export class HappinessSystem {
 
   // Private properties
   private lastHappinessUpdate: number = 0;
-  private scene: Phaser.Scene;
   private pet: Pet;
   private colyseusClient: ColyseusClient;
   private petId: string;
 
   constructor(
-    scene: Phaser.Scene,
     pet: Pet,
     colyseusClient: ColyseusClient,
     petId: string
   ) {
-    this.scene = scene;
     this.pet = pet;
     this.colyseusClient = colyseusClient;
     this.petId = petId;

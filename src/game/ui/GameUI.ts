@@ -1,3 +1,4 @@
+import type { GameScene } from "../scenes/GameScene";
 import { PetManager, type PetData } from "@/game/managers/PetManager";
 import { FeedingUI } from "./components/FeedingUI";
 import { CleanlinessUI } from "./components/CleanlinessUI";
@@ -13,7 +14,7 @@ import ShopModal from "./components/ShopModal";
 const PET_PRICE = 50; // Price to buy a new pet
 
 export class GameUI {
-  private scene: Phaser.Scene;
+  private scene: GameScene;
   private petManager: PetManager;
 
   // UI Components
@@ -32,7 +33,7 @@ export class GameUI {
   private buyPetButton!: Phaser.GameObjects.Rectangle;
   private shopButton!: Phaser.GameObjects.Rectangle;
 
-  constructor(scene: Phaser.Scene, petManager: PetManager) {
+  constructor(scene: GameScene, petManager: PetManager) {
     this.scene = scene;
     this.petManager = petManager;
 
@@ -44,11 +45,10 @@ export class GameUI {
     this.tokenUI = new TokenUI(scene);
     this.shopUI = new ShopUI(scene, petManager, this.notificationUI);
     this.petShopModal = new PetShopModal(
-      scene,
       petManager,
       this.notificationUI
     );
-    this.petDetailsModal = new PetDetailsModal(scene, petManager);
+    this.petDetailsModal = new PetDetailsModal(petManager);
     this.inputManager = new InputManager(
       scene,
       petManager,
