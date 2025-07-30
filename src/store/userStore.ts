@@ -13,7 +13,7 @@ interface UserState {
 }
 
 export const useUserStore = create<UserState>((set, get) => ({
-  nomToken: 100,
+  nomToken: 10000,
   isAuthenticated: Boolean(getAddressWalletFromLS()),
   addressWallet: getAddressWalletFromLS(),
   setNomToken: (amount) => set({ nomToken: amount }),
@@ -26,5 +26,5 @@ export const useUserStore = create<UserState>((set, get) => ({
     }
     return false;
   },
-  setIsAuthenticated: (isAuthenticated: boolean) => set({ isAuthenticated })
+  setIsAuthenticated: (isAuthenticated: boolean) => set({ isAuthenticated }),
 }));
