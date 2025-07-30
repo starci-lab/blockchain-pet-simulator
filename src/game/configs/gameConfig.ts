@@ -17,6 +17,10 @@ export interface GameConfig {
     items: PetItem[];
     defaultPrice: number;
   };
+  backgrounds: {
+    items: BackgroundItem[];
+    defaultPrice: number;
+  };
   economy: {
     initialTokens: number;
     hungerDecreaseRate: number;
@@ -64,6 +68,16 @@ export interface PetItem {
   texture: string;
   rarity?: "common" | "rare" | "epic";
   species: string;
+}
+
+export interface BackgroundItem {
+  id: string;
+  name: string;
+  price: number;
+  description: string;
+  texture: string;
+  rarity?: "common" | "rare" | "epic";
+  theme: string;
 }
 
 // API response interface
@@ -152,6 +166,38 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
       },
     ],
     defaultPrice: 50,
+  },
+  backgrounds: {
+    items: [
+      {
+        id: "forest",
+        name: "Forest",
+        price: 25,
+        description: "A peaceful forest environment",
+        texture: "forest-bg",
+        theme: "Nature",
+        rarity: "common",
+      },
+      {
+        id: "space",
+        name: "Space",
+        price: 35,
+        description: "A cosmic space environment",
+        texture: "space-bg",
+        theme: "Sci-Fi",
+        rarity: "rare",
+      },
+      {
+        id: "beach",
+        name: "Beach",
+        price: 30,
+        description: "A sunny beach environment",
+        texture: "beach-bg",
+        theme: "Tropical",
+        rarity: "common",
+      },
+    ],
+    defaultPrice: 30,
   },
   economy: {
     initialTokens: 100,
@@ -265,6 +311,27 @@ class GameConfigManager {
       petItems[item.id] = item;
     });
     return petItems;
+  }
+
+  getBackgroundPrice(backgroundId: string = "forest"): number {
+    const backgroundItem = this.config.backgrounds.items.find(
+      (item) => item.id === backgroundId
+    );
+    return backgroundItem?.price || this.config.backgrounds.defaultPrice;
+  }
+
+  getBackgroundItem(backgroundId: string): BackgroundItem | undefined {
+    return this.config.backgrounds.items.find(
+      (item) => item.id === backgroundId
+    );
+  }
+
+  getBackgroundItems(): { [key: string]: BackgroundItem } {
+    const backgroundItems: { [key: string]: BackgroundItem } = {};
+    this.config.backgrounds.items.forEach((item) => {
+      backgroundItems[item.id] = item;
+    });
+    return backgroundItems;
   }
 
   getToyItems(): { [key: string]: ToyItem } {
