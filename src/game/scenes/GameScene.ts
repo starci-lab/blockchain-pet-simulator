@@ -23,13 +23,14 @@ export class GameScene extends Phaser.Scene {
   private gameUI!: GameUI;
   private colyseusClient!: ColyseusClient;
   private isInitialized = false;
+  private backgroundImage?: Phaser.GameObjects.Image;
 
   constructor() {
     super({ key: SceneName.Gameplay });
   }
   preload() {
     loadChogAssets(this);
-    // loadBackgroundAssets(this);
+    loadBackgroundAssets(this);
     loadFoodAssets(this);
     loadPoopAssets(this);
     loadCleaningAssets(this);
@@ -39,8 +40,8 @@ export class GameScene extends Phaser.Scene {
     // Disable browser context menu on right click for the whole scene
     this.input.mouse?.disableContextMenu();
 
-    // Add background image
-    // this.createBackground();
+    // Add background image (default)
+    this.createBackground();
 
     // Initialize game configuration first
     console.log("🎮 Initializing game configuration...");
@@ -186,26 +187,29 @@ export class GameScene extends Phaser.Scene {
   }
 
   // Debug method
-  debugPets(): void {
-    this.petManager.debugPetsStatus();
-  }
-
-  // Force reset all pets (emergency method)
   forceResetPets(): void {
     this.petManager.forceResetAllPets();
-  } // Create background image
-  private createBackground() {
+  }
+
+  // Create or update background image
+  createBackground(textureKey: string = "game-background") {
     const cameraWidth = this.cameras.main.width;
     const cameraHeight = this.cameras.main.height;
 
-    try {
-      // Try to load your custom background
-      const background = this.add.image(0, 0, "game-background");
-      background.setOrigin(0, 0); // Set origin to top-left
-      background.setDisplaySize(cameraWidth, cameraHeight); // Scale to fit camera
-      background.setDepth(-100); // Put background behind everything
+    // Remove previous background if exists
+    if (this.backgroundImage) {
+      this.backgroundImage.destroy();
+      this.backgroundImage = undefined;
+    }
 
-      console.log("✅ Custom background loaded successfully");
+    try {
+      // Try to load the specified background
+      this.backgroundImage = this.add.image(0, 0, textureKey);
+      this.backgroundImage.setOrigin(0, 0); // Set origin to top-left
+      this.backgroundImage.setDisplaySize(cameraWidth, cameraHeight); // Scale to fit camera
+      this.backgroundImage.setDepth(-100); // Put background behind everything
+
+      console.log(`✅ Background '${textureKey}' loaded successfully`);
     } catch {
       // Fallback: create a gradient background
       this.createGradientBackground();
