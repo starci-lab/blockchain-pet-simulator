@@ -1,0 +1,5 @@
+Todo:
+  ☐ Call all messages when a pet item is purchased (brush, food, toy). @critical
+  ☐ Handle right-click on active pet to show pet stats. @high
+  ☐ When left-clicking an active pet, display activity (e.g., happiness with a heart) and claim tokens earned from the pet. @high
+
