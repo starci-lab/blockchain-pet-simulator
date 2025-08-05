@@ -1,4 +1,5 @@
 import { Pet } from "@/game/entities/Pet";
+import { useUserStore } from "@/store/userStore";
 import { FeedingSystem } from "@/game/systems/FeedingSystem";
 import { CleanlinessSystem } from "@/game/systems/CleanlinessSystem";
 import { HappinessSystem } from "@/game/systems/HappinessSystem";
@@ -195,27 +196,62 @@ export class PetManager {
 
   // Handle pet click to switch active pet
   private handlePetClick(petId: string): void {
-    const currentActivePet = this.getActivePet();
+    const petData = this.pets.get(petId);
+    if (petData) {
+      const petSprite = petData.pet.sprite;
+      const heart = this.scene.add.image(
+        petSprite.x,
+        petSprite.y - 30,
+        "heart"
+      );
+      heart.setScale(0.1);
+      heart.setAlpha(0);
+      heart.setDepth(1000);
 
-    // If clicking the same active pet, do nothing
-    if (currentActivePet && currentActivePet.id === petId) {
-      console.log(`🖱️ Pet ${petId} is already active`);
-      return;
-    }
+      this.scene.tweens.add({
+        targets: heart,
+        y: heart.y - 20,
+        alpha: 1,
+        duration: 1000,
+        ease: "Power2",
+        yoyo: true,
+        hold: 500,
+        onComplete: () => heart.destroy(),
+      });
 
-    // Switch to the clicked pet
-    const success = this.setActivePet(petId);
-    if (success) {
-      console.log(`🔄 Switched active pet to: ${petId}`);
-
-      // Update visual indicators for all pets
-      this.updatePetVisualStates();
-
-      // Notify UI to update (if GameUI is available)
       const gameScene = this.scene as any;
-      if (gameScene.gameUI && gameScene.gameUI.updateUI) {
-        gameScene.gameUI.updateUI();
-        console.log("🎨 UI updated after pet switch");
+      const tokenUI = gameScene.gameUI.getTokenUI();
+      const tokenIconPosition = tokenUI.getTokenIconPosition();
+
+      for (let i = 0; i < 5; i++) {
+        const coin = this.scene.add.image(petSprite.x, petSprite.y, "coin");
+        coin.setScale(0.1);
+        coin.setDepth(1000);
+
+        this.scene.tweens.add({
+          targets: coin,
+          x: coin.x + Phaser.Math.Between(-60, 60),
+          y: petData.pet.groundY + 5,
+          duration: 600,
+          ease: "Bounce.easeOut",
+          hold: 800,
+          onComplete: () => {
+            this.scene.tweens.add({
+              targets: coin,
+              x: tokenIconPosition.x,
+              y: tokenIconPosition.y,
+              duration: 500,
+              ease: "Power2.easeIn",
+              onComplete: () => {
+                coin.destroy();
+                // Increase user's token balance
+                useUserStore.getState().addToken(1);
+                // Update the token UI
+                tokenUI.update();
+              },
+            });
+          },
+        });
       }
     }
   }

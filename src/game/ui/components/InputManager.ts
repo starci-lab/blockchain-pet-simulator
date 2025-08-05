@@ -335,54 +335,54 @@ export class InputManager {
       }
 
       // Handle food dropping (existing logic)
-      if (!this.isDroppingFood) return;
+      if (this.isDroppingFood) {
+        // Check if clicking on food icon (ignore)
+        const iconBounds = this.shopUI.getFoodIcon().getBounds();
+        if (Phaser.Geom.Rectangle.Contains(iconBounds, pointer.x, pointer.y)) {
+          return;
+        }
 
-      // Check if clicking on food icon (ignore)
-      const iconBounds = this.shopUI.getFoodIcon().getBounds();
-      if (Phaser.Geom.Rectangle.Contains(iconBounds, pointer.x, pointer.y)) {
-        return;
-      }
+        const currentTime = Date.now();
+        const timeDiff = currentTime - lastClickTime;
+        lastClickTime = currentTime;
 
-      const currentTime = Date.now();
-      const timeDiff = currentTime - lastClickTime;
-      lastClickTime = currentTime;
+        if (timeDiff < DOUBLE_CLICK_THRESHOLD && pendingDrop) {
+          // Double click detected - cancel pending drop and exit mode
+          exitFoodDropMode();
+          return;
+        }
 
-      if (timeDiff < DOUBLE_CLICK_THRESHOLD && pendingDrop) {
-        // Double click detected - cancel pending drop and exit mode
-        exitFoodDropMode();
-        return;
-      }
+        // Single click - prepare to drop food but wait for potential double click
+        pendingDrop = { x: pointer.x, y: pointer.y };
 
-      // Single click - prepare to drop food but wait for potential double click
-      pendingDrop = { x: pointer.x, y: pointer.y };
+        // Cancel any existing timeout
+        if (dropTimeout) {
+          dropTimeout.destroy();
+        }
 
-      // Cancel any existing timeout
-      if (dropTimeout) {
-        dropTimeout.destroy();
-      }
-
-      // Set timer to actually drop food if no second click comes
-      dropTimeout = this.scene.time.delayedCall(DOUBLE_CLICK_THRESHOLD, () => {
-        if (pendingDrop && this.isDroppingFood) {
-          // Use combined buy and drop operation for better reliability
-          const success = this.petManager.buyAndDropFood(
-            pendingDrop.x,
-            pendingDrop.y
-          );
-          if (!success) {
-            // Show toast at the position where user clicked (not center)
-            this.notificationUI.showNotification(
-              "You do not have enough NOM tokens!",
+        // Set timer to actually drop food if no second click comes
+        dropTimeout = this.scene.time.delayedCall(DOUBLE_CLICK_THRESHOLD, () => {
+          if (pendingDrop && this.isDroppingFood) {
+            // Use combined buy and drop operation for better reliability
+            const success = this.petManager.buyAndDropFood(
               pendingDrop.x,
               pendingDrop.y
             );
+            if (!success) {
+              // Show toast at the position where user clicked (not center)
+              this.notificationUI.showNotification(
+                "You do not have enough NOM tokens!",
+                pendingDrop.x,
+                pendingDrop.y
+              );
+            }
           }
-        }
 
-        // Clean up only the pending drop and timeout, keep dropping mode active
-        pendingDrop = null;
-        dropTimeout = null;
-      });
+          // Clean up only the pending drop and timeout, keep dropping mode active
+          pendingDrop = null;
+          dropTimeout = null;
+        });
+      }
     });
 
     console.log("✅ Input handlers set up successfully");
