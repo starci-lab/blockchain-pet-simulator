@@ -42,6 +42,10 @@ export class TokenUI {
     this.update()
   }
 
+  getTokenIconPosition() {
+    return { x: this.tokenText.x, y: this.tokenText.y };
+  }
+
   update() {
     const nomToken = useUserStore.getState().nomToken
     this.tokenText.setText(`🪙 ${nomToken}`)

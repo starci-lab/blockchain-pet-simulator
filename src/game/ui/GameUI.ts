@@ -190,4 +190,8 @@ export class GameUI {
   showPetDetailsModal(petData: PetData) {
     this.petDetailsModal.show(petData);
   }
+
+  getTokenUI(): TokenUI {
+    return this.tokenUI;
+  }
 }
