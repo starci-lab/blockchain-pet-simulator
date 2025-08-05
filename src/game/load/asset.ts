@@ -13,6 +13,8 @@ import poopImg from "@/assets/images/poop/poop.png";
 import broomImg from "@/assets/images/broom/broom.png";
 import ballImg from "@/assets/images/ball/ball.png";
 import forestBgImg from "@/assets/images/backgrounds/forest-bg.png";
+import heartImg from "@/assets/images/effects/heart.png";
+import coinImg from "@/assets/images/effects/coin.png";
 export const loadChogAssets = (scene: Phaser.Scene) => {
   scene.load.atlas("dog-sleep", dogSleepImg, dogSleepJson);
   scene.load.atlas("dog-play", dogPlayImg, dogPlayJson);
@@ -41,4 +43,9 @@ export const loadCleaningAssets = (scene: Phaser.Scene) => {
 
 export const loadToyAssets = (scene: Phaser.Scene) => {
   scene.load.image("ball", ballImg);
+};
+
+export const loadEffectAssets = (scene: Phaser.Scene) => {
+  scene.load.image("heart", heartImg);
+  scene.load.image("coin", coinImg);
 };
