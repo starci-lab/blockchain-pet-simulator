@@ -134,7 +134,7 @@ const PhaserPetGame = ({ publicKey, signMessage }: PhaserPetGameProps) => {
         });
 
         setAddressWallet(verifyResponse.data.wallet_address);
-      } catch (error) {
+      } catch {
         // ignore
       }
     };
