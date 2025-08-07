@@ -6,6 +6,8 @@ import type {
   ToyItem,
   PetItem,
   BackgroundItem,
+  CleaningItem,
+  FurnitureItem,
 } from "../../configs/gameConfig";
 import { useUserStore } from "../../../store/userStore";
 
@@ -325,7 +327,14 @@ export default class ShopModal {
   private balanceValueElement: HTMLElement | null = null;
 
   // Pagination properties
-  private allTabs: string[] = ["pets", "food", "items", "backgrounds"];
+  private allTabs: string[] = [
+    "pets",
+    "food",
+    "toy",
+    "clean",
+    "furniture",
+    "backgrounds",
+  ];
   private currentTabPage: number = 0;
   private tabsPerPage: number = 3;
   private tabsContainer: HTMLElement | null = null;
@@ -485,7 +494,9 @@ export default class ShopModal {
     // Create all tabs
     this.tabs.pets = this.createTab(tabsRow, "Pets", "pets");
     this.tabs.food = this.createTab(tabsRow, "Food", "food");
-    this.tabs.items = this.createTab(tabsRow, "Items", "items");
+    this.tabs.toy = this.createTab(tabsRow, "Toys", "toy");
+    this.tabs.clean = this.createTab(tabsRow, "Cleaning", "clean");
+    this.tabs.furniture = this.createTab(tabsRow, "Furniture", "furniture");
     this.tabs.backgrounds = this.createTab(
       tabsRow,
       "Backgrounds",
@@ -623,16 +634,45 @@ export default class ShopModal {
 
   private populateItems(): void {
     this.itemsGrid.innerHTML = "";
-    let items: (FoodItem | ToyItem | PetItem | BackgroundItem)[] = [];
+    let items: (
+      | FoodItem
+      | ToyItem
+      | PetItem
+      | BackgroundItem
+      | CleaningItem
+      | FurnitureItem
+    )[] = [];
     this.itemsGrid.style.cssText = ITEMS_GRID_STYLE;
     if (this.currentCategory === "backgrounds") {
       items = Object.values(gameConfigManager.getBackgroundItems());
     } else if (this.currentCategory === "food") {
       items = Object.values(gameConfigManager.getFoodItems());
-    } else if (this.currentCategory === "items") {
+    } else if (this.currentCategory === "toy") {
       items = Object.values(gameConfigManager.getToyItems());
+    } else if (this.currentCategory === "clean") {
+      items = Object.values(gameConfigManager.getCleaningItems());
+    } else if (this.currentCategory === "furniture") {
+      items = Object.values(gameConfigManager.getFurnitureItems());
     } else if (this.currentCategory === "pets") {
       items = Object.values(gameConfigManager.getPetItems());
+    }
+
+    if (items.length === 0) {
+      // Change display to flex for centering the message
+      this.itemsGrid.style.display = "flex";
+      this.itemsGrid.style.alignItems = "center";
+      this.itemsGrid.style.justifyContent = "center";
+      this.itemsGrid.style.minHeight = "150px"; // Ensure it has some space
+
+      const noItemsMessage = document.createElement("div");
+      noItemsMessage.textContent = "Items coming soon!";
+      noItemsMessage.style.cssText = `
+        color: #888;
+        text-align: center;
+        font-size: 14px;
+      `;
+      this.itemsGrid.appendChild(noItemsMessage);
+      return;
     }
 
     items.forEach((item) => {
@@ -644,17 +684,32 @@ export default class ShopModal {
         ITEM_CARD_STYLE + (isActive ? ITEM_CARD_ACTIVE_STYLE : "");
 
       const itemImage = document.createElement("img");
-      let imagePath = "";
-      if (this.currentCategory === "food") {
-        imagePath = `assets/images/food/${item.texture}.png`;
-      } else if (this.currentCategory === "items") {
-        imagePath = `assets/images/ball/${item.texture}.png`;
-      } else if (this.currentCategory === "pets") {
-        imagePath = `assets/images/Chog/${item.texture}_idle.png`;
-      } else if (this.currentCategory === "backgrounds") {
-        imagePath = `assets/images/backgrounds/${item.texture}.png`;
+      let imagePath = item.image_url;
+      if (!imagePath) {
+        // Fallback image logic
+        let basePath = "assets/images/";
+        switch (this.currentCategory) {
+          case "food":
+            basePath += `food/${item.texture}.png`;
+            break;
+          case "toy":
+            basePath += `ball/${item.texture}.png`;
+            break;
+          case "clean":
+            basePath += `broom/${item.texture}.png`;
+            break;
+          case "pets":
+            basePath += `Chog/${item.texture}_idle.png`;
+            break;
+          case "backgrounds":
+            basePath += `backgrounds/${item.texture}.png`;
+            break;
+          default:
+            basePath += ""; // No default image for furniture yet
+        }
+        imagePath = basePath;
       }
-      itemImage.src = imagePath;
+      itemImage.src = imagePath ?? "";
       itemImage.style.cssText = ITEM_IMAGE_STYLE;
 
       const itemName = document.createElement("div");
@@ -694,7 +749,9 @@ export default class ShopModal {
     });
   }
 
-  private handleBuy(item: FoodItem | ToyItem | PetItem | BackgroundItem): void {
+  private handleBuy(
+    item: FoodItem | ToyItem | PetItem | BackgroundItem | CleaningItem | FurnitureItem
+  ): void {
     const userState = useUserStore.getState();
     if (userState.nomToken >= item.price) {
       if (this.currentCategory === "food") {
@@ -708,14 +765,35 @@ export default class ShopModal {
             "Failed to purchase food!"
           );
         }
-      } else if (this.currentCategory === "items") {
+      } else if (this.currentCategory === "toy") {
         const success = this.petManager.buyToy(item.id);
         if (success) {
           this.scene.events.emit("showNotification", `Purchased ${item.name}!`);
           setTimeout(() => this.updateBalance(), 100);
         } else {
-          this.scene.events.emit("showNotification", "Failed to purchase toy!");
+          this.scene.events.emit(
+            "showNotification",
+            "Failed to purchase toy!"
+          );
         }
+      } else if (this.currentCategory === "clean") {
+        // Assuming buyCleaningItem exists on petManager
+        const success = this.petManager.buyCleaningItem(item.id);
+        if (success) {
+          this.scene.events.emit("showNotification", `Purchased ${item.name}!`);
+          setTimeout(() => this.updateBalance(), 100);
+        } else {
+          this.scene.events.emit(
+            "showNotification",
+            "Failed to purchase cleaning item!"
+          );
+        }
+      } else if (this.currentCategory === "furniture") {
+        // Placeholder for buying furniture
+        this.scene.events.emit(
+          "showNotification",
+          `Buying furniture is not yet implemented.`
+        );
       } else if (this.currentCategory === "pets") {
         userState.spendToken(item.price);
         this.petManager.buyPet(item.id);
