@@ -204,7 +204,7 @@ export class PetManager {
         petSprite.y - 30,
         "heart"
       );
-      heart.setScale(0.1);
+      heart.setScale(0.05);
       heart.setAlpha(0);
       heart.setDepth(1000);
 
@@ -225,7 +225,7 @@ export class PetManager {
 
       for (let i = 0; i < 5; i++) {
         const coin = this.scene.add.image(petSprite.x, petSprite.y, "coin");
-        coin.setScale(0.1);
+        coin.setScale(0.05);
         coin.setDepth(1000);
 
         this.scene.tweens.add({
