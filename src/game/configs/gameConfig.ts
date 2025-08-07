@@ -1,4 +1,9 @@
 import http from "@/utils/http";
+import type {
+  StoreApiResponse,
+  ResponseItemDto,
+  ResponsePetTypeDto,
+} from "../../types/api";
 
 export interface GameConfig {
   food: {
@@ -21,6 +26,10 @@ export interface GameConfig {
     items: BackgroundItem[];
     defaultPrice: number;
   };
+  furniture: {
+    items: FurnitureItem[];
+    defaultPrice: number;
+  };
   economy: {
     initialTokens: number;
     hungerDecreaseRate: number;
@@ -39,6 +48,7 @@ export interface FoodItem {
   price: number;
   hungerRestore: number;
   texture: string;
+  image_url?: string;
   rarity?: "common" | "rare" | "epic";
 }
 
@@ -48,6 +58,7 @@ export interface CleaningItem {
   price: number;
   cleanlinessRestore: number;
   texture: string;
+  image_url?: string;
   rarity?: "common" | "rare" | "epic";
 }
 
@@ -57,6 +68,7 @@ export interface ToyItem {
   price: number;
   happinessRestore: number;
   texture: string;
+  image_url?: string;
   rarity?: "common" | "rare" | "epic";
 }
 
@@ -66,6 +78,7 @@ export interface PetItem {
   price: number;
   description: string;
   texture: string;
+  image_url?: string;
   rarity?: "common" | "rare" | "epic";
   species: string;
 }
@@ -76,128 +89,46 @@ export interface BackgroundItem {
   price: number;
   description: string;
   texture: string;
+  image_url?: string;
   rarity?: "common" | "rare" | "epic";
   theme: string;
 }
 
-// API response interface
-interface ApiStoreItem {
+export interface FurnitureItem {
+  id: string;
   name: string;
-  type: string;
-  cost_nom: number;
+  price: number;
+  description: string;
+  texture: string;
+  image_url?: string;
+  rarity?: "common" | "rare" | "epic";
 }
 
 // Default local config (fallback)
 export const DEFAULT_GAME_CONFIG: GameConfig = {
   food: {
-    items: [
-      {
-        id: "hamburger",
-        name: "Hamburger",
-        price: 10,
-        hungerRestore: 15,
-        texture: "hamburger",
-      },
-      {
-        id: "apple",
-        name: "Apple",
-        price: 5,
-        hungerRestore: 10,
-        texture: "apple",
-      },
-      {
-        id: "fish",
-        name: "Fish",
-        price: 15,
-        hungerRestore: 20,
-        texture: "fish",
-      },
-    ],
+    items: [],
     defaultPrice: 10,
   },
   cleaning: {
-    items: [
-      {
-        id: "soap",
-        name: "Soap",
-        price: 8,
-        cleanlinessRestore: 15,
-        texture: "soap",
-      },
-      {
-        id: "brush",
-        name: "Brush",
-        price: 12,
-        cleanlinessRestore: 20,
-        texture: "broom",
-      },
-    ],
+    items: [],
     defaultPrice: 10,
   },
   toys: {
-    items: [
-      {
-        id: "ball",
-        name: "Ball",
-        price: 20,
-        happinessRestore: 25,
-        texture: "ball",
-      },
-      {
-        id: "rope",
-        name: "Rope",
-        price: 15,
-        happinessRestore: 20,
-        texture: "rope",
-      },
-    ],
+    items: [],
     defaultPrice: 17,
   },
   pets: {
-    items: [
-      {
-        id: "chog",
-        name: "Chog",
-        price: 50,
-        description: "A cute and playful digital pet companion",
-        texture: "chog",
-        species: "Chog",
-        rarity: "common",
-      },
-    ],
+    items: [],
     defaultPrice: 50,
   },
   backgrounds: {
-    items: [
-      {
-        id: "forest",
-        name: "Forest",
-        price: 25,
-        description: "A peaceful forest environment",
-        texture: "forest-bg",
-        theme: "Nature",
-        rarity: "common",
-      },
-      {
-        id: "space",
-        name: "Space",
-        price: 35,
-        description: "A cosmic space environment",
-        texture: "space-bg",
-        theme: "Sci-Fi",
-        rarity: "rare",
-      },
-      {
-        id: "beach",
-        name: "Beach",
-        price: 30,
-        description: "A sunny beach environment",
-        texture: "beach-bg",
-        theme: "Tropical",
-        rarity: "common",
-      },
-    ],
+    items: [],
     defaultPrice: 30,
+  },
+  furniture: {
+    items: [],
+    defaultPrice: 0,
   },
   economy: {
     initialTokens: 100,
@@ -219,42 +150,112 @@ class GameConfigManager {
     console.log("🔄 Starting loadConfig...");
     try {
       console.log("📞 Calling API /store-item...");
-      const response = await http.get("/store-item");
+      const response = await http.get<StoreApiResponse>("/store-item");
       console.log("📥 Loaded game config from API:", response.data);
 
-      // Transform API response to match our GameConfig format
-      const storeItems: ApiStoreItem[] = response.data;
-      const foodItems: FoodItem[] = storeItems
-        .filter((item: ApiStoreItem) => item.type === "food")
-        .map((item: ApiStoreItem) => ({
-          id: item.name.toLowerCase().replace(" ", "_"),
+      const { food, toy, clean, background, pet, furniture } = response.data;
+
+      const foodItems: FoodItem[] = food.map((item: ResponseItemDto) => ({
+        id: item._id,
+        name: item.name,
+        price: item.cost_nom,
+        hungerRestore: item.effect?.hunger ?? 15,
+        texture: item.name.toLowerCase().replace(/ /g, "_"),
+        image_url: item.image_url,
+        rarity: "common",
+      }));
+
+      const cleaningItems: CleaningItem[] = clean.map(
+        (item: ResponseItemDto) => ({
+          id: item._id,
           name: item.name,
           price: item.cost_nom,
-          hungerRestore: 15, // Default value, có thể adjust dựa vào item
-          texture: item.name.toLowerCase().replace(" ", "_"),
-          rarity: "common", // Default, có thể map từ API nếu có
-        }));
+          cleanlinessRestore: item.effect?.cleanliness ?? 15,
+          texture: item.name.toLowerCase().replace(/ /g, "_"),
+          image_url: item.image_url,
+          rarity: "common",
+        })
+      );
 
-      if (foodItems.length > 0) {
-        const serverConfig: Partial<GameConfig> = {
-          food: {
-            items: foodItems,
-            defaultPrice: foodItems[0]?.price || this.config.food.defaultPrice,
-          },
-        };
+      const toyItems: ToyItem[] = toy.map((item: ResponseItemDto) => ({
+        id: item._id,
+        name: item.name,
+        price: item.cost_nom,
+        happinessRestore: item.effect?.happiness ?? 15,
+        texture: item.name.toLowerCase().replace(/ /g, "_"),
+        image_url: item.image_url,
+        rarity: "common",
+      }));
 
-        this.config = { ...DEFAULT_GAME_CONFIG, ...serverConfig };
-        console.log(
-          "✅ Game config loaded from API:",
-          foodItems.length,
-          "food items"
-        );
+      const backgroundItems: BackgroundItem[] = background.map(
+        (item: ResponseItemDto) => ({
+          id: item._id,
+          name: item.name,
+          price: item.cost_nom,
+          description: item.description,
+          texture: item.name.toLowerCase().replace(/ /g, "_"),
+          image_url: item.image_url,
+          theme: "default", // Placeholder
+          rarity: "common",
+        })
+      );
 
-        // Log detailed food items
-        // this.logFoodItems()
-      } else {
-        console.log("⚠️ No food items found in API, using default config");
-      }
+      const furnitureItems: FurnitureItem[] = furniture.map(
+        (item: ResponseItemDto) => ({
+          id: item._id,
+          name: item.name,
+          price: item.cost_nom,
+          description: item.description,
+          texture: item.name.toLowerCase().replace(/ /g, "_"),
+          image_url: item.image_url,
+          rarity: "common",
+        })
+      );
+
+      const petItems: PetItem[] = pet.map((item: ResponsePetTypeDto) => ({
+        id: item._id,
+        name: item.name,
+        price: 0, // API does not provide price for pets
+        description: item.description ?? "",
+        texture: item.name.toLowerCase().replace(/ /g, "_"),
+        image_url: item.image_url,
+        species: item.name,
+        rarity: "common",
+      }));
+
+      const serverConfig: Partial<GameConfig> = {
+        food: {
+          items: foodItems,
+          defaultPrice: foodItems[0]?.price || this.config.food.defaultPrice,
+        },
+        cleaning: {
+          items: cleaningItems,
+          defaultPrice:
+            cleaningItems[0]?.price || this.config.cleaning.defaultPrice,
+        },
+        toys: {
+          items: toyItems,
+          defaultPrice: toyItems[0]?.price || this.config.toys.defaultPrice,
+        },
+        backgrounds: {
+          items: backgroundItems,
+          defaultPrice:
+            backgroundItems[0]?.price ||
+            this.config.backgrounds.defaultPrice,
+        },
+        furniture: {
+          items: furnitureItems,
+          defaultPrice:
+            furnitureItems[0]?.price || this.config.furniture.defaultPrice,
+        },
+        pets: {
+          items: petItems,
+          defaultPrice: petItems[0]?.price || this.config.pets.defaultPrice,
+        },
+      };
+
+      this.config = { ...DEFAULT_GAME_CONFIG, ...serverConfig };
+      console.log("✅ Game config loaded and processed from API.");
     } catch (error) {
       console.log("⚠️ Using default game config (API error):", error);
     }
@@ -356,6 +357,14 @@ class GameConfigManager {
       cleaningItems[item.id] = item;
     });
     return cleaningItems;
+  }
+
+  getFurnitureItems(): { [key: string]: FurnitureItem } {
+    const furnitureItems: { [key: string]: FurnitureItem } = {};
+    this.config.furniture.items.forEach((item) => {
+      furnitureItems[item.id] = item;
+    });
+    return furnitureItems;
   }
 
   updateConfig(newConfig: Partial<GameConfig>) {
