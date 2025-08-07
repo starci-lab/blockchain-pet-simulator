@@ -229,11 +229,7 @@ export class InputManager {
             if (activePet) {
               activePet.cleanlinessSystem.cleaningInventory--;
             }
-            this.notificationUI.showNotification(
-              "🧹 Cleaned poop!",
-              pointer.x,
-              pointer.y
-            );
+            // Removed notification for cleaning poop
           } else {
             this.notificationUI.showNotification(
               "No poop found at this location",
@@ -252,11 +248,7 @@ export class InputManager {
               if (activePet) {
                 activePet.cleanlinessSystem.cleaningInventory--;
               }
-              this.notificationUI.showNotification(
-                "🧹 Bought brush and cleaned poop!",
-                pointer.x,
-                pointer.y
-              );
+              // Removed notification for buying brush and cleaning poop
             } else {
               this.notificationUI.showNotification(
                 "🧹 Bought brush! No poop found at this location",
@@ -301,27 +293,15 @@ export class InputManager {
 
         if (hasInventory) {
           // Use ball at clicked location
-          const success = this.petManager.useBall(pointer.x, pointer.y);
-          if (success) {
-            this.notificationUI.showNotification(
-              "🎾 Ball thrown! Pet will play with it!",
-              pointer.x,
-              pointer.y
-            );
-          }
+          this.petManager.useBall(pointer.x, pointer.y);
+          // Removed notification for ball throwing
         } else {
           // Try to buy ball first
           const success = this.petManager.buyToy();
           if (success) {
             // Use ball immediately after buying
-            const ballUsed = this.petManager.useBall(pointer.x, pointer.y);
-            if (ballUsed) {
-              this.notificationUI.showNotification(
-                "🎾 Bought ball and threw it! Pet will play!",
-                pointer.x,
-                pointer.y
-              );
-            }
+            this.petManager.useBall(pointer.x, pointer.y);
+            // Removed notification for buying and throwing ball
           } else {
             this.notificationUI.showNotification(
               "You do not have enough NOM tokens!",
