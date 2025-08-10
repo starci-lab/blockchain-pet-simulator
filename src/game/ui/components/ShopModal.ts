@@ -780,6 +780,7 @@ export default class ShopModal {
           this.scene.events.emit("showNotification", "Failed to purchase toy!");
         }
       } else if (this.currentCategory === "clean") {
+        console.log("Buying cleaning item:", item);
         const success = this.petManager.buyCleaning(item.id);
         if (success) {
           this.scene.events.emit("showNotification", `Purchased ${item.name}!`);

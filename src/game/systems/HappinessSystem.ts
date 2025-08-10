@@ -65,7 +65,7 @@ export class HappinessSystem {
 
   // ===== INVENTORY MANAGEMENT =====
 
-  buyToy(toyId: string = "ball"): boolean {
+  buyToy(toyId: string): boolean {
     const toy = gameConfigManager.getToyItem(toyId);
     if (!toy) {
       console.log(`❌ Toy with ID ${toyId} not found in config`);

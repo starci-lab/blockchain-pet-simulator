@@ -212,7 +212,7 @@ export class CleanlinessSystem {
 
   // ===== CLEANING MANAGEMENT =====
 
-  buyCleaning(cleaningId: string = "brush"): boolean {
+  buyCleaning(cleaningId: string): boolean {
     console.log(`🛒 Buying cleaning item: ${cleaningId}`);
     const price = gameConfigManager.getCleaningPrice(cleaningId);
 

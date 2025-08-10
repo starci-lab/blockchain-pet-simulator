@@ -64,7 +64,7 @@ export class FeedingSystem {
   }
 
   // ===== FOOD PURCHASE =====
-  buyFood(foodId: string = "hamburger"): boolean {
+  buyFood(foodId: string): boolean {
     const food = gameConfigManager.getFoodItem(foodId);
     if (!food) {
       return false;

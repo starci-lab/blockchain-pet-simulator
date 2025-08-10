@@ -479,7 +479,7 @@ export class PetManager {
   }
 
   // Shared feeding operations
-  buyFood(foodId: string = "hamburger"): boolean {
+  buyFood(foodId: string): boolean {
     // Use active pet's feeding system for purchase
     const activePet = this.getActivePet();
     if (activePet) {
@@ -1157,7 +1157,7 @@ export class PetManager {
   }
 
   // Cleaning management methods
-  buyCleaning(cleaningId: string = "brush"): boolean {
+  buyCleaning(cleaningId: string): boolean {
     const activePet = this.getActivePet();
     if (activePet) {
       return activePet.cleanlinessSystem.buyCleaning(cleaningId);
@@ -1179,7 +1179,7 @@ export class PetManager {
   }
 
   // Happiness/Toy management methods
-  buyToy(toyId: string = "ball"): boolean {
+  buyToy(toyId: string): boolean {
     const activePet = this.getActivePet();
     if (activePet) {
       return activePet.happinessSystem.buyToy(toyId);
@@ -1194,7 +1194,7 @@ export class PetManager {
       this.dropSharedBall(x, y);
       return true;
     } else {
-      // Try to buy ball first
+      // TODO: Implement buying logic to buy without ID?
       const success = this.buyToy();
       if (success) {
         this.dropSharedBall(x, y);
