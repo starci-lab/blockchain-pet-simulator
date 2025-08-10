@@ -750,7 +750,13 @@ export default class ShopModal {
   }
 
   private handleBuy(
-    item: FoodItem | ToyItem | PetItem | BackgroundItem | CleaningItem | FurnitureItem
+    item:
+      | FoodItem
+      | ToyItem
+      | PetItem
+      | BackgroundItem
+      | CleaningItem
+      | FurnitureItem
   ): void {
     const userState = useUserStore.getState();
     if (userState.nomToken >= item.price) {
@@ -771,14 +777,10 @@ export default class ShopModal {
           this.scene.events.emit("showNotification", `Purchased ${item.name}!`);
           setTimeout(() => this.updateBalance(), 100);
         } else {
-          this.scene.events.emit(
-            "showNotification",
-            "Failed to purchase toy!"
-          );
+          this.scene.events.emit("showNotification", "Failed to purchase toy!");
         }
       } else if (this.currentCategory === "clean") {
-        // Assuming buyCleaningItem exists on petManager
-        const success = this.petManager.buyCleaningItem(item.id);
+        const success = this.petManager.buyCleaning(item.id);
         if (success) {
           this.scene.events.emit("showNotification", `Purchased ${item.name}!`);
           setTimeout(() => this.updateBalance(), 100);
