@@ -230,8 +230,11 @@ export class CleanlinessSystem {
         return false;
       }
 
-      console.log("💰 Tokens sufficient, sending purchase request to server");
-      this.colyseusClient.purchaseItem("cleaning", cleaningId, 1);
+      // Get cleaning item to retrieve both id and name
+      const cleaningItem = gameConfigManager.getCleaningItem(cleaningId);
+      const itemName = cleaningItem?.name || cleaningId; // Fallback to cleaningId if name not found
+
+      this.colyseusClient.purchaseItem("cleaning", itemName, 1, cleaningId);
 
       return true; // Server will handle validation and update inventory
     } else {

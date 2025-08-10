@@ -2,9 +2,7 @@ import type { ColyseusClient } from "@/game/colyseus/client";
 import { Pet } from "../entities/Pet";
 import { useUserStore } from "@/store/userStore";
 import { gameConfigManager } from "@/game/configs/gameConfig";
-import {
-  GAME_MECHANICS,
-} from "../constants/gameConstants";
+import { GAME_MECHANICS } from "../constants/gameConstants";
 
 // Hunger states
 export const HungerState = {
@@ -67,8 +65,12 @@ export class FeedingSystem {
 
   // ===== FOOD PURCHASE =====
   buyFood(foodId: string = "hamburger"): boolean {
-    console.log(`🛒 Buying food: ${foodId}`);
-    const foodPrice = gameConfigManager.getFoodPrice(foodId);
+    const food = gameConfigManager.getFoodItem(foodId);
+    if (!food) {
+      return false;
+    }
+
+    const foodPrice = food.price;
 
     if (this.colyseusClient && this.colyseusClient.isConnected()) {
       console.log(
@@ -84,8 +86,11 @@ export class FeedingSystem {
         return false;
       }
 
-      console.log("💰 Tokens sufficient, sending purchase request to server");
-      this.colyseusClient.purchaseItem("food", foodId, 1);
+      // Get food item to retrieve both id and name
+      const foodItem = gameConfigManager.getFoodItem(foodId);
+      const itemName = foodItem?.name || foodId; // Fallback to foodId if name not found
+
+      this.colyseusClient.purchaseItem("food", itemName, 1, foodId);
 
       return true; // Server will handle validation and update inventory
     } else {
@@ -119,9 +124,11 @@ export class FeedingSystem {
 
     const oldHunger = this.hungerLevel;
     this.hungerLevel = Math.min(100, this.hungerLevel + recovery);
-    
+
     console.log(
-      `📈 Pet ${this.petId} hunger: ${oldHunger.toFixed(1)} → ${this.hungerLevel.toFixed(1)}`
+      `📈 Pet ${this.petId} hunger: ${oldHunger.toFixed(
+        1
+      )} → ${this.hungerLevel.toFixed(1)}`
     );
 
     // Send eaten food event to server if connected
@@ -139,7 +146,6 @@ export class FeedingSystem {
     // This system is only responsible for updating state and animation.
     this.pet.setActivity("chew");
   }
-
 
   // ===== CLEANUP =====
 

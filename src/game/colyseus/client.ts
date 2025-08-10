@@ -467,8 +467,13 @@ export class ColyseusClient {
   // ===== SIMPLE API METHODS FOR UI =====
 
   // Purchase item from store
-  purchaseItem(itemType: string, itemName: string, quantity: number = 1) {
-    this.sendMessage("buy_food", { itemType, itemName, quantity });
+  purchaseItem(
+    itemType: string,
+    itemName: string,
+    quantity: number = 1,
+    itemId: string
+  ) {
+    this.sendMessage("buy_food", { itemType, itemName, quantity, itemId });
   }
 
   // Feed pet

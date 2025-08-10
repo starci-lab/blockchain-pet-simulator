@@ -34,11 +34,7 @@ export class HappinessSystem {
   private colyseusClient: ColyseusClient;
   private petId: string;
 
-  constructor(
-    pet: Pet,
-    colyseusClient: ColyseusClient,
-    petId: string
-  ) {
+  constructor(pet: Pet, colyseusClient: ColyseusClient, petId: string) {
     this.pet = pet;
     this.colyseusClient = colyseusClient;
     this.petId = petId;
@@ -93,27 +89,21 @@ export class HappinessSystem {
         return false;
       }
 
-      console.log("💰 Tokens sufficient, sending purchase request to server");
-      this.colyseusClient.purchaseItem("toys", toyId, 1);
+      // Get toy item to retrieve both id and name
+      const toyItem = gameConfigManager.getToyItem(toyId);
+      const itemName = toyItem?.name || toyId; // Fallback to toyId if name not found
+
+      this.colyseusClient.purchaseItem("toys", itemName, 1, toyId);
 
       return true; // Server will handle validation and update inventory
     } else {
-      console.log("🔌 Offline mode - using local validation");
-
       const userStore = useUserStore.getState();
       if (userStore.nomToken >= toyPrice) {
         userStore.setNomToken(userStore.nomToken - toyPrice);
         this.toyInventory++;
-
-        console.log(
-          `✅ Purchase successful: ${toy.name} for ${toyPrice} tokens. Inventory: ${this.toyInventory}`
-        );
         return true;
       }
 
-      console.log(
-        `❌ Not enough tokens to buy ${toy.name}. Need: ${toyPrice}, Have: ${userStore.nomToken}`
-      );
       return false;
     }
   }
