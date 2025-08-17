@@ -44,10 +44,7 @@ export class GameUI {
     this.happinessUI = new HappinessUI(scene, petManager);
     this.tokenUI = new TokenUI(scene);
     this.shopUI = new ShopUI(scene, petManager, this.notificationUI);
-    this.petShopModal = new PetShopModal(
-      petManager,
-      this.notificationUI
-    );
+    this.petShopModal = new PetShopModal(petManager, this.notificationUI);
     this.petDetailsModal = new PetDetailsModal(petManager);
     this.inputManager = new InputManager(
       scene,
@@ -98,7 +95,7 @@ export class GameUI {
         color: "#ffffff",
         fontStyle: "bold",
         fontFamily: "monospace",
-        align: "center",
+        align: "center"
       })
       .setOrigin(0.5);
 
@@ -143,7 +140,7 @@ export class GameUI {
         color: "#ffffff",
         fontStyle: "bold",
         fontFamily: "Segoe UI, Arial, sans-serif",
-        align: "center",
+        align: "center"
       })
       .setOrigin(0.5);
 

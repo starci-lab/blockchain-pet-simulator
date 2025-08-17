@@ -39,7 +39,7 @@ export class ColyseusClient {
 
       this.room = await client.joinOrCreate("single_player", {
         name: "Pet Game",
-        addressWallet: useUserStore.getState().addressWallet,
+        addressWallet: useUserStore.getState().addressWallet
       });
 
       console.log("✅ Connected to Colyseus!");
@@ -112,17 +112,17 @@ export class ColyseusClient {
 
   private handleMessage(type: string, message: any) {
     switch (type) {
-      case "purchase-response":
+      case "purchase_response":
         this.handlePurchaseResponse(message);
         break;
 
-      case "feed-pet-response":
-      case "play-pet-response":
-      case "clean-pet-response":
+      case "feed_pet_response":
+      case "play_pet_response":
+      case "clean_pet_response":
         this.handlePetActionResponse(message);
         break;
 
-      case "player-state-sync":
+      case "player_state_sync":
         this.handlePlayerSync(message);
         break;
 
@@ -130,7 +130,7 @@ export class ColyseusClient {
         this.handlePetsSync(message);
         break;
 
-      case "buy-pet-response":
+      case "buy_pet_response":
         this.handleBuyPetResponse(message);
         break;
 
