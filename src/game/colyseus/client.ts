@@ -126,7 +126,7 @@ export class ColyseusClient {
         this.handlePlayerSync(message);
         break;
 
-      case "pets-state-sync":
+      case "pets_state_sync":
         this.handlePetsSync(message);
         break;
 
