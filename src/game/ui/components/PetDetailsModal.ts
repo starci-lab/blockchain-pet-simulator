@@ -54,7 +54,7 @@ export class PetDetailsModal {
       display: flex;
       align-items: center;
       justify-content: center;
-    `,
+    `
   };
 
   constructor(petManager: PetManager) {
@@ -149,20 +149,20 @@ export class PetDetailsModal {
         label: "🍖 Hunger",
         value: petData.feedingSystem.hungerLevel,
         color: "#FF6B6B",
-        className: "hunger",
+        className: "hunger"
       },
       {
         label: "🧼 Cleanliness",
         value: petData.cleanlinessSystem.cleanlinessLevel,
         color: "#4ECDC4",
-        className: "cleanliness",
+        className: "cleanliness"
       },
       {
         label: "😊 Happiness",
         value: petData.happinessSystem.happinessLevel,
         color: "#FFE066",
-        className: "happiness",
-      },
+        className: "happiness"
+      }
     ];
 
     const statBars = stats.map((stat) =>
@@ -253,18 +253,18 @@ export class PetDetailsModal {
       {
         type: "hunger",
         value: this.currentPet.feedingSystem.hungerLevel,
-        label: "🍖 Hunger",
+        label: "🍖 Hunger"
       },
       {
         type: "cleanliness",
         value: this.currentPet.cleanlinessSystem.cleanlinessLevel,
-        label: "🧼 Cleanliness",
+        label: "🧼 Cleanliness"
       },
       {
         type: "happiness",
         value: this.currentPet.happinessSystem.happinessLevel,
-        label: "😊 Happiness",
-      },
+        label: "😊 Happiness"
+      }
     ];
 
     stats.forEach((stat) => {
@@ -296,18 +296,18 @@ export class PetDetailsModal {
       {
         type: "hunger",
         value: petData.feedingSystem.hungerLevel,
-        label: "🍖 Hunger",
+        label: "🍖 Hunger"
       },
       {
         type: "cleanliness",
         value: petData.cleanlinessSystem.cleanlinessLevel,
-        label: "🧼 Cleanliness",
+        label: "🧼 Cleanliness"
       },
       {
         type: "happiness",
         value: petData.happinessSystem.happinessLevel,
-        label: "😊 Happiness",
-      },
+        label: "😊 Happiness"
+      }
     ];
 
     stats.forEach((stat) => {
