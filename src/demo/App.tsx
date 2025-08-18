@@ -88,7 +88,7 @@ function App() {
           ].map((act) => (
             <button
               key={act.key}
-              onClick={() => setActivity(act.key as any)}
+              onClick={() => setActivity(act.key as typeof activity)}
               style={{
                 marginRight: '5px',
                 backgroundColor: activity === act.key ? '#007bff' : '#f8f9fa',

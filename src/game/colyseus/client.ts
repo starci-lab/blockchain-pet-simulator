@@ -39,7 +39,7 @@ export class ColyseusClient {
 
       this.room = await client.joinOrCreate("single_player", {
         name: "Pet Game",
-        addressWallet: useUserStore.getState().addressWallet,
+        addressWallet: useUserStore.getState().addressWallet
       });
 
       console.log("✅ Connected to Colyseus!");
@@ -112,25 +112,25 @@ export class ColyseusClient {
 
   private handleMessage(type: string, message: any) {
     switch (type) {
-      case "purchase-response":
+      case "purchase_response":
         this.handlePurchaseResponse(message);
         break;
 
-      case "feed-pet-response":
-      case "play-pet-response":
-      case "clean-pet-response":
+      case "feed_pet_response":
+      case "play_pet_response":
+      case "clean_pet_response":
         this.handlePetActionResponse(message);
         break;
 
-      case "player-state-sync":
+      case "player_state_sync":
         this.handlePlayerSync(message);
         break;
 
-      case "pets-state-sync":
+      case "pets_state_sync":
         this.handlePetsSync(message);
         break;
 
-      case "buy-pet-response":
+      case "buy_pet_response":
         this.handleBuyPetResponse(message);
         break;
 
@@ -288,8 +288,12 @@ export class ColyseusClient {
       // Create pet if it doesn't exist locally
       if (!localPetData) {
         console.log(`➕ Creating new pet ${serverPet.id}`);
-        const x = 400;
-        const y = 300;
+        const minX = 100,
+          maxX = 1200;
+        const minY = 200,
+          maxY = 500;
+        const x = Math.floor(Math.random() * (maxX - minX + 1)) + minX;
+        const y = Math.floor(Math.random() * (maxY - minY + 1)) + minY;
         localPetData = petManager.createPet(serverPet.id, x, y);
 
         if (!localPetData) {
@@ -338,6 +342,12 @@ export class ColyseusClient {
     console.log(
       `✅ Pet sync completed. Total pets: ${petManager.getAllPets().length}`
     );
+
+    // Ensure visual states are updated after sync (especially on page reload)
+    if (petManager.updatePetVisualStates) {
+      petManager.updatePetVisualStates();
+      console.log("🎨 Updated pet visual states after sync");
+    }
 
     // Force UI update after pet sync
     if (this.gameUI && this.gameUI.updateUI) {
@@ -457,8 +467,13 @@ export class ColyseusClient {
   // ===== SIMPLE API METHODS FOR UI =====
 
   // Purchase item from store
-  purchaseItem(itemType: string, itemName: string, quantity: number = 1) {
-    this.sendMessage("buy_food", { itemType, itemName, quantity });
+  purchaseItem(
+    itemType: string,
+    itemName: string,
+    quantity: number = 1,
+    itemId: string
+  ) {
+    this.sendMessage("buy_food", { itemType, itemName, quantity, itemId });
   }
 
   // Feed pet
@@ -484,6 +499,29 @@ export class ColyseusClient {
   // Get player inventory
   getInventory() {
     this.sendMessage("get_inventory", {});
+  }
+
+  // Handle pet eating food
+  eatedFood(data: { hunger_level: number; pet_id: string; owner_id: string }) {
+    this.sendMessage("eated_food", data);
+  }
+
+  // Handle pet being cleaned
+  cleanedPet(data: {
+    cleanliness_level: number;
+    pet_id: string;
+    owner_id: string;
+  }) {
+    this.sendMessage("cleaned_pet", data);
+  }
+
+  // Handle pet playing
+  playedPet(data: {
+    happiness_level: number;
+    pet_id: string;
+    owner_id: string;
+  }) {
+    this.sendMessage("played_pet", data);
   }
 
   // ===== SYNC METHODS =====

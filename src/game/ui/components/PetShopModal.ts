@@ -4,16 +4,13 @@ import { useUserStore } from "@/store/userStore";
 const PET_PRICE = 50; // Price to buy a new pet
 
 export class PetShopModal {
-  private scene: Phaser.Scene;
   private petManager: PetManager;
   private notificationUI: any;
 
   constructor(
-    scene: Phaser.Scene,
     petManager: PetManager,
     notificationUI: any
   ) {
-    this.scene = scene;
     this.petManager = petManager;
     this.notificationUI = notificationUI;
   }

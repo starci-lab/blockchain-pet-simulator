@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { GamePositioning } from "@/game/constants/gameConstants";
+import { GamePositioning, GAME_LAYOUT } from "@/game/constants/gameConstants";
 
 export class Pet {
   public sprite!: Phaser.GameObjects.Sprite;
@@ -11,6 +11,12 @@ export class Pet {
   public lastEdgeHit: string = "";
   public groundY: number = 0; // Ground line Y position
 
+  // Cleanliness properties - thuộc tính riêng của mỗi pet
+  public cleanlinessDecreaseMultiplier: number; // Tốc độ giảm riêng cho mỗi pet
+
+  // Happiness properties - thuộc tính riêng của mỗi pet
+  public happinessDecreaseMultiplier: number; // Tốc độ giảm riêng cho mỗi pet
+
   // Chasing properties
   public isChasing: boolean = false;
   public chaseTarget: { x: number; y: number } | null = null;
@@ -18,10 +24,20 @@ export class Pet {
   // Callback for when pet stops chasing (to notify PetManager)
   public onStopChasing?: () => void;
 
+  // Callback for when pet is clicked (to notify PetManager to switch active pet)
+  public onPetClicked?: () => void;
+  public onPetRightClicked?: () => void;
+
   private scene: Phaser.Scene;
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
+
+    // Khởi tạo tốc độ giảm cleanliness ngẫu nhiên cho mỗi pet (0.7x - 1.3x)
+    this.cleanlinessDecreaseMultiplier = 0.7 + Math.random() * 0.6;
+
+    // Khởi tạo tốc độ giảm happiness ngẫu nhiên cho mỗi pet (0.7x - 1.3x)
+    this.happinessDecreaseMultiplier = 0.7 + Math.random() * 0.6;
   }
 
   create(x: number, y?: number) {
@@ -44,7 +60,40 @@ export class Pet {
       "dog-walk",
       "chog_walk 0.aseprite"
     );
-    this.sprite.setScale(2);
+    this.sprite.setScale(GAME_LAYOUT.PET_SCALE);
+
+    // Make pet clickable to switch active pet
+    this.sprite.setInteractive();
+    this.sprite.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
+      console.log(`🖱️ Pet clicked with button: ${pointer.button}`);
+
+      if (pointer.button === 0) {
+        // Left click
+        if (this.onPetClicked) {
+          this.onPetClicked();
+        }
+      } else if (pointer.button === 2) {
+        // Right click
+        if (this.onPetRightClicked) {
+          this.onPetRightClicked();
+        }
+      }
+    });
+
+    // Add hover effect for better UX
+    this.sprite.on("pointerover", () => {
+      // Only apply hover effect if not already active (no tint)
+      if (this.sprite.tintTopLeft === 0xffffff) {
+        this.sprite.setTint(0xdddddd); // Slightly darker when hovered
+      }
+    });
+
+    this.sprite.on("pointerout", () => {
+      // Only clear tint if it's the hover tint, not the active tint
+      if (this.sprite.tintTopLeft === 0xdddddd) {
+        this.sprite.clearTint();
+      }
+    });
 
     this.updateActivity();
   }
@@ -61,10 +110,10 @@ export class Pet {
         { key: "dog-walk", frame: "chog_walk 4.aseprite" },
         { key: "dog-walk", frame: "chog_walk 5.aseprite" },
         { key: "dog-walk", frame: "chog_walk 6.aseprite" },
-        { key: "dog-walk", frame: "chog_walk 7.aseprite" }
+        { key: "dog-walk", frame: "chog_walk 7.aseprite" },
       ],
       frameRate: 8,
-      repeat: -1
+      repeat: -1,
     });
 
     // Sleep animations
@@ -76,10 +125,10 @@ export class Pet {
         { key: "dog-sleep", frame: "chog_sleep 2.aseprite" },
         { key: "dog-sleep", frame: "chog_sleep 3.aseprite" },
         { key: "dog-sleep", frame: "chog_sleep 4.aseprite" },
-        { key: "dog-sleep", frame: "chog_sleep 5.aseprite" }
+        { key: "dog-sleep", frame: "chog_sleep 5.aseprite" },
       ],
       frameRate: 3,
-      repeat: 14
+      repeat: 14,
     });
 
     this.scene.anims.create({
@@ -90,10 +139,10 @@ export class Pet {
         { key: "dog-sleep", frame: "chog_sleep 2.aseprite" },
         { key: "dog-sleep", frame: "chog_sleep 3.aseprite" },
         { key: "dog-sleep", frame: "chog_sleep 4.aseprite" },
-        { key: "dog-sleep", frame: "chog_sleep 5.aseprite" }
+        { key: "dog-sleep", frame: "chog_sleep 5.aseprite" },
       ],
       frameRate: 3,
-      repeat: -1
+      repeat: -1,
     });
 
     // Play animations
@@ -114,10 +163,10 @@ export class Pet {
         { key: "dog-play", frame: "chog_idleplay 11.aseprite" },
         { key: "dog-play", frame: "chog_idleplay 12.aseprite" },
         { key: "dog-play", frame: "chog_idleplay 13.aseprite" },
-        { key: "dog-play", frame: "chog_idleplay 14.aseprite" }
+        { key: "dog-play", frame: "chog_idleplay 14.aseprite" },
       ],
       frameRate: 10,
-      repeat: 1
+      repeat: 1,
     });
 
     this.scene.anims.create({
@@ -137,10 +186,10 @@ export class Pet {
         { key: "dog-play", frame: "chog_idleplay 11.aseprite" },
         { key: "dog-play", frame: "chog_idleplay 12.aseprite" },
         { key: "dog-play", frame: "chog_idleplay 13.aseprite" },
-        { key: "dog-play", frame: "chog_idleplay 14.aseprite" }
+        { key: "dog-play", frame: "chog_idleplay 14.aseprite" },
       ],
       frameRate: 10,
-      repeat: -1
+      repeat: -1,
     });
 
     // Chew animations
@@ -152,10 +201,10 @@ export class Pet {
         { key: "dog-chew", frame: "chog_chew 2.aseprite" },
         { key: "dog-chew", frame: "chog_chew 3.aseprite" },
         { key: "dog-chew", frame: "chog_chew 4.aseprite" },
-        { key: "dog-chew", frame: "chog_chew 5.aseprite" }
+        { key: "dog-chew", frame: "chog_chew 5.aseprite" },
       ],
       frameRate: 6,
-      repeat: 1
+      repeat: 1,
     });
 
     this.scene.anims.create({
@@ -166,10 +215,10 @@ export class Pet {
         { key: "dog-chew", frame: "chog_chew 2.aseprite" },
         { key: "dog-chew", frame: "chog_chew 3.aseprite" },
         { key: "dog-chew", frame: "chog_chew 4.aseprite" },
-        { key: "dog-chew", frame: "chog_chew 5.aseprite" }
+        { key: "dog-chew", frame: "chog_chew 5.aseprite" },
       ],
       frameRate: 6,
-      repeat: -1
+      repeat: -1,
     });
   }
 
@@ -263,6 +312,16 @@ export class Pet {
       this.sprite.y = correctGroundY;
       this.groundY = correctGroundY; // Update stored ground Y
     }
+  }
+
+  // Set callback for when pet is clicked
+  setOnPetClicked(callback: () => void): void {
+    this.onPetClicked = callback;
+  }
+
+  // Set callback for when pet is right-clicked
+  setOnPetRightClicked(callback: () => void): void {
+    this.onPetRightClicked = callback;
   }
 
   // Cleanup method

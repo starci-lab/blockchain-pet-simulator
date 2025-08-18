@@ -1,5 +1,7 @@
 Todo:
-  ☐ Call all messages when a pet item is purchased (brush, food, toy). @critical
-  ☐ Handle right-click on active pet to show pet stats. @high
-  ☐ When left-clicking an active pet, display activity (e.g., happiness with a heart) and claim tokens earned from the pet. @high
+   ☐ Create UI for displaying pet stats (time nature, hunger, happiness, cleanliness, token earned, etc)
 
+Archive:
+  ✔ Handle right-click on active pet to show pet stats. @high @done(25-08-18 10:26) @project(Todo)
+  ✔ Call all messages when a pet item is purchased (brush, food, toy). @critical @done(25-08-07 19:27) @project(Todo)
+  ✔ When left-clicking an active pet, display activity (e.g., happiness with a heart) and claim tokens earned from the pet. @high @started(25-08-03 21:32) @done(25-08-06 16:09) @lasted(2d18h37m53s) @project(Todo)
