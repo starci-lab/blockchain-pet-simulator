@@ -3,10 +3,10 @@ import { type PetData } from "@/game/managers/PetManager";
 export class PetDetailsModal {
   private isVisible: boolean = false;
   private currentPet: PetData | null = null;
-  
+
   // Store creation time for each pet to prevent random changes
   private petCreationTimes: Map<string, number> = new Map();
-  
+
   // Store base total earned for each pet (should come from server)
   private petTotalEarned: Map<string, number> = new Map();
 
@@ -17,57 +17,84 @@ export class PetDetailsModal {
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      background: linear-gradient(145deg, #F4A460, #E6944A);
-      border: 3px solid #D2691E;
-      border-radius: 20px;
-      padding: 15px;
-      color: #4A4A4A;
-      width: 480px;
-      height: auto;
-      max-height: 600px;
-      overflow-y: auto;
-      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-      z-index: 10000;
-      font-family: Arial, sans-serif;
+      width: 20%;
+      max-width: 350px;
+      min-height: 150px;
+      background: linear-gradient(180deg, #1D1D1D 0%, #141414 100%);
+      border-radius: 21px;
+      border: 0.84px solid transparent;
+      background-clip: padding-box;
+      box-shadow: 0px 0px 1.43px 0px rgba(0, 0, 0, 0.25), inset 0px 1.26px 1.26px 0px rgba(154, 154, 154, 0.45);
+      display: block;
+      flex-direction: column;
+      padding: 12px;
+      z-index: 100;
+      color: #B3B3B3;
+      font-family: 'Plus Jakarta Sans', sans-serif;
       animation: modalSlideIn 0.3s ease-out;
     `,
-    section: `
-      background: rgba(255, 255, 255, 0.3);
-      border: 2px solid #D2691E;
-      border-radius: 10px;
-      padding: 15px;
-      max-width: 400px;
-      margin: 0 auto;
+    header: `
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+      margin-bottom: 8px;
+      position: relative;
     `,
-    petInfo: `
-      margin-bottom: 15px;
-      padding: 10px;
-      background: rgba(255, 255, 255, 0.2);
-      border-radius: 8px;
-    `,
-    economicInfo: `
-      margin-bottom: 15px;
-      padding: 10px;
-      background: rgba(255, 215, 0, 0.2);
-      border: 2px solid #FFD700;
-      border-radius: 8px;
+    title: `
+      font-size: 12px;
+      font-weight: 700;
+      color: #B3B3B3;
+      line-height: 1.26;
+      text-align: center;
+      margin: 0;
     `,
     closeButton: `
-      position: absolute;
-      top: 10px;
-      right: 15px;
-      background: rgba(139, 69, 19, 0.3);
-      border: 1px solid #8B4513;
-      color: #4A4A4A;
-      width: 25px;
-      height: 25px;
-      border-radius: 50%;
+      background: #323232;
+      border: none;
+      color: #E95151;
+      font-size: 8px;
       cursor: pointer;
-      font-size: 18px;
-      font-weight: bold;
+      width: 12px;
+      aspect-ratio: 1;
+      border-radius: 50%;
       display: flex;
-      align-items: center;
       justify-content: center;
+      align-items: center;
+      box-shadow: inset 0px 0.84px 0.42px 0px rgba(199, 199, 199, 0.19);
+      position: absolute;
+      top: 50%;
+      right: 0;
+      transform: translateY(-50%);
+    `,
+    contentWrapper: `
+      background: #101010;
+      border-radius: 12px;
+      border: 1px solid rgba(0, 0, 0, 0.5);
+      box-shadow: inset 0px 2.52px 3.35px 0px rgba(0, 0, 0, 0.3);
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      padding: 12px;
+    `,
+    section: `
+      margin-bottom: 12px;
+    `,
+    petInfo: `
+      background: rgba(60, 60, 60, 0.26);
+      border: 1.25px solid rgba(0, 0, 0, 0.37);
+      border-radius: 18.73px;
+      padding: 8px;
+      margin-bottom: 12px;
+      box-shadow: inset 0px 4.46px 5.95px 0px rgba(0, 0, 0, 0.3);
+    `,
+    economicInfo: `
+      background: rgba(60, 60, 60, 0.26);
+      border: 1.25px solid rgba(0, 0, 0, 0.37);
+      border-radius: 18.73px;
+      padding: 8px;
+      margin-bottom: 12px;
+      box-shadow: inset 0px 4.46px 5.95px 0px rgba(0, 0, 0, 0.3);
     `,
   };
 
@@ -89,12 +116,10 @@ export class PetDetailsModal {
     // Add CSS animation if not exists
     this.addModalAnimation();
 
-    // Create main content
+    // Create main content (includes header with close button)
     const mainContent = this.createMainContent(petData);
-    const closeButton = this.createCloseButton();
 
     modalWindow.appendChild(mainContent);
-    modalWindow.appendChild(closeButton);
     document.body.appendChild(modalWindow);
 
     // Close on outside click
@@ -123,7 +148,7 @@ export class PetDetailsModal {
         @keyframes modalSlideIn {
           from {
             opacity: 0;
-            transform: translate(-50%, -60%) scale(0.9);
+            transform: translate(-50%, -50%) scale(0.9);
           }
           to {
             opacity: 1;
@@ -138,54 +163,63 @@ export class PetDetailsModal {
   private createMainContent(petData: PetData): HTMLElement {
     const mainContent = document.createElement("div");
 
-    const petDetailsSection = document.createElement("div");
-    petDetailsSection.style.cssText = PetDetailsModal.MODAL_STYLES.section;
-
     // Header
-    const detailsLabel = document.createElement("h3");
-    detailsLabel.textContent = "Pet Details";
-    detailsLabel.style.cssText = `
-      margin: 0 0 15px 0;
-      font-size: 18px;
-      color: #8B4513;
-      text-align: center;
-    `;
+    const header = document.createElement("div");
+    header.style.cssText = PetDetailsModal.MODAL_STYLES.header;
 
-    // Pet info
+    const title = document.createElement("h3");
+    title.textContent = "Pet Details";
+    title.style.cssText = PetDetailsModal.MODAL_STYLES.title;
+
+    const closeButton = this.createCloseButton();
+
+    header.appendChild(title);
+    header.appendChild(closeButton);
+
+    // Content wrapper
+    const contentWrapper = document.createElement("div");
+    contentWrapper.style.cssText = PetDetailsModal.MODAL_STYLES.contentWrapper;
+
+    // Pet info section
     const petInfo = document.createElement("div");
     petInfo.style.cssText = PetDetailsModal.MODAL_STYLES.petInfo;
 
     const petID = document.createElement("p");
     petID.textContent = `Pet ID: ${petData.id}`;
     petID.style.cssText = `
-      font-size: 14px;
-      margin: 5px 0;
-      color: #4A4A4A;
-      font-weight: bold;
+      font-size: 12px;
+      margin: 0;
+      color: #B3B3B3;
+      font-weight: 600;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      text-align: center;
     `;
     petInfo.appendChild(petID);
 
     // Economic info section
     const economicInfo = this.createEconomicInfo(petData);
 
-    // Stats bars
+    // Stats section
+    const statsSection = document.createElement("div");
+    statsSection.style.cssText = PetDetailsModal.MODAL_STYLES.section;
+
     const stats = [
       {
-        label: "🍖 Hunger",
+        label: "Hunger",
         value: petData.feedingSystem.hungerLevel,
-        color: "#FF6B6B",
+        color: "#8B5CF6", // Purple for hunger
         className: "hunger",
       },
       {
-        label: "🧼 Cleanliness",
+        label: "Cleanliness",
         value: petData.cleanlinessSystem.cleanlinessLevel,
-        color: "#4ECDC4",
+        color: "#06B6D4", // Cyan for cleanliness
         className: "cleanliness",
       },
       {
-        label: "😊 Happiness",
+        label: "Happiness",
         value: petData.happinessSystem.happinessLevel,
-        color: "#FFE066",
+        color: "#F59E0B", // Amber for happiness
         className: "happiness",
       },
     ];
@@ -194,12 +228,15 @@ export class PetDetailsModal {
       this.createStatBar(stat.label, stat.value, stat.color, stat.className)
     );
 
-    // Assemble
-    petDetailsSection.appendChild(detailsLabel);
-    petDetailsSection.appendChild(petInfo);
-    petDetailsSection.appendChild(economicInfo);
-    statBars.forEach((bar) => petDetailsSection.appendChild(bar));
-    mainContent.appendChild(petDetailsSection);
+    statBars.forEach((bar) => statsSection.appendChild(bar));
+
+    // Assemble content
+    contentWrapper.appendChild(petInfo);
+    contentWrapper.appendChild(economicInfo);
+    contentWrapper.appendChild(statsSection);
+
+    mainContent.appendChild(header);
+    mainContent.appendChild(contentWrapper);
 
     return mainContent;
   }
@@ -210,16 +247,17 @@ export class PetDetailsModal {
 
     // Economic section header
     const economicLabel = document.createElement("h4");
-    economicLabel.textContent = "💰 Economic Stats";
+    economicLabel.textContent = "Economic Stats";
     economicLabel.style.cssText = `
-      margin: 0 0 10px 0;
-      font-size: 16px;
-      color: #B8860B;
+      margin: 0 0 8px 0;
+      font-size: 12px;
+      color: #B3B3B3;
       text-align: center;
-      font-weight: bold;
+      font-weight: 600;
+      font-family: 'Plus Jakarta Sans', sans-serif;
     `;
 
-    // Calculate economic stats (simulated for now)
+    // Calculate economic stats
     const tokensPerCycle = this.calculateTokensPerCycle(petData);
     const totalTokensEarned = this.calculateTotalTokensEarned(petData);
     const timeInNature = this.calculateTimeInNature(petData);
@@ -227,19 +265,16 @@ export class PetDetailsModal {
     // Create economic info items
     const economicItems = [
       {
-        icon: "💎",
         label: "Income per Cycle",
         value: `${tokensPerCycle.toFixed(2)} NOM`,
         id: "income-per-cycle",
       },
       {
-        icon: "💰",
         label: "Total Earned",
         value: `${totalTokensEarned.toFixed(2)} NOM`,
         id: "total-earned",
       },
       {
-        icon: "⏰",
         label: "Time in Nature",
         value: timeInNature,
         id: "time-nature",
@@ -250,7 +285,6 @@ export class PetDetailsModal {
 
     economicItems.forEach((item) => {
       const itemElement = this.createEconomicItem(
-        item.icon,
         item.label,
         item.value,
         item.id
@@ -262,7 +296,6 @@ export class PetDetailsModal {
   }
 
   private createEconomicItem(
-    icon: string,
     label: string,
     value: string,
     id: string
@@ -274,26 +307,28 @@ export class PetDetailsModal {
       justify-content: space-between;
       align-items: center;
       margin-bottom: 8px;
-      padding: 5px;
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 5px;
+      padding: 8px;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 8px;
     `;
 
     const labelSpan = document.createElement("span");
-    labelSpan.textContent = `${icon} ${label}:`;
+    labelSpan.textContent = `${label}:`;
     labelSpan.style.cssText = `
-      font-size: 14px;
-      color: #4A4A4A;
-      font-weight: bold;
+      font-size: 12px;
+      color: #B3B3B3;
+      font-weight: 500;
+      font-family: 'Plus Jakarta Sans', sans-serif;
     `;
 
     const valueSpan = document.createElement("span");
     valueSpan.className = `economic-value-${id}`;
     valueSpan.textContent = value;
     valueSpan.style.cssText = `
-      font-size: 14px;
-      color: #B8860B;
-      font-weight: bold;
+      font-size: 12px;
+      color: #FFFFFF;
+      font-weight: 600;
+      font-family: 'Plus Jakarta Sans', sans-serif;
     `;
 
     itemContainer.appendChild(labelSpan);
@@ -327,26 +362,26 @@ export class PetDetailsModal {
       const baseEarned = Math.random() * 50 + 10; // Random between 10-60 NOM
       this.petTotalEarned.set(petData.id, baseEarned);
     }
-    
+
     const baseEarned = this.petTotalEarned.get(petData.id)!;
-    
+
     // Calculate additional earnings based on time since creation
     const creationTime = this.petCreationTimes.get(petData.id);
     if (creationTime) {
       const currentTime = Date.now();
       const timeAliveInHours = (currentTime - creationTime) / (1000 * 60 * 60);
-      
+
       // Calculate average income per hour based on current stats
       const currentTokensPerCycle = this.calculateTokensPerCycle(petData);
       const cyclesPerHour = 6; // Assume 6 cycles per hour (10 minutes per cycle)
       const incomePerHour = currentTokensPerCycle * cyclesPerHour;
-      
+
       // Add time-based earnings to base
       const timeBasedEarnings = timeAliveInHours * incomePerHour * 0.1; // Reduced multiplier to make it more realistic
-      
+
       return baseEarned + timeBasedEarnings;
     }
-    
+
     return baseEarned;
   }
 
@@ -356,16 +391,19 @@ export class PetDetailsModal {
       // This would typically come from server data (creation time, active time)
       // For now, simulate some time but store it persistently per pet
       const currentTime = Date.now();
-      const estimatedCreationTime = currentTime - (Math.random() * 7 * 24 * 60 * 60 * 1000); // Random time up to 7 days ago
+      const estimatedCreationTime =
+        currentTime - Math.random() * 7 * 24 * 60 * 60 * 1000; // Random time up to 7 days ago
       this.petCreationTimes.set(petData.id, estimatedCreationTime);
     }
-    
+
     const currentTime = Date.now();
     const creationTime = this.petCreationTimes.get(petData.id)!;
     const diffInMs = currentTime - creationTime;
-    
+
     const days = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((diffInMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const hours = Math.floor(
+      (diffInMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+    );
     const minutes = Math.floor((diffInMs % (1000 * 60 * 60)) / (1000 * 60));
 
     if (days > 0) {
@@ -384,26 +422,31 @@ export class PetDetailsModal {
     className: string
   ): HTMLElement {
     const statContainer = document.createElement("div");
-    statContainer.style.marginBottom = "8px";
+    statContainer.style.cssText = `
+      margin-bottom: 12px;
+      padding: 8px;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 8px;
+    `;
 
     const statLabel = document.createElement("div");
     statLabel.className = `${className}-label`;
     statLabel.textContent = `${label}: ${Math.round(value)}%`;
     statLabel.style.cssText = `
-      font-size: 14px;
-      margin-bottom: 5px;
-      color: #4A4A4A;
-      font-weight: bold;
+      font-size: 12px;
+      margin-bottom: 6px;
+      color: #B3B3B3;
+      font-weight: 500;
+      font-family: 'Plus Jakarta Sans', sans-serif;
     `;
 
     const statBarBg = document.createElement("div");
     statBarBg.style.cssText = `
       width: 100%;
-      height: 12px;
-      background: rgba(139, 69, 19, 0.3);
-      border-radius: 6px;
+      height: 8px;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 4px;
       overflow: hidden;
-      border: 1px solid #D2691E;
     `;
 
     const statBarFill = document.createElement("div");
@@ -412,7 +455,7 @@ export class PetDetailsModal {
       width: ${value}%;
       height: 100%;
       background: ${color};
-      border-radius: 5px;
+      border-radius: 4px;
       transition: width 0.3s ease;
     `;
 
@@ -452,17 +495,17 @@ export class PetDetailsModal {
       {
         type: "hunger",
         value: this.currentPet.feedingSystem.hungerLevel,
-        label: "🍖 Hunger",
+        label: "Hunger",
       },
       {
         type: "cleanliness",
         value: this.currentPet.cleanlinessSystem.cleanlinessLevel,
-        label: "🧼 Cleanliness",
+        label: "Cleanliness",
       },
       {
         type: "happiness",
         value: this.currentPet.happinessSystem.happinessLevel,
-        label: "😊 Happiness",
+        label: "Happiness",
       },
     ];
 
@@ -516,12 +559,10 @@ export class PetDetailsModal {
   }
 
   private updateModalContent(petData: PetData) {
-    // Update Pet ID in the modal
-    const petIdElement = document.querySelector(
-      "#pet-details-modal p"
-    ) as HTMLElement;
-    if (petIdElement) {
-      petIdElement.textContent = `Pet ID: ${petData.id}`;
+    // Update Pet ID in the modal (first p element in pet info)
+    const petIdElements = document.querySelectorAll("#pet-details-modal p");
+    if (petIdElements.length > 0) {
+      (petIdElements[0] as HTMLElement).textContent = `Pet ID: ${petData.id}`;
     }
 
     // Update all stat bars with new pet data
@@ -529,17 +570,17 @@ export class PetDetailsModal {
       {
         type: "hunger",
         value: petData.feedingSystem.hungerLevel,
-        label: "🍖 Hunger",
+        label: "Hunger",
       },
       {
         type: "cleanliness",
         value: petData.cleanlinessSystem.cleanlinessLevel,
-        label: "🧼 Cleanliness",
+        label: "Cleanliness",
       },
       {
         type: "happiness",
         value: petData.happinessSystem.happinessLevel,
-        label: "😊 Happiness",
+        label: "Happiness",
       },
     ];
 
