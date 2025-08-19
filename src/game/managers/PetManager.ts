@@ -256,20 +256,6 @@ export class PetManager {
     }
   }
 
-  // Handle pet right-click to show details modal
-  private handlePetRightClick(petId: string): void {
-    console.log(`🖱️ Pet ${petId} right-clicked - showing details`);
-
-    const petData = this.pets.get(petId);
-    if (petData) {
-      // Notify GameUI to show pet details modal
-      const gameScene = this.scene as any;
-      if (gameScene.gameUI && gameScene.gameUI.showPetDetailsModal) {
-        gameScene.gameUI.showPetDetailsModal(petData);
-      }
-    }
-  }
-
   // Update visual states for all pets (highlight active pet)
   public updatePetVisualStates(): void {
     for (const [petId, petData] of this.pets) {
@@ -1518,5 +1504,24 @@ export class PetManager {
         this.forceReturnToWalk(petData);
       }
     });
+  }
+
+  // Handle right-click on pet to show pet details modal
+  handlePetRightClick(petId: string): void {
+    const petData = this.pets.get(petId);
+    if (!petData) {
+      console.warn(`⚠️ Pet ${petId} not found for right-click`);
+      return;
+    }
+
+    console.log(`🖱️ Right-clicked on pet ${petId}, showing details modal`);
+    
+    // Get GameUI reference to show modal
+    const gameScene = this.scene as any;
+    if (gameScene.gameUI && gameScene.gameUI.petDetailsModal) {
+      gameScene.gameUI.petDetailsModal.showForPet(petData);
+    } else {
+      console.warn("⚠️ GameUI or PetDetailsModal not found");
+    }
   }
 }

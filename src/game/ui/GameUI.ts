@@ -45,7 +45,7 @@ export class GameUI {
     this.tokenUI = new TokenUI(scene);
     this.shopUI = new ShopUI(scene, petManager, this.notificationUI);
     this.petShopModal = new PetShopModal(petManager, this.notificationUI);
-    this.petDetailsModal = new PetDetailsModal(petManager);
+    this.petDetailsModal = new PetDetailsModal();
     this.inputManager = new InputManager(
       scene,
       petManager,

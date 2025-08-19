@@ -1,9 +1,14 @@
-import { PetManager, type PetData } from "@/game/managers/PetManager";
+import { type PetData } from "@/game/managers/PetManager";
 
 export class PetDetailsModal {
-  private petManager: PetManager;
   private isVisible: boolean = false;
   private currentPet: PetData | null = null;
+  
+  // Store creation time for each pet to prevent random changes
+  private petCreationTimes: Map<string, number> = new Map();
+  
+  // Store base total earned for each pet (should come from server)
+  private petTotalEarned: Map<string, number> = new Map();
 
   // Modal styling constants
   private static readonly MODAL_STYLES = {
@@ -17,8 +22,10 @@ export class PetDetailsModal {
       border-radius: 20px;
       padding: 15px;
       color: #4A4A4A;
-      width: 450px;
+      width: 480px;
       height: auto;
+      max-height: 600px;
+      overflow-y: auto;
       box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
       z-index: 10000;
       font-family: Arial, sans-serif;
@@ -38,6 +45,13 @@ export class PetDetailsModal {
       background: rgba(255, 255, 255, 0.2);
       border-radius: 8px;
     `,
+    economicInfo: `
+      margin-bottom: 15px;
+      padding: 10px;
+      background: rgba(255, 215, 0, 0.2);
+      border: 2px solid #FFD700;
+      border-radius: 8px;
+    `,
     closeButton: `
       position: absolute;
       top: 10px;
@@ -54,12 +68,8 @@ export class PetDetailsModal {
       display: flex;
       align-items: center;
       justify-content: center;
-    `
+    `,
   };
-
-  constructor(petManager: PetManager) {
-    this.petManager = petManager;
-  }
 
   create() {
     // Modal is created dynamically when needed
@@ -91,6 +101,18 @@ export class PetDetailsModal {
     modalWindow.addEventListener("click", (event) => {
       if (event.target === modalWindow) this.hide();
     });
+  }
+
+  // Show modal for specific pet (used for right-click)
+  showForPet(petData: PetData) {
+    // If modal is already visible, just update it with new pet data
+    if (this.isVisible) {
+      this.currentPet = petData;
+      this.updateModalContent(petData);
+    } else {
+      // Show modal for first time with this specific pet
+      this.show(petData);
+    }
   }
 
   private addModalAnimation() {
@@ -143,26 +165,29 @@ export class PetDetailsModal {
     `;
     petInfo.appendChild(petID);
 
+    // Economic info section
+    const economicInfo = this.createEconomicInfo(petData);
+
     // Stats bars
     const stats = [
       {
         label: "🍖 Hunger",
         value: petData.feedingSystem.hungerLevel,
         color: "#FF6B6B",
-        className: "hunger"
+        className: "hunger",
       },
       {
         label: "🧼 Cleanliness",
         value: petData.cleanlinessSystem.cleanlinessLevel,
         color: "#4ECDC4",
-        className: "cleanliness"
+        className: "cleanliness",
       },
       {
         label: "😊 Happiness",
         value: petData.happinessSystem.happinessLevel,
         color: "#FFE066",
-        className: "happiness"
-      }
+        className: "happiness",
+      },
     ];
 
     const statBars = stats.map((stat) =>
@@ -172,10 +197,184 @@ export class PetDetailsModal {
     // Assemble
     petDetailsSection.appendChild(detailsLabel);
     petDetailsSection.appendChild(petInfo);
+    petDetailsSection.appendChild(economicInfo);
     statBars.forEach((bar) => petDetailsSection.appendChild(bar));
     mainContent.appendChild(petDetailsSection);
 
     return mainContent;
+  }
+
+  private createEconomicInfo(petData: PetData): HTMLElement {
+    const economicContainer = document.createElement("div");
+    economicContainer.style.cssText = PetDetailsModal.MODAL_STYLES.economicInfo;
+
+    // Economic section header
+    const economicLabel = document.createElement("h4");
+    economicLabel.textContent = "💰 Economic Stats";
+    economicLabel.style.cssText = `
+      margin: 0 0 10px 0;
+      font-size: 16px;
+      color: #B8860B;
+      text-align: center;
+      font-weight: bold;
+    `;
+
+    // Calculate economic stats (simulated for now)
+    const tokensPerCycle = this.calculateTokensPerCycle(petData);
+    const totalTokensEarned = this.calculateTotalTokensEarned(petData);
+    const timeInNature = this.calculateTimeInNature(petData);
+
+    // Create economic info items
+    const economicItems = [
+      {
+        icon: "💎",
+        label: "Income per Cycle",
+        value: `${tokensPerCycle.toFixed(2)} NOM`,
+        id: "income-per-cycle",
+      },
+      {
+        icon: "💰",
+        label: "Total Earned",
+        value: `${totalTokensEarned.toFixed(2)} NOM`,
+        id: "total-earned",
+      },
+      {
+        icon: "⏰",
+        label: "Time in Nature",
+        value: timeInNature,
+        id: "time-nature",
+      },
+    ];
+
+    economicContainer.appendChild(economicLabel);
+
+    economicItems.forEach((item) => {
+      const itemElement = this.createEconomicItem(
+        item.icon,
+        item.label,
+        item.value,
+        item.id
+      );
+      economicContainer.appendChild(itemElement);
+    });
+
+    return economicContainer;
+  }
+
+  private createEconomicItem(
+    icon: string,
+    label: string,
+    value: string,
+    id: string
+  ): HTMLElement {
+    const itemContainer = document.createElement("div");
+    itemContainer.className = `economic-item-${id}`;
+    itemContainer.style.cssText = `
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      padding: 5px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 5px;
+    `;
+
+    const labelSpan = document.createElement("span");
+    labelSpan.textContent = `${icon} ${label}:`;
+    labelSpan.style.cssText = `
+      font-size: 14px;
+      color: #4A4A4A;
+      font-weight: bold;
+    `;
+
+    const valueSpan = document.createElement("span");
+    valueSpan.className = `economic-value-${id}`;
+    valueSpan.textContent = value;
+    valueSpan.style.cssText = `
+      font-size: 14px;
+      color: #B8860B;
+      font-weight: bold;
+    `;
+
+    itemContainer.appendChild(labelSpan);
+    itemContainer.appendChild(valueSpan);
+
+    return itemContainer;
+  }
+
+  private calculateTokensPerCycle(petData: PetData): number {
+    // Base income calculation based on pet stats
+    const hungerMultiplier = petData.feedingSystem.hungerLevel / 100;
+    const cleanlinessMultiplier =
+      petData.cleanlinessSystem.cleanlinessLevel / 100;
+    const happinessMultiplier = petData.happinessSystem.happinessLevel / 100;
+
+    // Average multiplier from all stats
+    const avgMultiplier =
+      (hungerMultiplier + cleanlinessMultiplier + happinessMultiplier) / 3;
+
+    // Base income per cycle (can be configured)
+    const baseIncome = 0.5;
+
+    return baseIncome * avgMultiplier;
+  }
+
+  private calculateTotalTokensEarned(petData: PetData): number {
+    // Initialize base earned amount if not exists
+    if (!this.petTotalEarned.has(petData.id)) {
+      // This would typically come from server data
+      // For now, simulate an initial earned amount
+      const baseEarned = Math.random() * 50 + 10; // Random between 10-60 NOM
+      this.petTotalEarned.set(petData.id, baseEarned);
+    }
+    
+    const baseEarned = this.petTotalEarned.get(petData.id)!;
+    
+    // Calculate additional earnings based on time since creation
+    const creationTime = this.petCreationTimes.get(petData.id);
+    if (creationTime) {
+      const currentTime = Date.now();
+      const timeAliveInHours = (currentTime - creationTime) / (1000 * 60 * 60);
+      
+      // Calculate average income per hour based on current stats
+      const currentTokensPerCycle = this.calculateTokensPerCycle(petData);
+      const cyclesPerHour = 6; // Assume 6 cycles per hour (10 minutes per cycle)
+      const incomePerHour = currentTokensPerCycle * cyclesPerHour;
+      
+      // Add time-based earnings to base
+      const timeBasedEarnings = timeAliveInHours * incomePerHour * 0.1; // Reduced multiplier to make it more realistic
+      
+      return baseEarned + timeBasedEarnings;
+    }
+    
+    return baseEarned;
+  }
+
+  private calculateTimeInNature(petData: PetData): string {
+    // Get or create creation time for this pet
+    if (!this.petCreationTimes.has(petData.id)) {
+      // This would typically come from server data (creation time, active time)
+      // For now, simulate some time but store it persistently per pet
+      const currentTime = Date.now();
+      const estimatedCreationTime = currentTime - (Math.random() * 7 * 24 * 60 * 60 * 1000); // Random time up to 7 days ago
+      this.petCreationTimes.set(petData.id, estimatedCreationTime);
+    }
+    
+    const currentTime = Date.now();
+    const creationTime = this.petCreationTimes.get(petData.id)!;
+    const diffInMs = currentTime - creationTime;
+    
+    const days = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diffInMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diffInMs % (1000 * 60 * 60)) / (1000 * 60));
+
+    if (days > 0) {
+      return `${days}d ${hours}h ${minutes}m`;
+    } else if (hours > 0) {
+      return `${hours}h ${minutes}m`;
+    } else {
+      return `${minutes}m`;
+    }
   }
 
   private createStatBar(
@@ -253,18 +452,18 @@ export class PetDetailsModal {
       {
         type: "hunger",
         value: this.currentPet.feedingSystem.hungerLevel,
-        label: "🍖 Hunger"
+        label: "🍖 Hunger",
       },
       {
         type: "cleanliness",
         value: this.currentPet.cleanlinessSystem.cleanlinessLevel,
-        label: "🧼 Cleanliness"
+        label: "🧼 Cleanliness",
       },
       {
         type: "happiness",
         value: this.currentPet.happinessSystem.happinessLevel,
-        label: "😊 Happiness"
-      }
+        label: "😊 Happiness",
+      },
     ];
 
     stats.forEach((stat) => {
@@ -280,6 +479,40 @@ export class PetDetailsModal {
         label.textContent = `${stat.label}: ${Math.round(stat.value)}%`;
       }
     });
+
+    // Update economic info in real-time
+    this.updateEconomicInfo(this.currentPet);
+  }
+
+  private updateEconomicInfo(petData: PetData) {
+    // Calculate updated economic stats
+    const tokensPerCycle = this.calculateTokensPerCycle(petData);
+    const totalTokensEarned = this.calculateTotalTokensEarned(petData);
+    const timeInNature = this.calculateTimeInNature(petData);
+
+    // Update income per cycle
+    const incomeElement = document.querySelector(
+      "#pet-details-modal .economic-value-income-per-cycle"
+    ) as HTMLElement;
+    if (incomeElement) {
+      incomeElement.textContent = `${tokensPerCycle.toFixed(2)} NOM`;
+    }
+
+    // Update total earned
+    const totalElement = document.querySelector(
+      "#pet-details-modal .economic-value-total-earned"
+    ) as HTMLElement;
+    if (totalElement) {
+      totalElement.textContent = `${totalTokensEarned.toFixed(2)} NOM`;
+    }
+
+    // Update time in nature
+    const timeElement = document.querySelector(
+      "#pet-details-modal .economic-value-time-nature"
+    ) as HTMLElement;
+    if (timeElement) {
+      timeElement.textContent = timeInNature;
+    }
   }
 
   private updateModalContent(petData: PetData) {
@@ -296,18 +529,18 @@ export class PetDetailsModal {
       {
         type: "hunger",
         value: petData.feedingSystem.hungerLevel,
-        label: "🍖 Hunger"
+        label: "🍖 Hunger",
       },
       {
         type: "cleanliness",
         value: petData.cleanlinessSystem.cleanlinessLevel,
-        label: "🧼 Cleanliness"
+        label: "🧼 Cleanliness",
       },
       {
         type: "happiness",
         value: petData.happinessSystem.happinessLevel,
-        label: "😊 Happiness"
-      }
+        label: "😊 Happiness",
+      },
     ];
 
     stats.forEach((stat) => {
@@ -324,30 +557,16 @@ export class PetDetailsModal {
       }
     });
 
+    // Update economic info
+    this.updateEconomicInfo(petData);
+
     console.log(`✅ Modal content updated for Pet ${petData.id}`);
   }
 
   update() {
-    if (this.isVisible) {
-      // Check if active pet has changed
-      const activePet = this.petManager.getActivePet();
-
-      if (activePet && activePet.id !== this.currentPet?.id) {
-        console.log(
-          `🔄 Active pet changed from ${this.currentPet?.id} to ${activePet.id}, updating modal`
-        );
-
-        // Update current pet reference
-        this.currentPet = activePet;
-
-        // Update the modal content with new pet data
-        this.updateModalContent(activePet);
-      }
-
+    if (this.isVisible && this.currentPet) {
       // Always update stats display for real-time updates
-      if (this.currentPet) {
-        this.updateStatsDisplay();
-      }
+      this.updateStatsDisplay();
     }
   }
 
