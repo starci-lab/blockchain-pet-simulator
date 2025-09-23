@@ -4,10 +4,10 @@ import http from "@/utils/http";
 import { ROUTES } from "@/constants/routes";
 import { GameScene } from "@/game/scenes/GameScene";
 import { SceneName } from "@/constants/scene";
-import RexUIPlugin from "phaser3-rex-plugins/templates/ui/ui-plugin.js";
 import { useUserStore } from "@/store/userStore";
 import { GameRoomState } from "@/game/schema/ChatSchema";
 import { createColyseus } from "@/hooks/createColyseus";
+import { getConfig, CONTAINER_ID } from "@/game/configs/phaser-config";
 
 interface PhaserPetGameProps {
   publicKey: string;
@@ -47,31 +47,18 @@ const PhaserPetGame = ({ publicKey, signMessage }: PhaserPetGameProps) => {
       console.log("❌ Skipping game initialization");
       return;
     }
+    // Ensure the container has the expected id for Phaser parent binding
+    if (gameRef.current && gameRef.current.id !== CONTAINER_ID) {
+      gameRef.current.id = CONTAINER_ID;
+    }
     if (hasBootedRef.current || phaserGameRef.current) {
       console.log("❌ Game already booted, skipping new Phaser.Game()");
       return;
     }
     console.log("🎮 Starting Phaser game initialization...");
-    const config: Phaser.Types.Core.GameConfig = {
-      type: Phaser.AUTO,
-      width: window.innerWidth,
-      height: 120,
-      parent: gameRef.current,
-      scene: GameScene,
-      transparent: true,
-      plugins: {
-        scene: [
-          {
-            key: "rexUI",
-            plugin: RexUIPlugin,
-            mapping: "rexUI"
-          }
-        ]
-      }
-    };
 
     try {
-      phaserGameRef.current = new Phaser.Game(config);
+      phaserGameRef.current = new Phaser.Game(getConfig());
       hasBootedRef.current = true;
       console.log("✅ Phaser Game created successfully");
 
@@ -237,6 +224,7 @@ const PhaserPetGame = ({ publicKey, signMessage }: PhaserPetGameProps) => {
       )}
       <div
         ref={gameRef}
+        id={CONTAINER_ID}
         style={{
           width: "100%",
           height: "100%",
