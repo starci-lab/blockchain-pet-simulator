@@ -6,7 +6,7 @@ import {
   loadPoopAssets,
   loadCleaningAssets,
   loadToyAssets,
-  loadEffectAssets,
+  loadEffectAssets
 } from "@/game/load";
 import Phaser from "phaser";
 import { GameUI } from "@/game/ui/GameUI";
@@ -25,6 +25,7 @@ export class GameScene extends Phaser.Scene {
   private colyseusClient!: ColyseusClient;
   private isInitialized = false;
   private backgroundImage?: Phaser.GameObjects.Image;
+  private pendingColyseusRoom?: unknown;
 
   constructor() {
     super({ key: SceneName.Gameplay });
@@ -62,19 +63,17 @@ export class GameScene extends Phaser.Scene {
       `url(./src/assets/images/cursor/navigation_nw.png), pointer`
     );
 
-    // Connect to Colyseus (optional, game works offline too)
-    console.log("🔌 Starting Colyseus connection...");
-    await this.colyseusClient.connect(BACKEND_URL);
-
-    console.log("🏁 Scene initialization complete");
+    // Multiplayer connection is managed externally (React via use-colyseus) or via explicit call
     console.log(
-      "Room status:",
-      this.colyseusClient.isConnected() ? "Connected" : "Offline mode"
+      "🏁 Scene initialization complete (waiting for multiplayer attach/connect)"
     );
 
     // Mark as initialized
     this.isInitialized = true;
     console.log("✅ GameScene fully initialized");
+
+    // Notify external listeners (React) that assets/UI are ready for multiplayer connect
+    this.events.emit("assets-ready");
   }
 
   private initializeSystems() {
@@ -83,6 +82,12 @@ export class GameScene extends Phaser.Scene {
 
     // Initialize pet manager
     this.petManager = new PetManager(this, this.colyseusClient);
+
+    // If a room was provided before systems were ready, attach it now
+    if (this.pendingColyseusRoom) {
+      this.colyseusClient.attachRoom(this.pendingColyseusRoom);
+      this.pendingColyseusRoom = undefined;
+    }
   }
 
   private initializePets() {
@@ -191,6 +196,20 @@ export class GameScene extends Phaser.Scene {
   // Debug method
   forceResetPets(): void {
     this.petManager.forceResetAllPets();
+  }
+
+  // ===== Multiplayer wiring (for React/use-colyseus) =====
+  attachColyseusRoom(room: unknown) {
+    if (!this.colyseusClient) {
+      // Defer until systems are initialized
+      this.pendingColyseusRoom = room;
+      return;
+    }
+    this.colyseusClient.attachRoom(room);
+  }
+
+  async connectToColyseus(url: string = BACKEND_URL) {
+    await this.colyseusClient.connect(url);
   }
 
   // Create or update background image

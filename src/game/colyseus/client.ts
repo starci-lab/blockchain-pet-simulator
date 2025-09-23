@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { GameRoomState } from "@/game/schema/ChatSchema";
 import { Room, Client, getStateCallbacks } from "colyseus.js";
 import { useUserStore } from "@/store/userStore";
@@ -54,6 +55,27 @@ export class ColyseusClient {
       statusText.setStyle({ color: "#ff0000" });
       this.room = null;
     }
+  }
+
+  // Allow attaching an already-created room (from React hook `use-colyseus`)
+  attachRoom(room: unknown) {
+    // Avoid re-attaching if same room
+    if (this.room === (room as any)) return;
+
+    this.room = room as Room<GameRoomState>;
+    this.setupEventListeners();
+
+    // After attaching, request initial state
+    this.requestPlayerState();
+
+    // Also request other initial data to ensure UI/state is hydrated even if early
+    // server messages (like 'welcome') were missed before listeners were attached.
+    setTimeout(() => {
+      this.sendMessage("get_store_catalog", {});
+    }, 500);
+    setTimeout(() => {
+      this.sendMessage("get_inventory", {});
+    }, 800);
   }
 
   isConnected(): boolean {
@@ -217,14 +239,19 @@ export class ColyseusClient {
   private handlePlayerSync(message: any) {
     console.log("👤 Player sync:", message);
 
-    // Update tokens if provided
-    if (message.tokens !== undefined) {
-      const currentTokens = useUserStore.getState().nomToken;
-      if (currentTokens !== message.tokens) {
-        useUserStore.getState().setNomToken(message.tokens);
-        console.log(`💰 Tokens synced: ${currentTokens} -> ${message.tokens}`);
+    // Support nested shape under `data` or flat message
+    const payload =
+      message && typeof message === "object" && "data" in message
+        ? message.data
+        : message;
 
-        // Update UI to reflect token change
+    // Update tokens if provided
+    if (payload?.tokens !== undefined) {
+      const currentTokens = useUserStore.getState().nomToken;
+      if (currentTokens !== payload.tokens) {
+        useUserStore.getState().setNomToken(payload.tokens);
+        console.log(`💰 Tokens synced: ${currentTokens} -> ${payload.tokens}`);
+
         if (this.gameUI && this.gameUI.updateUI) {
           this.gameUI.updateUI();
         }
@@ -232,18 +259,15 @@ export class ColyseusClient {
     }
 
     // Update inventory summary if provided
-    if (message.inventory) {
-      console.log(`📦 Inventory synced:`, message.inventory);
-
-      // Update UI to reflect inventory changes
+    if (payload?.inventory) {
+      console.log(`📦 Inventory synced:`, payload.inventory);
       if (this.gameUI && this.gameUI.updateUI) {
         this.gameUI.updateUI();
       }
     }
 
-    // Update any other player data
-    if (message.playerData) {
-      console.log("📊 Player data synced:", message.playerData);
+    if (payload?.playerData) {
+      console.log("📊 Player data synced:", payload.playerData);
     }
   }
 
@@ -256,7 +280,12 @@ export class ColyseusClient {
       return;
     }
 
-    if (!message.pets || !Array.isArray(message.pets)) {
+    const payload =
+      message && typeof message === "object" && "data" in message
+        ? message.data
+        : message;
+    const pets = payload?.pets;
+    if (!pets || !Array.isArray(pets)) {
       console.log("📝 No pets to sync or invalid pets data");
       return;
     }
@@ -265,13 +294,13 @@ export class ColyseusClient {
     const localPets = new Set(
       petManager.getAllPets().map((petData: any) => petData.id)
     );
-    const serverPets = new Set(message.pets.map((pet: any) => pet.id));
+    const serverPets = new Set(pets.map((pet: any) => pet.id));
 
     console.log(`🔄 Local pets: [${Array.from(localPets).join(", ")}]`);
     console.log(`🔄 Server pets: [${Array.from(serverPets).join(", ")}]`);
 
     // Track if we create any new pets
-    let newPetsCreated: string[] = [];
+    const newPetsCreated: string[] = [];
 
     // Remove pets that don't exist on server
     for (const localPetId of localPets) {
@@ -282,7 +311,7 @@ export class ColyseusClient {
     }
 
     // Add or update pets from server
-    message.pets.forEach((serverPet: any) => {
+    pets.forEach((serverPet: any) => {
       let localPetData = petManager.getPet(serverPet.id);
 
       // Create pet if it doesn't exist locally
