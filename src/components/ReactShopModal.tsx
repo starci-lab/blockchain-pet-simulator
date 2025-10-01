@@ -112,16 +112,28 @@ export function ReactShopModal({
       `button[data-key="${category}"]`
     );
     if (!activeBtn) return;
-    const wrapRect = wrap.getBoundingClientRect();
-    const btnRect = activeBtn.getBoundingClientRect();
-    setIndicator({
-      left: btnRect.left - wrapRect.left + wrap.scrollLeft,
-      width: btnRect.width
+    const left = activeBtn.offsetLeft - wrap.scrollLeft;
+    const width = activeBtn.offsetWidth;
+    setIndicator({ left, width });
+  };
+
+  const scrollActiveIntoView = () => {
+    const wrap = tabsContainerRef.current;
+    if (!wrap) return;
+    const activeBtn = wrap.querySelector<HTMLButtonElement>(
+      `button[data-key="${category}"]`
+    );
+    if (!activeBtn) return;
+    activeBtn.scrollIntoView({
+      behavior: "smooth",
+      inline: "center",
+      block: "nearest"
     });
   };
 
   useEffect(() => {
     recalcIndicator();
+    scrollActiveIntoView();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [category]);
 
@@ -308,10 +320,9 @@ export function ReactShopModal({
                 fontWeight: category === tab.k ? 600 : 500,
                 fontSize: 12,
                 position: "relative",
-                minWidth: 0,
+                padding: "6px 12px",
                 whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis"
+                flex: "0 0 auto"
               }}
             >
               {tab.t}
@@ -322,12 +333,17 @@ export function ReactShopModal({
           style={{
             position: "absolute",
             bottom: 0,
-            left: 12 + indicator.left,
+            left:
+              12 +
+              indicator.left -
+              (tabsContainerRef.current
+                ? tabsContainerRef.current.scrollLeft
+                : 0),
             width: indicator.width,
             height: 3.5,
             background: "rgba(135,135,135,0.6)",
             borderRadius: 3,
-            transition: "left 200ms, width 200ms"
+            transition: "left 150ms ease, width 150ms ease"
           }}
         />
       </div>
@@ -345,12 +361,14 @@ export function ReactShopModal({
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(100px,1fr))",
-          gap: 8.39,
+          gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+          gridAutoRows: 120,
+          gap: 8,
           overflowY: "auto",
           padding: 8,
           flex: 1,
-          minHeight: 0
+          minHeight: 0,
+          maxHeight: 376
         }}
       >
         {items.length === 0 ? (
@@ -362,31 +380,39 @@ export function ReactShopModal({
               onClick={() => handleBuy(item)}
               style={{
                 background: "rgba(60,60,60,0.26)",
-                border: "1.25px solid rgba(0,0,0,0.37)",
-                borderRadius: 18.73,
-                padding: "12px 8px",
+                border: "1px solid rgba(0,0,0,0.37)",
+                borderRadius: 14,
+                padding: "8px 6px",
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
-                gap: 6.42,
+                justifyContent: "center",
+                gap: 6,
                 cursor: "pointer",
                 opacity: 1,
-                boxShadow: "inset 0px 4.46px 5.95px 0px rgba(0,0,0,0.3)"
+                boxShadow: "inset 0px 3px 5px 0px rgba(0,0,0,0.3)"
               }}
             >
               <img
                 src={getItemImageSrc(category, item)}
                 style={{
-                  width: 48,
-                  height: 48,
+                  width: 40,
+                  height: 40,
                   objectFit: "cover",
                   borderRadius: 8
                 }}
               />
-              <div style={{ fontWeight: 600, fontSize: 16, color: "#B3B3B3" }}>
+              <div
+                style={{
+                  fontWeight: 600,
+                  fontSize: 13,
+                  color: "#B3B3B3",
+                  textAlign: "center"
+                }}
+              >
                 {item.name}
               </div>
-              <div style={{ fontSize: 14, color: "#B3B3B3" }}>
+              <div style={{ fontSize: 12, color: "#B3B3B3" }}>
                 {item.price} NOM
               </div>
             </div>
