@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { GameScene } from "@/game/scenes/GameScene";
 import { useUserStore } from "@/store/userStore";
 import { gameConfigManager } from "@/game/configs/gameConfig";
@@ -98,6 +98,46 @@ export function ReactShopModal({
     return () => unsub();
   }, []);
 
+  // Tabs slider indicator (horizontal scrollable tabs)
+  const tabsContainerRef = useRef<HTMLDivElement | null>(null);
+  const [indicator, setIndicator] = useState<{ left: number; width: number }>({
+    left: 0,
+    width: 0
+  });
+
+  const recalcIndicator = () => {
+    const wrap = tabsContainerRef.current;
+    if (!wrap) return;
+    const activeBtn = wrap.querySelector<HTMLButtonElement>(
+      `button[data-key="${category}"]`
+    );
+    if (!activeBtn) return;
+    const wrapRect = wrap.getBoundingClientRect();
+    const btnRect = activeBtn.getBoundingClientRect();
+    setIndicator({
+      left: btnRect.left - wrapRect.left + wrap.scrollLeft,
+      width: btnRect.width
+    });
+  };
+
+  useEffect(() => {
+    recalcIndicator();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [category]);
+
+  useEffect(() => {
+    const onResize = () => recalcIndicator();
+    window.addEventListener("resize", onResize);
+    const el = tabsContainerRef.current;
+    const onScroll = () => recalcIndicator();
+    el?.addEventListener("scroll", onScroll);
+    return () => {
+      window.removeEventListener("resize", onResize);
+      el?.removeEventListener("scroll", onScroll);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     switch (category) {
       case "food":
@@ -178,9 +218,9 @@ export function ReactShopModal({
   return (
     <div
       style={{
-        width: 450,
-        maxWidth: 450,
-        minWidth: 450,
+        width: "calc(40vh * 0.692)",
+        minWidth: 320,
+        maxWidth: 900,
         height: "40vh",
         background: "linear-gradient(180deg, #1D1D1D 0%, #141414 100%)",
         borderRadius: 21,
@@ -233,13 +273,15 @@ export function ReactShopModal({
         style={{
           position: "relative",
           marginBottom: 8,
-          padding: "8px 24px" // padding to make room for arrows
+          padding: "8px 12px 14px 12px",
+          borderBottom: "1px solid rgba(135,135,135,0.25)"
         }}
       >
         <div
+          ref={tabsContainerRef}
           style={{
             display: "flex",
-            gap: 8,
+            gap: 12,
             overflowX: "auto",
             scrollbarWidth: "none",
             msOverflowStyle: "none"
@@ -255,6 +297,7 @@ export function ReactShopModal({
           ].map((tab) => (
             <button
               key={tab.k}
+              data-key={tab.k}
               onClick={() => setCategory(tab.k)}
               style={{
                 background: "transparent",
@@ -272,23 +315,21 @@ export function ReactShopModal({
               }}
             >
               {tab.t}
-              {category === tab.k && (
-                <div
-                  style={{
-                    position: "absolute",
-                    bottom: -15,
-                    left: "50%",
-                    transform: "translateX(-50%)",
-                    width: "80%",
-                    height: 4.44,
-                    background: "rgba(135,135,135,0.4)",
-                    borderRadius: 3
-                  }}
-                />
-              )}
             </button>
           ))}
         </div>
+        <div
+          style={{
+            position: "absolute",
+            bottom: 0,
+            left: 12 + indicator.left,
+            width: indicator.width,
+            height: 3.5,
+            background: "rgba(135,135,135,0.6)",
+            borderRadius: 3,
+            transition: "left 200ms, width 200ms"
+          }}
+        />
       </div>
       <div
         style={{
