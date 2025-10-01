@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import backgroundImg from "@/assets/images/backgrounds/game-bg.svg";
+import backgroundImg from "@/assets/images/backgrounds/game-bg.png";
 import dogSleepImg from "@/assets/images/Chog/chog_sleep.png";
 import dogSleepJson from "@/assets/images/Chog/chog_sleep.json";
 import dogPlayImg from "@/assets/images/Chog/chog_idleplay.png";
