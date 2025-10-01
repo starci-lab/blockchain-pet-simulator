@@ -9,7 +9,7 @@ import { NotificationUI } from "./components/NotificationUI";
 import { PetShopModal } from "./components/PetShopModal";
 import { PetDetailsModal } from "./components/PetDetailsModal";
 import { InputManager } from "./components/InputManager";
-import ShopModal from "./components/ShopModal";
+// Legacy ShopModal removed in favor of React-based shop rendered from React layer
 
 const PET_PRICE = 50; // Price to buy a new pet
 
@@ -27,7 +27,7 @@ export class GameUI {
   private petShopModal: PetShopModal;
   private petDetailsModal: PetDetailsModal;
   private inputManager: InputManager;
-  private shopModal: ShopModal;
+  // React shop is opened via scene events; no local legacy modal instance
 
   // UI Elements
   private buyPetButton!: Phaser.GameObjects.Rectangle;
@@ -52,7 +52,7 @@ export class GameUI {
       this.notificationUI,
       this.shopUI
     );
-    this.shopModal = new ShopModal(scene, petManager);
+    // Legacy ShopModal removed
   }
 
   create() {
@@ -144,9 +144,9 @@ export class GameUI {
       })
       .setOrigin(0.5);
 
-    // Button click handler
+    // Button click handler -> always open React shop
     this.shopButton.on("pointerdown", () => {
-      this.shopModal.show();
+      this.scene.events.emit("open-react-shop");
     });
 
     // Hover effects

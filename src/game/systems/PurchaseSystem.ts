@@ -36,6 +36,7 @@ export class PurchaseSystem {
   private colyseusClient: ColyseusClient;
   private pendingPurchases: Map<string, PurchaseRequest> = new Map();
   private purchaseIdCounter = 0;
+  private retryTimers: Map<string, number> = new Map();
 
   constructor(colyseusClient: ColyseusClient) {
     this.colyseusClient = colyseusClient;
@@ -58,6 +59,19 @@ export class PurchaseSystem {
         }
       );
     }
+
+    // Also listen to forwarded responses from networking layer (e.g., when
+    // the client receives "purchase_item_response" and forwards as eventBus)
+    eventBus.on(
+      "purchase_response",
+      (message: {
+        purchaseId: string;
+        success: boolean;
+        message: string;
+        currentTokens?: number;
+        itemData?: unknown;
+      }) => this.handlePurchaseResponse(message)
+    );
   }
 
   /**
@@ -136,11 +150,37 @@ export class PurchaseSystem {
     request: PurchaseRequest
   ): void {
     if (!this.colyseusClient.isConnected()) {
-      this.emitPurchaseFailed("Not connected to server");
+      // Retry sending a few times until connected
+      let attempts = 0;
+      const maxAttempts = 10;
+      const intervalMs = 500;
+      const timerId = window.setInterval(() => {
+        attempts += 1;
+        if (this.colyseusClient.isConnected()) {
+          window.clearInterval(timerId);
+          this.retryTimers.delete(purchaseId);
+          this.colyseusClient.sendMessage("purchase_item", {
+            purchaseId,
+            itemType: request.itemType,
+            itemId: request.itemId,
+            quantity: request.quantity,
+            price: request.price
+          });
+          console.log(
+            `📤 Purchase request sent (after retry): ${purchaseId}`,
+            request
+          );
+        } else if (attempts >= maxAttempts) {
+          window.clearInterval(timerId);
+          this.retryTimers.delete(purchaseId);
+          this.emitPurchaseFailed("Not connected to server");
+        }
+      }, intervalMs);
+      this.retryTimers.set(purchaseId, timerId);
       return;
     }
 
-    // Send purchase request to server
+    // Send purchase request to server (connected)
     this.colyseusClient.sendMessage("purchase_item", {
       purchaseId,
       itemType: request.itemType,
@@ -245,5 +285,10 @@ export class PurchaseSystem {
       return true;
     }
     return false;
+  }
+
+  /** Public connection check for UI */
+  isConnected(): boolean {
+    return this.colyseusClient.isConnected();
   }
 }

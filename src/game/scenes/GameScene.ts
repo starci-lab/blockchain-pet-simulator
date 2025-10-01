@@ -301,6 +301,27 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  // ===== Exposed getters for React UI integration =====
+  getPurchaseSystem(): PurchaseSystem | undefined {
+    return this._purchaseSystem;
+  }
+
+  // Temporary legacy hook: send buy_food with requested payload
+  sendBuyFoodLegacy(payload: {
+    itemType: string;
+    itemName: string;
+    quantity: number;
+    itemId: string;
+  }) {
+    if (!this.colyseusClient) return;
+    this.colyseusClient.purchaseItem(
+      payload.itemType,
+      payload.itemName,
+      payload.quantity,
+      payload.itemId
+    );
+  }
+
   private createGradientBackground() {
     const cameraWidth = this.cameras.main.width;
     const cameraHeight = this.cameras.main.height;
