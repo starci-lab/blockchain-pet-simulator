@@ -17,6 +17,8 @@ import { gameConfigManager } from "@/game/configs/gameConfig";
 import { GamePositioning } from "@/game/constants/gameConstants";
 import RexUIPlugin from "phaser3-rex-plugins/templates/ui/ui-plugin.js";
 import { eventBus, EventNames, TilemapInputSystem } from "@/game/tilemap";
+import { PurchaseSystem } from "@/game/systems/PurchaseSystem";
+import { PurchaseUI } from "@/game/ui/PurchaseUI";
 const BACKEND_URL = import.meta.env.VITE_BASE_SOCKET || "ws://localhost:3002";
 
 export class GameScene extends Phaser.Scene {
@@ -28,6 +30,8 @@ export class GameScene extends Phaser.Scene {
   private backgroundImage?: Phaser.GameObjects.Image;
   private pendingColyseusRoom?: unknown;
   private tilemapInput?: TilemapInputSystem;
+  private _purchaseSystem?: PurchaseSystem;
+  private purchaseUI?: PurchaseUI;
 
   constructor() {
     super({ key: SceneName.Gameplay });
@@ -92,6 +96,10 @@ export class GameScene extends Phaser.Scene {
       offsetY: this.cameras.main.height - tileHeight,
       drawGrid: false
     });
+
+    // Initialize purchase system
+    this._purchaseSystem = new PurchaseSystem(this.colyseusClient);
+    this.purchaseUI = new PurchaseUI(this);
   }
 
   private initializeSystems() {
@@ -155,6 +163,10 @@ export class GameScene extends Phaser.Scene {
     if (this.tilemapInput) {
       this.tilemapInput.destroy();
       this.tilemapInput = undefined;
+    }
+    if (this.purchaseUI) {
+      this.purchaseUI.destroy();
+      this.purchaseUI = undefined;
     }
   }
 

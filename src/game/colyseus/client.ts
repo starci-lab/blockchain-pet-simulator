@@ -138,6 +138,10 @@ export class ColyseusClient {
         this.handlePurchaseResponse(message);
         break;
 
+      case "purchase_item_response":
+        this.handlePurchaseItemResponse(message);
+        break;
+
       case "feed_pet_response":
       case "play_pet_response":
       case "clean_pet_response":
@@ -213,6 +217,14 @@ export class ColyseusClient {
       const y = this.lastClickPosition?.y;
       this.gameUI.showNotification(`❌ ${message.message}`, x, y);
     }
+  }
+
+  private handlePurchaseItemResponse(message: any) {
+    console.log("🛒 Purchase item response:", message);
+
+    // Forward to PurchaseSystem via event bus
+    const { eventBus } = require("@/game/systems/PurchaseSystem");
+    eventBus.emit("purchase_response", message);
   }
 
   private handlePetActionResponse(message: any) {
@@ -495,7 +507,7 @@ export class ColyseusClient {
 
   // ===== SIMPLE API METHODS FOR UI =====
 
-  // Purchase item from store
+  // Purchase item from store (legacy method - use PurchaseSystem instead)
   purchaseItem(
     itemType: string,
     itemName: string,
@@ -503,6 +515,23 @@ export class ColyseusClient {
     itemId: string
   ) {
     this.sendMessage("buy_food", { itemType, itemName, quantity, itemId });
+  }
+
+  // New purchase system method
+  purchaseItemV2(
+    purchaseId: string,
+    itemType: string,
+    itemId: string,
+    quantity: number,
+    price: number
+  ) {
+    this.sendMessage("purchase_item", {
+      purchaseId,
+      itemType,
+      itemId,
+      quantity,
+      price
+    });
   }
 
   // Feed pet
