@@ -8,6 +8,7 @@ import { useUserStore } from "@/store/userStore";
 import { GameRoomState } from "@/game/schema/ChatSchema";
 import { createColyseus } from "@/hooks/createColyseus";
 import { getConfig, CONTAINER_ID } from "@/game/configs/phaser-config";
+// import { TilemapInput } from "@/components/TilemapInput"; // Disabled in favor of Phaser-native input
 
 interface PhaserPetGameProps {
   publicKey: string;
@@ -232,6 +233,7 @@ const PhaserPetGame = ({ publicKey, signMessage }: PhaserPetGameProps) => {
           background: "transparent"
         }}
       />
+      {/* React tilemap input overlay disabled in favor of Phaser-native input */}
     </div>
   );
 };

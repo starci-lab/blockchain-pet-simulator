@@ -16,6 +16,7 @@ import { PetManager } from "@/game/managers/PetManager";
 import { gameConfigManager } from "@/game/configs/gameConfig";
 import { GamePositioning } from "@/game/constants/gameConstants";
 import RexUIPlugin from "phaser3-rex-plugins/templates/ui/ui-plugin.js";
+import { eventBus, EventNames, TilemapInputSystem } from "@/game/tilemap";
 const BACKEND_URL = import.meta.env.VITE_BASE_SOCKET || "ws://localhost:3002";
 
 export class GameScene extends Phaser.Scene {
@@ -26,6 +27,7 @@ export class GameScene extends Phaser.Scene {
   private isInitialized = false;
   private backgroundImage?: Phaser.GameObjects.Image;
   private pendingColyseusRoom?: unknown;
+  private tilemapInput?: TilemapInputSystem;
 
   constructor() {
     super({ key: SceneName.Gameplay });
@@ -74,6 +76,22 @@ export class GameScene extends Phaser.Scene {
 
     // Notify external listeners (React) that assets/UI are ready for multiplayer connect
     this.events.emit("assets-ready");
+
+    // Subscribe to React UI tile events via global event bus
+    this.setupTileInputListeners();
+
+    // Initialize Phaser-native tilemap input for the bottom HUD area
+    const tileWidth = this.cameras.main.width / 32;
+    const tileHeight = this.cameras.main.height / 5;
+    this.tilemapInput = new TilemapInputSystem(this, {
+      rows: 1,
+      cols: 32,
+      tileWidth: tileWidth,
+      tileHeight: tileHeight,
+      offsetX: 0,
+      offsetY: this.cameras.main.height - tileHeight,
+      drawGrid: false
+    });
   }
 
   private initializeSystems() {
@@ -104,6 +122,40 @@ export class GameScene extends Phaser.Scene {
 
     // Set GameUI reference in ColyseusClient for notifications
     this.colyseusClient.setGameUI(this.gameUI);
+  }
+
+  private setupTileInputListeners() {
+    const handleTileSelected = (payload: {
+      tile: { row: number; col: number };
+      worldX: number;
+      worldY: number;
+    }) => {
+      try {
+        // Example: Move active pet horizontally based on tile col
+        const active = this.petManager.getActivePet();
+        if (!active) return;
+        const cameraWidth = this.cameras.main.width;
+        const cols = 32;
+        const x = (payload.tile.col + 0.5) * (cameraWidth / cols);
+        const y = GamePositioning.getPetY(this.cameras.main.height);
+        active.pet.startChasing(x, y);
+      } catch (e) {
+        console.error("Tile select handling error", e);
+      }
+    };
+
+    eventBus.on(EventNames.TileSelected, handleTileSelected);
+
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      eventBus.off(EventNames.TileSelected, handleTileSelected);
+    });
+  }
+
+  shutdown() {
+    if (this.tilemapInput) {
+      this.tilemapInput.destroy();
+      this.tilemapInput = undefined;
+    }
   }
 
   update() {
