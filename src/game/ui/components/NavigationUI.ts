@@ -4,6 +4,7 @@ const NAV_BG_COLOR = 0x2a2a2a; // Dark gray background
 const NAV_BORDER_COLOR = 0x404040; // Lighter gray border
 const NAV_BUTTON_SIZE = 50;
 const NAV_BUTTON_SPACING = 10;
+const NAV_UI_DEPTH = 200; // Ensure above pets and world objects
 
 export class NavigationUI {
   private scene: GameScene;
@@ -48,6 +49,7 @@ export class NavigationUI {
       .rectangle(x, y, NAV_BUTTON_SIZE, NAV_BUTTON_SIZE, NAV_BG_COLOR, 0.95)
       .setStrokeStyle(1, NAV_BORDER_COLOR)
       .setOrigin(0.5, 0)
+      .setDepth(NAV_UI_DEPTH)
       .setInteractive({ useHandCursor: true });
 
     // Home icon (pixel art style)
@@ -75,6 +77,7 @@ export class NavigationUI {
       .rectangle(x, y, NAV_BUTTON_SIZE, NAV_BUTTON_SIZE, NAV_BG_COLOR, 0.95)
       .setStrokeStyle(1, NAV_BORDER_COLOR)
       .setOrigin(0.5, 0)
+      .setDepth(NAV_UI_DEPTH)
       .setInteractive({ useHandCursor: true });
 
     // Shop icon (pixel art style)
@@ -102,6 +105,7 @@ export class NavigationUI {
       .rectangle(x, y, NAV_BUTTON_SIZE, NAV_BUTTON_SIZE, NAV_BG_COLOR, 0.95)
       .setStrokeStyle(1, NAV_BORDER_COLOR)
       .setOrigin(0.5, 0)
+      .setDepth(NAV_UI_DEPTH)
       .setInteractive({ useHandCursor: true });
 
     // Settings icon (pixel art style)
@@ -144,7 +148,7 @@ export class NavigationUI {
     graphics.fillStyle(0x8b4513); // Brown door
     graphics.fillRect(x - 2, y - 2, 4, 6);
 
-    graphics.setDepth(10); // Make sure it's above the button
+    graphics.setDepth(NAV_UI_DEPTH + 1); // Above button
   }
 
   private createShopIcon(x: number, y: number) {
@@ -170,7 +174,7 @@ export class NavigationUI {
     graphics.fillStyle(0x8b4513); // Brown
     graphics.fillRect(x - 1, y - 2, 2, 6);
 
-    graphics.setDepth(10); // Make sure it's above the button
+    graphics.setDepth(NAV_UI_DEPTH + 1); // Above button
   }
 
   private createSettingsIcon(x: number, y: number) {
@@ -189,6 +193,6 @@ export class NavigationUI {
     graphics.fillRect(x - 1, y - 8, 2, 3);
     graphics.fillRect(x - 1, y + 5, 2, 3);
 
-    graphics.setDepth(10); // Make sure it's above the button
+    graphics.setDepth(NAV_UI_DEPTH + 1); // Above button
   }
 }

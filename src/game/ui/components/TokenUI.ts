@@ -7,6 +7,7 @@ const TOKEN_TEXT_COLOR = "#b3b3b3"; // Light gray text
 const TOKEN_ICON_COLOR = 0x6366f1; // Purple icon background
 const TOKEN_WIDTH = 200;
 const TOKEN_HEIGHT = 40;
+const TOKEN_UI_DEPTH = 200; // Ensure above pets and world objects
 
 export class TokenUI {
   private scene: Phaser.Scene;
@@ -32,7 +33,9 @@ export class TokenUI {
       TOKEN_BG_COLOR,
       0.95
     );
-    bg.setStrokeStyle(1, TOKEN_BORDER_COLOR).setOrigin(0.5, 0);
+    bg.setStrokeStyle(1, TOKEN_BORDER_COLOR)
+      .setOrigin(0.5, 0)
+      .setDepth(TOKEN_UI_DEPTH);
 
     // Token icon (purple circle with white dot)
     this.tokenIcon = this.scene.add.circle(
@@ -41,15 +44,16 @@ export class TokenUI {
       12, // Radius
       TOKEN_ICON_COLOR
     );
-    this.tokenIcon.setStrokeStyle(2, 0xffffff); // White border
+    this.tokenIcon.setStrokeStyle(2, 0xffffff).setDepth(TOKEN_UI_DEPTH + 1); // White border
 
     // White dot in center of icon
-    this.scene.add.circle(
+    const dot = this.scene.add.circle(
       tokenX - 70,
       tokenY + 20,
       4, // Smaller radius for dot
       0xffffff
     );
+    dot.setDepth(TOKEN_UI_DEPTH + 2);
 
     // Token amount text
     this.tokenText = this.scene.add
@@ -60,7 +64,8 @@ export class TokenUI {
         fontFamily: UI_FONT,
         align: "left"
       })
-      .setOrigin(0, 0.5);
+      .setOrigin(0, 0.5)
+      .setDepth(TOKEN_UI_DEPTH + 3);
 
     this.update();
   }
