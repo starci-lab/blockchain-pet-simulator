@@ -4,7 +4,6 @@ const UI_FONT = "monospace";
 const TOKEN_BG_COLOR = 0x2a2a2a; // Dark gray background
 const TOKEN_BORDER_COLOR = 0x404040; // Lighter gray border
 const TOKEN_TEXT_COLOR = "#b3b3b3"; // Light gray text
-const TOKEN_ICON_COLOR = 0x6366f1; // Purple icon background
 const TOKEN_WIDTH = 200;
 const TOKEN_HEIGHT = 40;
 const TOKEN_UI_DEPTH = 200; // Ensure above pets and world objects
@@ -12,7 +11,6 @@ const TOKEN_UI_DEPTH = 200; // Ensure above pets and world objects
 export class TokenUI {
   private scene: Phaser.Scene;
   private tokenText!: Phaser.GameObjects.Text;
-  private tokenIcon!: Phaser.GameObjects.Arc;
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
@@ -37,28 +35,17 @@ export class TokenUI {
       .setOrigin(0.5, 0)
       .setDepth(TOKEN_UI_DEPTH);
 
-    // Token icon (purple circle with white dot)
-    this.tokenIcon = this.scene.add.circle(
-      tokenX - 70, // Left side of the token display
-      tokenY + 20, // Center vertically
-      12, // Radius
-      TOKEN_ICON_COLOR
-    );
-    this.tokenIcon.setStrokeStyle(2, 0xffffff).setDepth(TOKEN_UI_DEPTH + 1); // White border
-
-    // White dot in center of icon
-    const dot = this.scene.add.circle(
-      tokenX - 70,
-      tokenY + 20,
-      4, // Smaller radius for dot
-      0xffffff
-    );
-    dot.setDepth(TOKEN_UI_DEPTH + 2);
+    // Token icon: use pixel coin sprite
+    this.scene.add
+      .image(tokenX - 70, tokenY + 20, "coin")
+      .setDepth(TOKEN_UI_DEPTH + 1)
+      .setOrigin(0.5)
+      .setDisplaySize(16, 16);
 
     // Token amount text
     this.tokenText = this.scene.add
       .text(tokenX + 20, tokenY + 20, "", {
-        fontSize: "18px",
+        fontSize: "14px",
         color: TOKEN_TEXT_COLOR,
         fontStyle: "bold",
         fontFamily: UI_FONT,

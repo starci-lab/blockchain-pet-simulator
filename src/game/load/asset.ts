@@ -14,7 +14,7 @@ import broomImg from "@/assets/images/broom/broom.png";
 import ballImg from "@/assets/images/ball/ball.png";
 import forestBgImg from "@/assets/images/backgrounds/forest-bg.png";
 import heartImg from "@/assets/images/effects/heart.png";
-import coinImg from "@/assets/images/effects/coin.png";
+import coinPixelImg from "@/assets/images/coin/coin-e4dae5.png";
 export const loadChogAssets = (scene: Phaser.Scene) => {
   scene.load.atlas("dog-sleep", dogSleepImg, dogSleepJson);
   scene.load.atlas("dog-play", dogPlayImg, dogPlayJson);
@@ -47,5 +47,6 @@ export const loadToyAssets = (scene: Phaser.Scene) => {
 
 export const loadEffectAssets = (scene: Phaser.Scene) => {
   scene.load.image("heart", heartImg);
-  scene.load.image("coin", coinImg);
+  // Use pixel-styled coin sprite instead of effects coin
+  scene.load.image("coin", coinPixelImg);
 };
