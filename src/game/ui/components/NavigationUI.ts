@@ -19,9 +19,10 @@ export class NavigationUI {
     console.log("🧭 Creating Navigation UI...");
 
     const startY = 80; // Below the token display
-    const centerX = this.scene.cameras.main.width / 2;
+    const screenWidth = this.scene.cameras.main.width;
     const totalWidth = NAV_BUTTON_SIZE * 3 + NAV_BUTTON_SPACING * 2;
-    const startX = centerX - totalWidth / 2;
+    const padding = 20; // Padding from right edge
+    const startX = screenWidth - totalWidth - padding;
 
     // Home Button
     this.createHomeButton(startX, startY);

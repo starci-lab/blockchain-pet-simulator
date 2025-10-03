@@ -11,15 +11,17 @@ const TOKEN_HEIGHT = 40;
 export class TokenUI {
   private scene: Phaser.Scene;
   private tokenText!: Phaser.GameObjects.Text;
-  private tokenIcon!: Phaser.GameObjects.Circle;
+  private tokenIcon!: Phaser.GameObjects.Arc;
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
   }
 
   create() {
-    const tokenX = this.scene.cameras.main.width / 2; // Center horizontally
-    const tokenY = 30; // Top of screen
+    const screenWidth = this.scene.cameras.main.width;
+    const padding = 20; // Match NavigationUI right padding
+    const tokenX = screenWidth - padding - TOKEN_WIDTH / 2; // Align to right
+    const tokenY = 30; // Top of screen, above NavigationUI
 
     // Main token background with rounded corners effect
     const bg = this.scene.add.rectangle(
