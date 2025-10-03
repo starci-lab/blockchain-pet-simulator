@@ -96,7 +96,7 @@ const PhaserPetGame = ({ publicKey, signMessage }: PhaserPetGameProps) => {
 
     const handleResize = () => {
       if (phaserGameRef.current) {
-        phaserGameRef.current.scale.resize(window.innerWidth, 120);
+        phaserGameRef.current.scale.resize(window.innerWidth, 160);
       }
     };
 
@@ -205,7 +205,7 @@ const PhaserPetGame = ({ publicKey, signMessage }: PhaserPetGameProps) => {
         bottom: 0,
         left: 0,
         width: "100vw",
-        height: "120px",
+        height: "160px",
         zIndex: 1000,
         border: "none",
         background: "transparent"

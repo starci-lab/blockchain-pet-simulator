@@ -1,7 +1,8 @@
 import type { GameScene } from "../../scenes/GameScene";
 
-const NAV_BG_COLOR = 0x2a2a2a; // Dark gray background
-const NAV_BORDER_COLOR = 0x404040; // Lighter gray border
+const NAV_BG_COLOR = 0x2a2a2a; // Inner panel color
+const NAV_BORDER_COLOR = 0x404040; // Inner border color
+const NAV_OUTER_COLOR = 0x101010; // Outer container color
 const NAV_BUTTON_SIZE = 50;
 const NAV_BUTTON_SPACING = 10;
 const NAV_UI_DEPTH = 200; // Ensure above pets and world objects
@@ -19,10 +20,11 @@ export class NavigationUI {
   create() {
     console.log("🧭 Creating Navigation UI...");
 
-    const startY = 80; // Below the token display
+    const centerY = this.scene.cameras.main.centerY;
+    const startY = centerY + 40 - NAV_BUTTON_SIZE / 2; // move slightly further below center
     const screenWidth = this.scene.cameras.main.width;
     const totalWidth = NAV_BUTTON_SIZE * 3 + NAV_BUTTON_SPACING * 2;
-    const padding = 20; // Padding from right edge
+    const padding = 28; // Slightly increased padding from right edge
     const startX = screenWidth - totalWidth - padding;
 
     // Home Button
@@ -45,11 +47,45 @@ export class NavigationUI {
 
   private createHomeButton(x: number, y: number) {
     // Button background
+    // Two-layer panel (outer + inner)
+    const radius = 12;
+    const paddingInner = 8;
+
+    const outer = this.scene.add.graphics();
+    outer.fillStyle(NAV_OUTER_COLOR, 0.98);
+    outer.fillRoundedRect(
+      x - NAV_BUTTON_SIZE / 2,
+      y,
+      NAV_BUTTON_SIZE,
+      NAV_BUTTON_SIZE,
+      radius
+    );
+    outer.setDepth(NAV_UI_DEPTH);
+
+    const panel = this.scene.add.graphics();
+    panel.fillStyle(NAV_BG_COLOR, 0.98);
+    panel.lineStyle(2, NAV_BORDER_COLOR, 1);
+    panel.fillRoundedRect(
+      x - NAV_BUTTON_SIZE / 2 + paddingInner,
+      y + paddingInner,
+      NAV_BUTTON_SIZE - paddingInner * 2,
+      NAV_BUTTON_SIZE - paddingInner * 2,
+      radius - 4
+    );
+    panel.strokeRoundedRect(
+      x - NAV_BUTTON_SIZE / 2 + paddingInner,
+      y + paddingInner,
+      NAV_BUTTON_SIZE - paddingInner * 2,
+      NAV_BUTTON_SIZE - paddingInner * 2,
+      radius - 4
+    );
+    panel.setDepth(NAV_UI_DEPTH + 1);
+
+    // Transparent hit area on top to keep interactions
     this.homeButton = this.scene.add
-      .rectangle(x, y, NAV_BUTTON_SIZE, NAV_BUTTON_SIZE, NAV_BG_COLOR, 0.95)
-      .setStrokeStyle(1, NAV_BORDER_COLOR)
+      .rectangle(x, y, NAV_BUTTON_SIZE, NAV_BUTTON_SIZE, 0x000000, 0)
       .setOrigin(0.5, 0)
-      .setDepth(NAV_UI_DEPTH)
+      .setDepth(NAV_UI_DEPTH + 2)
       .setInteractive({ useHandCursor: true });
 
     // Home icon (pixel art style)
@@ -73,11 +109,42 @@ export class NavigationUI {
 
   private createShopButton(x: number, y: number) {
     // Button background
+    const radius = 12;
+    const paddingInner2 = 8;
+    const outer2 = this.scene.add.graphics();
+    outer2.fillStyle(NAV_OUTER_COLOR, 0.98);
+    outer2.fillRoundedRect(
+      x - NAV_BUTTON_SIZE / 2,
+      y,
+      NAV_BUTTON_SIZE,
+      NAV_BUTTON_SIZE,
+      radius
+    );
+    outer2.setDepth(NAV_UI_DEPTH);
+
+    const panel2 = this.scene.add.graphics();
+    panel2.fillStyle(NAV_BG_COLOR, 0.98);
+    panel2.lineStyle(2, NAV_BORDER_COLOR, 1);
+    panel2.fillRoundedRect(
+      x - NAV_BUTTON_SIZE / 2 + paddingInner2,
+      y + paddingInner2,
+      NAV_BUTTON_SIZE - paddingInner2 * 2,
+      NAV_BUTTON_SIZE - paddingInner2 * 2,
+      radius - 4
+    );
+    panel2.strokeRoundedRect(
+      x - NAV_BUTTON_SIZE / 2 + paddingInner2,
+      y + paddingInner2,
+      NAV_BUTTON_SIZE - paddingInner2 * 2,
+      NAV_BUTTON_SIZE - paddingInner2 * 2,
+      radius - 4
+    );
+    panel2.setDepth(NAV_UI_DEPTH + 1);
+
     this.shopButton = this.scene.add
-      .rectangle(x, y, NAV_BUTTON_SIZE, NAV_BUTTON_SIZE, NAV_BG_COLOR, 0.95)
-      .setStrokeStyle(1, NAV_BORDER_COLOR)
+      .rectangle(x, y, NAV_BUTTON_SIZE, NAV_BUTTON_SIZE, 0x000000, 0)
       .setOrigin(0.5, 0)
-      .setDepth(NAV_UI_DEPTH)
+      .setDepth(NAV_UI_DEPTH + 2)
       .setInteractive({ useHandCursor: true });
 
     // Shop icon (pixel art style)
@@ -101,11 +168,42 @@ export class NavigationUI {
 
   private createSettingsButton(x: number, y: number) {
     // Button background
+    const radius = 12;
+    const paddingInner3 = 8;
+    const outer3 = this.scene.add.graphics();
+    outer3.fillStyle(NAV_OUTER_COLOR, 0.98);
+    outer3.fillRoundedRect(
+      x - NAV_BUTTON_SIZE / 2,
+      y,
+      NAV_BUTTON_SIZE,
+      NAV_BUTTON_SIZE,
+      radius
+    );
+    outer3.setDepth(NAV_UI_DEPTH);
+
+    const panel3 = this.scene.add.graphics();
+    panel3.fillStyle(NAV_BG_COLOR, 0.98);
+    panel3.lineStyle(2, NAV_BORDER_COLOR, 1);
+    panel3.fillRoundedRect(
+      x - NAV_BUTTON_SIZE / 2 + paddingInner3,
+      y + paddingInner3,
+      NAV_BUTTON_SIZE - paddingInner3 * 2,
+      NAV_BUTTON_SIZE - paddingInner3 * 2,
+      radius - 4
+    );
+    panel3.strokeRoundedRect(
+      x - NAV_BUTTON_SIZE / 2 + paddingInner3,
+      y + paddingInner3,
+      NAV_BUTTON_SIZE - paddingInner3 * 2,
+      NAV_BUTTON_SIZE - paddingInner3 * 2,
+      radius - 4
+    );
+    panel3.setDepth(NAV_UI_DEPTH + 1);
+
     this.settingsButton = this.scene.add
-      .rectangle(x, y, NAV_BUTTON_SIZE, NAV_BUTTON_SIZE, NAV_BG_COLOR, 0.95)
-      .setStrokeStyle(1, NAV_BORDER_COLOR)
+      .rectangle(x, y, NAV_BUTTON_SIZE, NAV_BUTTON_SIZE, 0x000000, 0)
       .setOrigin(0.5, 0)
-      .setDepth(NAV_UI_DEPTH)
+      .setDepth(NAV_UI_DEPTH + 2)
       .setInteractive({ useHandCursor: true });
 
     // Settings icon (pixel art style)

@@ -8,7 +8,7 @@ export const getConfig = (): Phaser.Types.Core.GameConfig => {
   return {
     type: AUTO,
     width: window.innerWidth,
-    height: 120,
+    height: 160,
     parent: CONTAINER_ID,
     scene: GameScene,
     transparent: true,

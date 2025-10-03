@@ -69,7 +69,7 @@ export class GameUI {
     console.log("✅ GameUI created successfully");
   }
 
-  // Buy Pet Button
+  // // Buy Pet Button
   private createBuyPetButton() {
     console.log("🏪 Creating Buy Pet Button...");
 
