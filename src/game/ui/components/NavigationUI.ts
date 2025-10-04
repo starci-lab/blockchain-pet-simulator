@@ -48,8 +48,8 @@ export class NavigationUI {
   private createHomeButton(x: number, y: number) {
     // Button background
     // Two-layer panel (outer + inner)
-    const radius = 12;
-    const paddingInner = 8;
+    const radius = 8;
+    const paddingInner = 6;
 
     const outer = this.scene.add.graphics();
     outer.fillStyle(NAV_OUTER_COLOR, 0.98);
@@ -91,26 +91,18 @@ export class NavigationUI {
     // Home icon (pixel art style)
     this.createHomeIcon(x, y + 25);
 
-    // Hover effects
-    this.homeButton.on("pointerover", () => {
-      this.homeButton.setFillStyle(0x3a3a3a);
-    });
-
-    this.homeButton.on("pointerout", () => {
-      this.homeButton.setFillStyle(NAV_BG_COLOR, 0.95);
-    });
-
     // Click handler
     this.homeButton.on("pointerdown", () => {
       console.log("🏠 Home button clicked");
+      //TODO: add logic stick food item
       // Add home functionality here if needed
     });
   }
 
   private createShopButton(x: number, y: number) {
     // Button background
-    const radius = 12;
-    const paddingInner2 = 8;
+    const radius = 8;
+    const paddingInner2 = 6;
     const outer2 = this.scene.add.graphics();
     outer2.fillStyle(NAV_OUTER_COLOR, 0.98);
     outer2.fillRoundedRect(
@@ -150,15 +142,6 @@ export class NavigationUI {
     // Shop icon (pixel art style)
     this.createShopIcon(x, y + 25);
 
-    // Hover effects
-    this.shopButton.on("pointerover", () => {
-      this.shopButton.setFillStyle(0x3a3a3a);
-    });
-
-    this.shopButton.on("pointerout", () => {
-      this.shopButton.setFillStyle(NAV_BG_COLOR, 0.95);
-    });
-
     // Click handler - open React shop
     this.shopButton.on("pointerdown", () => {
       console.log("🛒 Shop button clicked - opening React shop");
@@ -168,8 +151,8 @@ export class NavigationUI {
 
   private createSettingsButton(x: number, y: number) {
     // Button background
-    const radius = 12;
-    const paddingInner3 = 8;
+    const radius = 8;
+    const paddingInner3 = 6;
     const outer3 = this.scene.add.graphics();
     outer3.fillStyle(NAV_OUTER_COLOR, 0.98);
     outer3.fillRoundedRect(
@@ -209,18 +192,10 @@ export class NavigationUI {
     // Settings icon (pixel art style)
     this.createSettingsIcon(x, y + 25);
 
-    // Hover effects
-    this.settingsButton.on("pointerover", () => {
-      this.settingsButton.setFillStyle(0x3a3a3a);
-    });
-
-    this.settingsButton.on("pointerout", () => {
-      this.settingsButton.setFillStyle(NAV_BG_COLOR, 0.95);
-    });
-
     // Click handler
     this.settingsButton.on("pointerdown", () => {
       console.log("⚙️ Settings button clicked");
+      // TODO: add modal config game
       // Add settings functionality here if needed
     });
   }

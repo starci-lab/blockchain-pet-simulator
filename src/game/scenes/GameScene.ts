@@ -293,10 +293,38 @@ export class GameScene extends Phaser.Scene {
       // Try to load the specified background
       this.backgroundImage = this.add.image(0, 0, textureKey);
       this.backgroundImage.setOrigin(0, 0); // Set origin to top-left
-      this.backgroundImage.setDisplaySize(cameraWidth, cameraHeight); // Scale to fit camera
+
+      // Calculate scale to maintain aspect ratio while covering the entire camera
+      const texture = this.textures.get(textureKey);
+      if (texture) {
+        const textureWidth = texture.source[0].width;
+        const textureHeight = texture.source[0].height;
+
+        // Calculate scale to cover the entire camera area while maintaining aspect ratio
+        const scaleX = cameraWidth / textureWidth;
+        const scaleY = cameraHeight / textureHeight;
+        const scale = Math.max(scaleX, scaleY); // Use the larger scale to ensure coverage
+
+        this.backgroundImage.setScale(scale);
+
+        // Center the background if it's larger than the camera
+        if (scale === scaleX) {
+          // Background is wider than camera, center vertically
+          this.backgroundImage.setY((cameraHeight - textureHeight * scale) / 2);
+        } else {
+          // Background is taller than camera, center horizontally
+          this.backgroundImage.setX((cameraWidth - textureWidth * scale) / 2);
+        }
+      } else {
+        // Fallback to simple scaling if texture info not available
+        this.backgroundImage.setDisplaySize(cameraWidth, cameraHeight);
+      }
+
       this.backgroundImage.setDepth(-100); // Put background behind everything
 
-      console.log(`✅ Background '${textureKey}' loaded successfully`);
+      console.log(
+        `✅ Background '${textureKey}' loaded successfully with proper scaling`
+      );
     } catch {
       // Fallback: create a gradient background
       this.createGradientBackground();
