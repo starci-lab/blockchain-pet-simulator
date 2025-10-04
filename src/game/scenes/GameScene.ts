@@ -6,7 +6,8 @@ import {
   loadPoopAssets,
   loadCleaningAssets,
   loadToyAssets,
-  loadEffectAssets
+  loadEffectAssets,
+  loadUiAssets
 } from "@/game/load";
 import Phaser from "phaser";
 import { GameUI } from "@/game/ui/GameUI";
@@ -44,6 +45,7 @@ export class GameScene extends Phaser.Scene {
     loadCleaningAssets(this);
     loadToyAssets(this);
     loadEffectAssets(this);
+    loadUiAssets(this);
   }
   async create() {
     // Disable browser context menu on right click for the whole scene

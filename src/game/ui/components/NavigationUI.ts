@@ -1,8 +1,8 @@
 import type { GameScene } from "../../scenes/GameScene";
 
-const NAV_BG_COLOR = 0x2a2a2a; // Inner panel color
-const NAV_BORDER_COLOR = 0x404040; // Inner border color
-const NAV_OUTER_COLOR = 0x101010; // Outer container color
+const NAV_BG_COLOR = 0x101010; // Inner panel color
+const NAV_BORDER_COLOR = 0x242424; // Inner border color
+const NAV_OUTER_COLOR = 0x242424; // Outer container color
 const NAV_BUTTON_SIZE = 50;
 const NAV_BUTTON_SPACING = 10;
 const NAV_UI_DEPTH = 200; // Ensure above pets and world objects
@@ -227,70 +227,28 @@ export class NavigationUI {
 
   private createHomeIcon(x: number, y: number) {
     // Create a simple house icon using graphics
-    const graphics = this.scene.add.graphics();
-
-    // House base (rectangle)
-    graphics.fillStyle(0xffffff);
-    graphics.fillRect(x - 8, y - 5, 16, 10);
-
-    // House roof (triangle)
-    graphics.fillStyle(0x87ceeb); // Light blue roof
-    graphics.beginPath();
-    graphics.moveTo(x - 10, y - 5);
-    graphics.lineTo(x, y - 12);
-    graphics.lineTo(x + 10, y - 5);
-    graphics.closePath();
-    graphics.fillPath();
-
-    // Door
-    graphics.fillStyle(0x8b4513); // Brown door
-    graphics.fillRect(x - 2, y - 2, 4, 6);
-
-    graphics.setDepth(NAV_UI_DEPTH + 1); // Above button
+    this.scene.add
+      .image(x, y, "home")
+      .setOrigin(0.5)
+      .setDisplaySize(30, 30)
+      .setDepth(NAV_UI_DEPTH + 3);
   }
 
   private createShopIcon(x: number, y: number) {
-    // Create a simple shop icon using graphics
-    const graphics = this.scene.add.graphics();
-
-    // Shop base
-    graphics.fillStyle(0xffffff);
-    graphics.fillRect(x - 8, y - 5, 16, 10);
-
-    // Shop roof with stripes
-    graphics.fillStyle(0xff0000); // Red
-    graphics.fillRect(x - 10, y - 8, 20, 3);
-    graphics.fillStyle(0xffffff); // White
-    graphics.fillRect(x - 10, y - 11, 20, 3);
-
-    // Windows
-    graphics.fillStyle(0x87ceeb); // Light blue
-    graphics.fillRect(x - 6, y - 3, 3, 3);
-    graphics.fillRect(x + 3, y - 3, 3, 3);
-
-    // Door
-    graphics.fillStyle(0x8b4513); // Brown
-    graphics.fillRect(x - 1, y - 2, 2, 6);
-
-    graphics.setDepth(NAV_UI_DEPTH + 1); // Above button
+    // Use image-based icon (requested: @images/game-ui/setting.png)
+    this.scene.add
+      .image(x, y, "shop")
+      .setOrigin(0.5)
+      .setDisplaySize(20, 20)
+      .setDepth(NAV_UI_DEPTH + 3);
   }
 
   private createSettingsIcon(x: number, y: number) {
-    // Create a simple gear icon using graphics
-    const graphics = this.scene.add.graphics();
-
-    // Gear icon (simplified)
-    graphics.fillStyle(0xb3b3b3); // Light gray
-
-    // Center circle
-    graphics.fillCircle(x, y, 4);
-
-    // Gear teeth (simplified as small rectangles)
-    graphics.fillRect(x - 8, y - 1, 3, 2);
-    graphics.fillRect(x + 5, y - 1, 3, 2);
-    graphics.fillRect(x - 1, y - 8, 2, 3);
-    graphics.fillRect(x - 1, y + 5, 2, 3);
-
-    graphics.setDepth(NAV_UI_DEPTH + 1); // Above button
+    // Use the same setting image for settings button
+    this.scene.add
+      .image(x, y, "setting")
+      .setOrigin(0.5)
+      .setDisplaySize(20, 20)
+      .setDepth(NAV_UI_DEPTH + 3);
   }
 }

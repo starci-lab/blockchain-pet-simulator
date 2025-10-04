@@ -205,7 +205,7 @@ const PhaserPetGame = ({ publicKey, signMessage }: PhaserPetGameProps) => {
         bottom: 0,
         left: 0,
         width: "100vw",
-        height: "160px",
+        height: "140px",
         zIndex: 1000,
         border: "none",
         background: "transparent"

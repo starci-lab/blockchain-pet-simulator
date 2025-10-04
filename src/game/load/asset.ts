@@ -15,6 +15,9 @@ import ballImg from "@/assets/images/ball/ball.png";
 import forestBgImg from "@/assets/images/backgrounds/forest-bg.png";
 import heartImg from "@/assets/images/effects/heart.png";
 import coinPixelImg from "@/assets/images/coin/coin-e4dae5.png";
+import settingImg from "@/assets/images/game-ui/setting.png";
+import shopImg from "@/assets/images/game-ui/shop.png";
+import homeImg from "@/assets/images/game-ui/home.png";
 export const loadChogAssets = (scene: Phaser.Scene) => {
   scene.load.atlas("dog-sleep", dogSleepImg, dogSleepJson);
   scene.load.atlas("dog-play", dogPlayImg, dogPlayJson);
@@ -49,4 +52,11 @@ export const loadEffectAssets = (scene: Phaser.Scene) => {
   scene.load.image("heart", heartImg);
   // Use pixel-styled coin sprite instead of effects coin
   scene.load.image("coin", coinPixelImg);
+};
+
+export const loadUiAssets = (scene: Phaser.Scene) => {
+  // Generic setting icon used for both shop and settings buttons per request
+  scene.load.image("setting", settingImg);
+  scene.load.image("shop", shopImg);
+  scene.load.image("home", homeImg);
 };
