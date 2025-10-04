@@ -275,7 +275,12 @@ export function ReactShopModal({
             aspectRatio: "1 / 1",
             borderRadius: "50%",
             boxShadow: "inset 0px 0.84px 0.42px 0px rgba(199,199,199,0.19)",
-            cursor: "pointer"
+            cursor: "pointer",
+            flexShrink: 0,
+            flex: "auto",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center"
           }}
         >
           ✕
