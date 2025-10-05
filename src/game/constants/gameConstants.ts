@@ -1,12 +1,12 @@
 // Game layout constants
 export const GAME_LAYOUT = {
   GROUND_OFFSET: 30, // Distance from bottom of screen for ground line
-  PET_GROUND_OFFSET: 30, // Distance from bottom for pets (standing on ground)
+  PET_GROUND_OFFSET: -12, // Distance from bottom for pets (standing on ground) - 0 = sát cạnh dưới
   FOOD_GROUND_OFFSET: 15, // Distance from bottom for food (sitting on ground)
   FOOD_DROP_HEIGHT: 25, // Height above final position for food drop animation
   PET_HEIGHT: 40, // Pet sprite height (approximate)
   PET_WIDTH: 40, // Pet sprite width (approximate)
-  PET_SCALE: 2, // Pet sprite scale multiplier
+  PET_SCALE: 1.7, // Pet sprite scale multiplier
   FOOD_WIDTH: 30, // Food sprite width (approximate)
   FOOD_HEIGHT: 30, // Food sprite height (approximate)
   FOOD_SCALE: 1.5, // Food sprite scale multiplier
@@ -15,7 +15,7 @@ export const GAME_LAYOUT = {
   BALL_SCALE: 0.01, // Ball sprite scale multiplier
   POOP_WIDTH: 25, // Poop sprite width (approximate)
   POOP_HEIGHT: 25, // Poop sprite height (approximate)
-  POOP_SCALE: 0.1, // Poop sprite scale multiplier
+  POOP_SCALE: 0.1 // Poop sprite scale multiplier
 } as const;
 
 // Calculated constants based on layout
@@ -50,7 +50,7 @@ export const CALCULATED_CONSTANTS = {
   },
   get SCALED_POOP_HEIGHT() {
     return GAME_LAYOUT.POOP_HEIGHT * GAME_LAYOUT.POOP_SCALE;
-  },
+  }
 } as const;
 
 // Game mechanics constants
@@ -75,7 +75,7 @@ export const GAME_MECHANICS = {
   HAPPINESS_UPDATE_INTERVAL: 5000, // Interval between happiness updates (ms)
   HAPPINESS_DECREASE_RATE: 20.0, // Happiness decrease per update (increased from 0.2)
   HAPPINESS_INCREASE_AMOUNT: 25, // Happiness gained when playing with ball
-  BALL_LIFETIME: 30000, // Time before ball auto-despawns (ms) - 30 seconds
+  BALL_LIFETIME: 30000 // Time before ball auto-despawns (ms) - 30 seconds
 } as const;
 
 // Helper functions for game positioning
@@ -128,7 +128,7 @@ export const GamePositioning = {
     const halfWidth = CALCULATED_CONSTANTS.SCALED_PET_WIDTH / 2;
     const bounds = {
       minX: halfWidth,
-      maxX: cameraWidth - halfWidth,
+      maxX: cameraWidth - halfWidth
     };
     // console.log(`Pet boundaries: [${bounds.minX.toFixed(1)}, ${bounds.maxX.toFixed(1)}], camera: ${cameraWidth}`)
     return bounds;
@@ -139,7 +139,7 @@ export const GamePositioning = {
     const halfWidth = CALCULATED_CONSTANTS.SCALED_FOOD_WIDTH / 2;
     const bounds = {
       minX: halfWidth,
-      maxX: cameraWidth - halfWidth,
+      maxX: cameraWidth - halfWidth
     };
     // console.log(`Food boundaries: [${bounds.minX.toFixed(1)}, ${bounds.maxX.toFixed(1)}], camera: ${cameraWidth}`)
     return bounds;
@@ -150,7 +150,7 @@ export const GamePositioning = {
     const halfWidth = CALCULATED_CONSTANTS.SCALED_BALL_WIDTH / 2;
     const bounds = {
       minX: halfWidth,
-      maxX: cameraWidth - halfWidth,
+      maxX: cameraWidth - halfWidth
     };
     return bounds;
   },
@@ -160,8 +160,8 @@ export const GamePositioning = {
     const halfWidth = CALCULATED_CONSTANTS.SCALED_POOP_WIDTH / 2;
     const bounds = {
       minX: halfWidth,
-      maxX: cameraWidth - halfWidth,
+      maxX: cameraWidth - halfWidth
     };
     return bounds;
-  },
+  }
 } as const;

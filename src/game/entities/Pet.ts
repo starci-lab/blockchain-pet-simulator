@@ -69,6 +69,12 @@ export class Pet {
     this.sprite = this.scene.add.sprite(finalX, finalY, textureKey, frameKey);
     this.sprite.setScale(GAME_LAYOUT.PET_SCALE);
 
+    // Set origin to bottom center so pets stand ON the ground line
+    this.sprite.setOrigin(0.5, 1);
+
+    // Fine-tune Y position to ensure pets stick to bottom without being cut off
+    this.sprite.y = finalY - 2;
+
     // Make pet clickable to switch active pet
     this.sprite.setInteractive();
     this.sprite.on("pointerdown", (pointer: Phaser.Input.Pointer) => {

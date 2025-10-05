@@ -20,14 +20,16 @@ import keonedogWalkJson from "@/assets/images/KeoneDog/keonedog_walk.json";
 import keonedogIdleImg from "@/assets/images/KeoneDog/keonedog_idle.png";
 import keonedogIdleJson from "@/assets/images/KeoneDog/keonedog_idle.json";
 // Ghost assets
-import ghostSleepImg from "@/assets/images/pets/Ghost/ghost_sleep.png";
-import ghostSleepJson from "@/assets/images/pets/Ghost/ghost_sleep.json";
-import ghostPlayImg from "@/assets/images/pets/Ghost/ghost_idleplay.png";
-import ghostPlayJson from "@/assets/images/pets/Ghost/ghost_idleplay.json";
-import ghostChewImg from "@/assets/images/pets/Ghost/ghost_chew.png";
-import ghostChewJson from "@/assets/images/pets/Ghost/ghost_chew.json";
-import ghostIdleImg from "@/assets/images/pets/Ghost/ghost_idle.png";
-import ghostIdleJson from "@/assets/images/pets/Ghost/ghost_idle.json";
+import ghostSleepImg from "@/assets/images/Ghost/ghost_sleep.png";
+import ghostSleepJson from "@/assets/images/Ghost/ghost_sleep.json";
+import ghostPlayImg from "@/assets/images/Ghost/ghost_idleplay.png";
+import ghostPlayJson from "@/assets/images/Ghost/ghost_idleplay.json";
+import ghostChewImg from "@/assets/images/Ghost/ghost_chew.png";
+import ghostChewJson from "@/assets/images/Ghost/ghost_chew.json";
+import ghostIdleImg from "@/assets/images/Ghost/ghost_idle.png";
+import ghostIdleJson from "@/assets/images/Ghost/ghost_idle.json";
+import ghostWalkImg from "@/assets/images/Ghost/ghost_walk.png";
+import ghostWalkJson from "@/assets/images/Ghost/ghost_walk.json";
 import hamburgerImg from "@/assets/images/food/hambuger.png";
 import poopImg from "@/assets/images/poop/poop.png";
 import broomImg from "@/assets/images/broom/broom.png";
@@ -58,7 +60,7 @@ export const loadGhostAssets = (scene: Phaser.Scene) => {
   scene.load.atlas("ghost-sleep", ghostSleepImg, ghostSleepJson);
   scene.load.atlas("ghost-play", ghostPlayImg, ghostPlayJson);
   scene.load.atlas("ghost-chew", ghostChewImg, ghostChewJson);
-  // Note: Ghost doesn't have walk animation yet
+  scene.load.atlas("ghost-walk", ghostWalkImg, ghostWalkJson);
 };
 
 // Load all pet assets
