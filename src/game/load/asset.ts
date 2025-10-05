@@ -30,6 +30,18 @@ import ghostIdleImg from "@/assets/images/Ghost/ghost_idle.png";
 import ghostIdleJson from "@/assets/images/Ghost/ghost_idle.json";
 import ghostWalkImg from "@/assets/images/Ghost/ghost_walk.png";
 import ghostWalkJson from "@/assets/images/Ghost/ghost_walk.json";
+
+// Zombie assets
+import zombieIdleImg from "@/assets/images/Zombie/zombie_idle.png";
+import zombieIdleJson from "@/assets/images/Zombie/zombie_idle.json";
+import zombieWalkImg from "@/assets/images/Zombie/zombie_walk.png";
+import zombieWalkJson from "@/assets/images/Zombie/zombie_walk.json";
+import zombieIdleplayImg from "@/assets/images/Zombie/zombie_idleplay.png";
+import zombieIdleplayJson from "@/assets/images/Zombie/zombie_idleplay.json";
+import zombieChewImg from "@/assets/images/Zombie/zombie_chew.png";
+import zombieChewJson from "@/assets/images/Zombie/zombie_chew.json";
+import zombieSleepImg from "@/assets/images/Zombie/zombie_sleep.png";
+import zombieSleepJson from "@/assets/images/Zombie/zombie_sleep.json";
 import hamburgerImg from "@/assets/images/food/hambuger.png";
 import poopImg from "@/assets/images/poop/poop.png";
 import broomImg from "@/assets/images/broom/broom.png";
@@ -45,6 +57,14 @@ export const loadChogAssets = (scene: Phaser.Scene) => {
   scene.load.atlas("dog-play", dogPlayImg, dogPlayJson);
   scene.load.atlas("dog-chew", dogChewImg, dogChewJson);
   scene.load.atlas("dog-walk", dogWalkImg, dogWalkJson);
+};
+
+export const loadZombieAssets = (scene: Phaser.Scene) => {
+  scene.load.atlas("zombie-idle", zombieIdleImg, zombieIdleJson);
+  scene.load.atlas("zombie-walk", zombieWalkImg, zombieWalkJson);
+  scene.load.atlas("zombie-idleplay", zombieIdleplayImg, zombieIdleplayJson);
+  scene.load.atlas("zombie-chew", zombieChewImg, zombieChewJson);
+  scene.load.atlas("zombie-sleep", zombieSleepImg, zombieSleepJson);
 };
 
 export const loadKeoneDogAssets = (scene: Phaser.Scene) => {
@@ -68,6 +88,7 @@ export const loadAllPetAssets = (scene: Phaser.Scene) => {
   loadChogAssets(scene);
   loadKeoneDogAssets(scene);
   loadGhostAssets(scene);
+  loadZombieAssets(scene);
 };
 
 // Load background assets

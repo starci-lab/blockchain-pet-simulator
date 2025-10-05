@@ -120,6 +120,8 @@ export class Pet {
         return `keonedog-${activity}`;
       case "ghost":
         return `ghost-${activity}`;
+      case "zombie":
+        return `zombie-${activity}`;
       case "chog":
       default:
         return `dog-${activity}`;
@@ -135,7 +137,16 @@ export class Pet {
         ? "keonedog"
         : this.petType === "ghost"
         ? "ghost"
+        : this.petType === "zombie"
+        ? "zombie"
         : "chog";
+
+    // Handle different frame naming conventions
+    if (this.petType === "zombie") {
+      // Zombie uses different extensions: .gif for idle, .aseprite for others
+      const extension = activity === "idle" ? "gif" : "aseprite";
+      return `${petPrefix}_${activity} ${frameNumber}.${extension}`;
+    }
 
     return `${petPrefix}_${activity} ${frameNumber}.aseprite`;
   }
@@ -149,6 +160,8 @@ export class Pet {
         return `keonedog-${activity}`;
       case "ghost":
         return `ghost-${activity}`;
+      case "zombie":
+        return `zombie-${activity}`;
       case "chog":
       default:
         return `dog-${activity}`;
@@ -180,6 +193,9 @@ export class Pet {
         break;
       case "ghost":
         maxFrames = 4; // Ghost uses idle animation for walk
+        break;
+      case "zombie":
+        maxFrames = 6; // Zombie walk has 6 frames
         break;
       default:
         maxFrames = 6;
@@ -217,6 +233,9 @@ export class Pet {
         break;
       case "ghost":
         maxFrames = 4; // Ghost uses same frame count as KeoneDog
+        break;
+      case "zombie":
+        maxFrames = 4; // Zombie sleep has 4 frames
         break;
       default:
         maxFrames = 6;
@@ -264,6 +283,9 @@ export class Pet {
       case "ghost":
         maxFrames = 10; // Ghost uses same frame count as KeoneDog
         break;
+      case "zombie":
+        maxFrames = 9; // Zombie idleplay has 9 frames
+        break;
       default:
         maxFrames = 15;
     }
@@ -309,6 +331,9 @@ export class Pet {
         break;
       case "ghost":
         maxFrames = 11; // Ghost uses same frame count as KeoneDog
+        break;
+      case "zombie":
+        maxFrames = 8; // Zombie chew has 8 frames
         break;
       default:
         maxFrames = 6;
