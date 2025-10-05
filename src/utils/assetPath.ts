@@ -2,6 +2,25 @@
  * Asset path utility for generating consistent asset URLs
  */
 
+/**
+ * Normalize pet name to match folder structure
+ * Handles different naming conventions from backend
+ */
+function normalizePetName(petName: string): string {
+  // Handle common pet name variations
+  const nameMappings: Record<string, string> = {
+    KeoneDog: "KeoneDog",
+    keonedog: "KeoneDog",
+    Keonedog: "KeoneDog",
+    Chog: "Chog",
+    chog: "Chog",
+    Ghost: "Ghost",
+    ghost: "Ghost"
+  };
+
+  return nameMappings[petName] || petName;
+}
+
 export interface AssetPathConfig {
   basePath?: string;
   category: string;
@@ -28,17 +47,20 @@ export function generateAssetPath(config: AssetPathConfig): string {
       return `${basePath}food/${itemName}.${extension}`;
 
     case "toy":
-      return `${basePath}ball/${itemName}.${extension}`;
+    case "toys":
+      return `${basePath}toys/${itemName}.${extension}`;
 
     case "clean":
     case "cleaning":
-      return `${basePath}broom/${itemName}.${extension}`;
+      return `${basePath}cleaning/${itemName}.${extension}`;
 
     case "pets":
     case "pet":
       // For pets, we need to handle different species and variants
       const petVariant = variant || "idle";
-      return `${basePath}pets/${itemName}/${itemName}_${petVariant}.${extension}`;
+      // Normalize pet name to match folder structure
+      const normalizedPetName = normalizePetName(itemName);
+      return `${basePath}pets/${normalizedPetName}/${normalizedPetName}_${petVariant}.${extension}`;
 
     case "backgrounds":
     case "background":
@@ -125,7 +147,7 @@ export function getShopItemAssetPath(
 /**
  * Get fallback asset path when primary path fails
  */
-function getFallbackAssetPath(category: string, itemName: string): string {
+function getFallbackAssetPath(category: string, _itemName: string): string {
   const fallbackMappings: Record<string, string> = {
     pets: "assets/images/effects/heart.png",
     food: "assets/images/effects/coin.png",
@@ -145,11 +167,12 @@ function getFallbackAssetPath(category: string, itemName: string): string {
 export const ASSET_PATHS = {
   BASE: "assets/images/",
   FOOD: "assets/images/food/",
-  TOYS: "assets/images/ball/",
-  CLEANING: "assets/images/broom/",
+  TOYS: "assets/images/toys/",
+  CLEANING: "assets/images/cleaning/",
   PETS: "assets/images/pets/",
   BACKGROUNDS: "assets/images/backgrounds/",
-  EFFECTS: "assets/images/effects/"
+  EFFECTS: "assets/images/effects/",
+  UI: "assets/images/ui/"
 } as const;
 
 /**

@@ -7,10 +7,7 @@ export class PetShopModal {
   private petManager: PetManager;
   private notificationUI: any;
 
-  constructor(
-    petManager: PetManager,
-    notificationUI: any
-  ) {
+  constructor(petManager: PetManager, notificationUI: any) {
     this.petManager = petManager;
     this.notificationUI = notificationUI;
   }

@@ -7,7 +7,8 @@ import {
   loadCleaningAssets,
   loadToyAssets,
   loadEffectAssets,
-  loadUiAssets
+  loadUiAssets,
+  loadAllPetAssets
 } from "@/game/load";
 import Phaser from "phaser";
 import { GameUI } from "@/game/ui/GameUI";
@@ -38,7 +39,7 @@ export class GameScene extends Phaser.Scene {
     super({ key: SceneName.Gameplay });
   }
   preload() {
-    loadChogAssets(this);
+    loadAllPetAssets(this);
     loadBackgroundAssets(this);
     loadFoodAssets(this);
     loadPoopAssets(this);
@@ -242,11 +243,12 @@ export class GameScene extends Phaser.Scene {
     return this.petManager;
   }
 
-  addPet(petId: string, x?: number, y?: number): boolean {
+  addPet(petId: string, x?: number, y?: number, petType?: string): boolean {
     const petData = this.petManager.createPet(
       petId,
       x || Math.random() * 300 + 50,
-      y || GamePositioning.getPetY(this.cameras.main.height)
+      y || GamePositioning.getPetY(this.cameras.main.height),
+      petType || "chog"
     );
     return !!petData;
   }

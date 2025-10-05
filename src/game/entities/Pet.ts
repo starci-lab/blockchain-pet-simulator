@@ -10,6 +10,7 @@ export class Pet {
   public isUserControlled: boolean = false;
   public lastEdgeHit: string = "";
   public groundY: number = 0; // Ground line Y position
+  public petType: string = "chog"; // Pet species/type
 
   // Cleanliness properties - thuộc tính riêng của mỗi pet
   public cleanlinessDecreaseMultiplier: number; // Tốc độ giảm riêng cho mỗi pet
@@ -30,8 +31,9 @@ export class Pet {
 
   private scene: Phaser.Scene;
 
-  constructor(scene: Phaser.Scene) {
+  constructor(scene: Phaser.Scene, petType: string = "chog") {
     this.scene = scene;
+    this.petType = petType.toLowerCase();
 
     // Khởi tạo tốc độ giảm cleanliness ngẫu nhiên cho mỗi pet (0.7x - 1.3x)
     this.cleanlinessDecreaseMultiplier = 0.7 + Math.random() * 0.6;
@@ -44,22 +46,27 @@ export class Pet {
     // Nếu x/y chưa truyền vào, thử lấy từ _pendingX/_pendingY (random từ PetManager)
     let finalX = x;
     let finalY = y;
-    if (typeof finalX !== "number" && (this as any)._pendingX)
-      finalX = (this as any)._pendingX;
-    if (typeof finalY !== "number" && (this as any)._pendingY)
-      finalY = (this as any)._pendingY;
+    if (
+      typeof finalX !== "number" &&
+      (this as unknown as { _pendingX?: number })._pendingX
+    )
+      finalX = (this as unknown as { _pendingX: number })._pendingX;
+    if (
+      typeof finalY !== "number" &&
+      (this as unknown as { _pendingY?: number })._pendingY
+    )
+      finalY = (this as unknown as { _pendingY: number })._pendingY;
     // Nếu vẫn chưa có, fallback mặc định
     if (typeof finalX !== "number") finalX = 400;
     if (typeof finalY !== "number")
       finalY = GamePositioning.getPetY(this.scene.cameras.main.height);
     this.groundY = finalY; // Store ground line position
 
-    this.sprite = this.scene.add.sprite(
-      finalX,
-      finalY,
-      "dog-walk",
-      "chog_walk 0.aseprite"
-    );
+    // Get appropriate texture based on pet type
+    const textureKey = this.getTextureKey("walk");
+    const frameKey = this.getFrameKey("walk", 0);
+
+    this.sprite = this.scene.add.sprite(finalX, finalY, textureKey, frameKey);
     this.sprite.setScale(GAME_LAYOUT.PET_SCALE);
 
     // Make pet clickable to switch active pet
@@ -98,162 +105,285 @@ export class Pet {
     this.updateActivity();
   }
 
+  /**
+   * Get texture key based on pet type and activity
+   */
+  private getTextureKey(activity: string): string {
+    switch (this.petType) {
+      case "keonedog":
+        return `keonedog-${activity}`;
+      case "ghost":
+        return `ghost-${activity}`;
+      case "chog":
+      default:
+        return `dog-${activity}`;
+    }
+  }
+
+  /**
+   * Get frame key based on pet type, activity and frame number
+   */
+  private getFrameKey(activity: string, frameNumber: number): string {
+    const petPrefix =
+      this.petType === "keonedog"
+        ? "keonedog"
+        : this.petType === "ghost"
+        ? "ghost"
+        : "chog";
+
+    return `${petPrefix}_${activity} ${frameNumber}.aseprite`;
+  }
+
+  /**
+   * Get animation key based on pet type and activity
+   */
+  private getAnimationKey(activity: string): string {
+    switch (this.petType) {
+      case "keonedog":
+        return `keonedog-${activity}`;
+      case "ghost":
+        return `ghost-${activity}`;
+      case "chog":
+      default:
+        return `dog-${activity}`;
+    }
+  }
+
   createAnimations() {
-    // Walk animation
+    // Create animations for current pet type
+    this.createWalkAnimation();
+    this.createSleepAnimations();
+    this.createPlayAnimations();
+    this.createChewAnimations();
+    this.createIdleAnimation();
+  }
+
+  private createWalkAnimation() {
+    const textureKey = this.getTextureKey("walk");
+    const animationKey = this.getAnimationKey("walk");
+
+    const frames = [];
+    // Get correct frame count for each pet type
+    let maxFrames = 6; // Default fallback
+    switch (this.petType) {
+      case "chog":
+        maxFrames = 8;
+        break;
+      case "keonedog":
+        maxFrames = 5;
+        break;
+      case "ghost":
+        maxFrames = 4; // Ghost uses idle animation for walk
+        break;
+      default:
+        maxFrames = 6;
+    }
+
+    for (let i = 0; i < maxFrames; i++) {
+      frames.push({
+        key: textureKey,
+        frame: this.getFrameKey("walk", i)
+      });
+    }
+
     this.scene.anims.create({
-      key: "dog-walk",
-      frames: [
-        { key: "dog-walk", frame: "chog_walk 0.aseprite" },
-        { key: "dog-walk", frame: "chog_walk 1.aseprite" },
-        { key: "dog-walk", frame: "chog_walk 2.aseprite" },
-        { key: "dog-walk", frame: "chog_walk 3.aseprite" },
-        { key: "dog-walk", frame: "chog_walk 4.aseprite" },
-        { key: "dog-walk", frame: "chog_walk 5.aseprite" },
-        { key: "dog-walk", frame: "chog_walk 6.aseprite" },
-        { key: "dog-walk", frame: "chog_walk 7.aseprite" },
-      ],
+      key: animationKey,
+      frames,
       frameRate: 8,
-      repeat: -1,
+      repeat: -1
     });
+  }
 
-    // Sleep animations
+  private createSleepAnimations() {
+    const textureKey = this.getTextureKey("sleep");
+    const animationKey = this.getAnimationKey("sleep");
+    const loopAnimationKey = this.getAnimationKey("sleep-loop");
+
+    const frames = [];
+    // Get correct frame count for each pet type
+    let maxFrames = 6; // Default fallback
+    switch (this.petType) {
+      case "chog":
+        maxFrames = 6;
+        break;
+      case "keonedog":
+        maxFrames = 4;
+        break;
+      case "ghost":
+        maxFrames = 4; // Ghost uses same frame count as KeoneDog
+        break;
+      default:
+        maxFrames = 6;
+    }
+
+    for (let i = 0; i < maxFrames; i++) {
+      frames.push({
+        key: textureKey,
+        frame: this.getFrameKey("sleep", i)
+      });
+    }
+
+    // Sleep animation (plays once)
     this.scene.anims.create({
-      key: "dog-sleep",
-      frames: [
-        { key: "dog-sleep", frame: "chog_sleep 0.aseprite" },
-        { key: "dog-sleep", frame: "chog_sleep 1.aseprite" },
-        { key: "dog-sleep", frame: "chog_sleep 2.aseprite" },
-        { key: "dog-sleep", frame: "chog_sleep 3.aseprite" },
-        { key: "dog-sleep", frame: "chog_sleep 4.aseprite" },
-        { key: "dog-sleep", frame: "chog_sleep 5.aseprite" },
-      ],
+      key: animationKey,
+      frames,
       frameRate: 3,
-      repeat: 14,
+      repeat: 14
     });
 
+    // Sleep loop animation (repeats forever)
     this.scene.anims.create({
-      key: "dog-sleep-loop",
-      frames: [
-        { key: "dog-sleep", frame: "chog_sleep 0.aseprite" },
-        { key: "dog-sleep", frame: "chog_sleep 1.aseprite" },
-        { key: "dog-sleep", frame: "chog_sleep 2.aseprite" },
-        { key: "dog-sleep", frame: "chog_sleep 3.aseprite" },
-        { key: "dog-sleep", frame: "chog_sleep 4.aseprite" },
-        { key: "dog-sleep", frame: "chog_sleep 5.aseprite" },
-      ],
+      key: loopAnimationKey,
+      frames,
       frameRate: 3,
-      repeat: -1,
+      repeat: -1
     });
+  }
 
-    // Play animations
+  private createPlayAnimations() {
+    const textureKey = this.getTextureKey("play");
+    const animationKey = this.getAnimationKey("play");
+    const loopAnimationKey = this.getAnimationKey("play-loop");
+
+    const frames = [];
+    // Get correct frame count for each pet type
+    let maxFrames = 15; // Default fallback
+    switch (this.petType) {
+      case "chog":
+        maxFrames = 15;
+        break;
+      case "keonedog":
+        maxFrames = 10;
+        break;
+      case "ghost":
+        maxFrames = 10; // Ghost uses same frame count as KeoneDog
+        break;
+      default:
+        maxFrames = 15;
+    }
+
+    for (let i = 0; i < maxFrames; i++) {
+      frames.push({
+        key: textureKey,
+        frame: this.getFrameKey("idleplay", i) // Note: using "idleplay" for frame naming
+      });
+    }
+
+    // Play animation (plays once)
     this.scene.anims.create({
-      key: "dog-play",
-      frames: [
-        { key: "dog-play", frame: "chog_idleplay 0.aseprite" },
-        { key: "dog-play", frame: "chog_idleplay 1.aseprite" },
-        { key: "dog-play", frame: "chog_idleplay 2.aseprite" },
-        { key: "dog-play", frame: "chog_idleplay 3.aseprite" },
-        { key: "dog-play", frame: "chog_idleplay 4.aseprite" },
-        { key: "dog-play", frame: "chog_idleplay 5.aseprite" },
-        { key: "dog-play", frame: "chog_idleplay 6.aseprite" },
-        { key: "dog-play", frame: "chog_idleplay 7.aseprite" },
-        { key: "dog-play", frame: "chog_idleplay 8.aseprite" },
-        { key: "dog-play", frame: "chog_idleplay 9.aseprite" },
-        { key: "dog-play", frame: "chog_idleplay 10.aseprite" },
-        { key: "dog-play", frame: "chog_idleplay 11.aseprite" },
-        { key: "dog-play", frame: "chog_idleplay 12.aseprite" },
-        { key: "dog-play", frame: "chog_idleplay 13.aseprite" },
-        { key: "dog-play", frame: "chog_idleplay 14.aseprite" },
-      ],
+      key: animationKey,
+      frames,
       frameRate: 10,
-      repeat: 1,
+      repeat: 1
     });
 
+    // Play loop animation (repeats forever)
     this.scene.anims.create({
-      key: "dog-play-loop",
-      frames: [
-        { key: "dog-play", frame: "chog_idleplay 0.aseprite" },
-        { key: "dog-play", frame: "chog_idleplay 1.aseprite" },
-        { key: "dog-play", frame: "chog_idleplay 2.aseprite" },
-        { key: "dog-play", frame: "chog_idleplay 3.aseprite" },
-        { key: "dog-play", frame: "chog_idleplay 4.aseprite" },
-        { key: "dog-play", frame: "chog_idleplay 5.aseprite" },
-        { key: "dog-play", frame: "chog_idleplay 6.aseprite" },
-        { key: "dog-play", frame: "chog_idleplay 7.aseprite" },
-        { key: "dog-play", frame: "chog_idleplay 8.aseprite" },
-        { key: "dog-play", frame: "chog_idleplay 9.aseprite" },
-        { key: "dog-play", frame: "chog_idleplay 10.aseprite" },
-        { key: "dog-play", frame: "chog_idleplay 11.aseprite" },
-        { key: "dog-play", frame: "chog_idleplay 12.aseprite" },
-        { key: "dog-play", frame: "chog_idleplay 13.aseprite" },
-        { key: "dog-play", frame: "chog_idleplay 14.aseprite" },
-      ],
+      key: loopAnimationKey,
+      frames,
       frameRate: 10,
-      repeat: -1,
+      repeat: -1
+    });
+  }
+
+  private createChewAnimations() {
+    const textureKey = this.getTextureKey("chew");
+    const animationKey = this.getAnimationKey("chew");
+    const loopAnimationKey = this.getAnimationKey("chew-loop");
+
+    const frames = [];
+    // Get correct frame count for each pet type
+    let maxFrames = 6; // Default fallback
+    switch (this.petType) {
+      case "chog":
+        maxFrames = 10;
+        break;
+      case "keonedog":
+        maxFrames = 11;
+        break;
+      case "ghost":
+        maxFrames = 11; // Ghost uses same frame count as KeoneDog
+        break;
+      default:
+        maxFrames = 6;
+    }
+
+    for (let i = 0; i < maxFrames; i++) {
+      frames.push({
+        key: textureKey,
+        frame: this.getFrameKey("chew", i)
+      });
+    }
+
+    // Chew animation (plays once)
+    this.scene.anims.create({
+      key: animationKey,
+      frames,
+      frameRate: 6,
+      repeat: 1
     });
 
-    // Chew animations
+    // Chew loop animation (repeats forever)
     this.scene.anims.create({
-      key: "dog-chew",
-      frames: [
-        { key: "dog-chew", frame: "chog_chew 0.aseprite" },
-        { key: "dog-chew", frame: "chog_chew 1.aseprite" },
-        { key: "dog-chew", frame: "chog_chew 2.aseprite" },
-        { key: "dog-chew", frame: "chog_chew 3.aseprite" },
-        { key: "dog-chew", frame: "chog_chew 4.aseprite" },
-        { key: "dog-chew", frame: "chog_chew 5.aseprite" },
-      ],
+      key: loopAnimationKey,
+      frames,
       frameRate: 6,
-      repeat: 1,
+      repeat: -1
     });
+  }
 
+  private createIdleAnimation() {
+    // For now, idle uses walk animation
+    // This can be expanded later if pets have specific idle animations
+    const textureKey = this.getTextureKey("idle");
+    const animationKey = this.getAnimationKey("idle");
+
+    // Use first frame of walk as idle
     this.scene.anims.create({
-      key: "dog-chew-loop",
+      key: animationKey,
       frames: [
-        { key: "dog-chew", frame: "chog_chew 0.aseprite" },
-        { key: "dog-chew", frame: "chog_chew 1.aseprite" },
-        { key: "dog-chew", frame: "chog_chew 2.aseprite" },
-        { key: "dog-chew", frame: "chog_chew 3.aseprite" },
-        { key: "dog-chew", frame: "chog_chew 4.aseprite" },
-        { key: "dog-chew", frame: "chog_chew 5.aseprite" },
+        {
+          key: textureKey,
+          frame: this.getFrameKey("idle", 0)
+        }
       ],
-      frameRate: 6,
-      repeat: -1,
+      frameRate: 1,
+      repeat: -1
     });
   }
 
   updateActivity() {
     switch (this.currentActivity) {
       case "walk":
-        this.sprite.play("dog-walk");
+        this.sprite.play(this.getAnimationKey("walk"));
         this.isMoving = true;
         break;
       case "sleep":
         if (this.isUserControlled) {
-          this.sprite.play("dog-sleep-loop");
+          this.sprite.play(this.getAnimationKey("sleep-loop"));
         } else {
-          this.sprite.play("dog-sleep");
+          this.sprite.play(this.getAnimationKey("sleep"));
         }
         this.isMoving = false;
         break;
       case "idleplay":
         if (this.isUserControlled) {
-          this.sprite.play("dog-play-loop");
+          this.sprite.play(this.getAnimationKey("play-loop"));
         } else {
-          this.sprite.play("dog-play");
+          this.sprite.play(this.getAnimationKey("play"));
         }
         this.isMoving = false;
         break;
       case "chew":
         if (this.isUserControlled) {
-          this.sprite.play("dog-chew-loop");
+          this.sprite.play(this.getAnimationKey("chew-loop"));
         } else {
-          this.sprite.play("dog-chew");
+          this.sprite.play(this.getAnimationKey("chew"));
         }
         this.isMoving = false;
         break;
       default:
-        this.sprite.play("dog-walk");
+        this.sprite.play(this.getAnimationKey("walk"));
         this.isMoving = true;
     }
   }

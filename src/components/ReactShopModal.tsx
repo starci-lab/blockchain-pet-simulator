@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { GameScene } from "@/game/scenes/GameScene";
 import { useUserStore } from "@/store/userStore";
 import { gameConfigManager } from "@/game/configs/gameConfig";
+import { getShopItemAssetPath } from "@/utils/assetPath";
 import type {
   FoodItem,
   ToyItem,
@@ -35,29 +36,10 @@ export function ReactShopModal({
   );
 
   const getItemImageSrc = (cat: string, shopItem: ShopItem): string => {
-    const maybeUrl = (shopItem as { image_url?: string }).image_url;
-    if (maybeUrl && maybeUrl.length > 0) return maybeUrl;
-    const basePath = "assets/images/";
     const effectiveCategory =
       cat === "items" ? detectItemType(shopItem) : (cat as string);
-    switch (effectiveCategory) {
-      case "food":
-        return `${basePath}food/${shopItem.texture}.png`;
-      case "toy":
-        return `${basePath}ball/${shopItem.texture}.png`;
-      case "clean":
-        return `${basePath}broom/${shopItem.texture}.png`;
-      case "pets":
-        return `${basePath}Chog/${shopItem.texture}_idle.png`;
-      case "backgrounds":
-        return `${basePath}backgrounds/${shopItem.texture}.png`;
-      case "background":
-        return `${basePath}backgrounds/${shopItem.texture}.png`;
-      case "furniture":
-        return `${basePath}effects/coin.png`;
-      default:
-        return "";
-    }
+
+    return getShopItemAssetPath(effectiveCategory, shopItem);
   };
 
   const detectItemType = (
@@ -207,7 +189,9 @@ export function ReactShopModal({
       try {
         const petType =
           (item as PetItem).texture || (item as PetItem).species || item.name;
-        scene.getPetManager().buyPet(petType);
+        console.log("petType", petType);
+        console.log("item", item);
+        scene.getPetManager().buyPet(petType, (item as PetItem).id);
       } catch {
         // fallback to generic message
         scene.sendBuyFoodLegacy({

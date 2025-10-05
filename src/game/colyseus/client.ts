@@ -335,7 +335,12 @@ export class ColyseusClient {
           maxY = 500;
         const x = Math.floor(Math.random() * (maxX - minX + 1)) + minX;
         const y = Math.floor(Math.random() * (maxY - minY + 1)) + minY;
-        localPetData = petManager.createPet(serverPet.id, x, y);
+        localPetData = petManager.createPet(
+          serverPet.id,
+          x,
+          y,
+          serverPet.petType || "chog"
+        );
 
         if (!localPetData) {
           console.error(`❌ Failed to create pet ${serverPet.id}`);

@@ -9,7 +9,7 @@ import { ColyseusClient } from "@/game/colyseus/client";
 import {
   GamePositioning,
   GAME_MECHANICS,
-  GAME_LAYOUT,
+  GAME_LAYOUT
 } from "@/game/constants/gameConstants";
 
 export interface PetData {
@@ -58,9 +58,14 @@ export class PetManager {
   /**
    * Tạo pet entity local (chỉ render, không gửi event mua pet)
    */
-  createPet(petId: string, x: number, y: number): PetData {
-    console.log(`🐕 Creating pet entity: ${petId}`);
-    const pet = new Pet(this.scene);
+  createPet(
+    petId: string,
+    x: number,
+    y: number,
+    petType: string = "chog"
+  ): PetData {
+    console.log(`🐕 Creating pet entity: ${petId} (type: ${petType})`);
+    const pet = new Pet(this.scene, petType);
     pet.createAnimations();
     pet.create(x, y);
 
@@ -101,7 +106,7 @@ export class PetManager {
       cleanlinessSystem,
       happinessSystem,
       movementSystem,
-      activitySystem,
+      activitySystem
     };
     pet.onStopChasing = () => {
       this.releaseFoodTarget(petId);
@@ -122,7 +127,7 @@ export class PetManager {
    * Gửi event mua pet lên server (chuẩn backend: create_pet với isBuyPet)
    * (Truyền x/y random để server có thể lưu vị trí spawn ban đầu nếu muốn)
    */
-  buyPet(petType: string = "chog") {
+  buyPet(petType: string = "chog", petTypeId: string) {
     if (this.colyseusClient?.isConnected()) {
       // Random vị trí spawn cho pet mới
       const minX = 100,
@@ -133,9 +138,10 @@ export class PetManager {
       const y = Math.floor(Math.random() * (maxY - minY + 1)) + minY;
       this.colyseusClient.sendMessage("buy_pet", {
         petType,
+        petTypeId,
         isBuyPet: true,
         x,
-        y,
+        y
       });
     }
   }
@@ -149,7 +155,7 @@ export class PetManager {
     if (this.colyseusClient?.isConnected()) {
       console.log(`📤 Sending remove-pet message to server for ${petId}`);
       this.colyseusClient.sendMessage("remove_pet", {
-        petId: petId,
+        petId: petId
       });
     }
 
@@ -216,7 +222,7 @@ export class PetManager {
         ease: "Power2",
         yoyo: true,
         hold: 500,
-        onComplete: () => heart.destroy(),
+        onComplete: () => heart.destroy()
       });
 
       const gameScene = this.scene as any;
@@ -248,9 +254,9 @@ export class PetManager {
                 useUserStore.getState().addToken(1);
                 // Update the token UI
                 tokenUI.update();
-              },
+              }
             });
-          },
+          }
         });
       }
     }
@@ -557,9 +563,9 @@ export class PetManager {
           scaleX: 1.7,
           scaleY: 1.2,
           duration: 100,
-          yoyo: true,
+          yoyo: true
         });
-      },
+      }
     });
 
     // Add shadow effect
@@ -576,7 +582,7 @@ export class PetManager {
       scaleX: 1.3,
       alpha: 0.5,
       duration: 500,
-      ease: "Power2.easeOut",
+      ease: "Power2.easeOut"
     });
 
     this.sharedDroppedFood.push(food as any);
@@ -646,7 +652,7 @@ export class PetManager {
       ease: "Power2.easeIn",
       onComplete: () => {
         food.destroy();
-      },
+      }
     });
 
     this.scene.tweens.add({
@@ -655,7 +661,7 @@ export class PetManager {
       duration: 300,
       onComplete: () => {
         shadow.destroy();
-      },
+      }
     });
 
     // Remove from arrays
@@ -739,7 +745,7 @@ export class PetManager {
       duration: 300,
       onComplete: () => {
         shadow.destroy();
-      },
+      }
     });
 
     // Remove from arrays
@@ -816,9 +822,9 @@ export class PetManager {
           scaleX: GAME_LAYOUT.BALL_SCALE * 1.13,
           scaleY: GAME_LAYOUT.BALL_SCALE * 0.8,
           duration: 100,
-          yoyo: true,
+          yoyo: true
         });
-      },
+      }
     });
 
     // Add shadow effect
@@ -835,7 +841,7 @@ export class PetManager {
       scaleX: { from: 0.5, to: 1 },
       scaleY: { from: 0.5, to: 1 },
       duration: 500,
-      ease: "Power2",
+      ease: "Power2"
     });
 
     this.sharedDroppedBalls.push(ball);
@@ -1181,7 +1187,7 @@ export class PetManager {
       return true;
     } else {
       // TODO: Implement buying logic to buy without ID?
-      const success = this.buyToy();
+      const success = this.buyToy("ball");
       if (success) {
         this.dropSharedBall(x, y);
         return true;
@@ -1204,7 +1210,7 @@ export class PetManager {
       cleanlinessLevel: petData.cleanlinessSystem.cleanlinessLevel,
       happinessLevel: petData.happinessSystem.happinessLevel,
       currentActivity: petData.pet.currentActivity,
-      foodInventory: petData.feedingSystem.foodInventory,
+      foodInventory: petData.feedingSystem.foodInventory
     }));
 
     return {
@@ -1213,7 +1219,7 @@ export class PetManager {
       pets: stats,
       totalFoodInventory: this.getFoodInventory(),
       totalCleaningInventory: this.getCleaningInventory(),
-      totalToyInventory: this.getToyInventory(),
+      totalToyInventory: this.getToyInventory()
     };
   }
   // Cleanup all pets
@@ -1260,7 +1266,7 @@ export class PetManager {
       callback: () => {
         this.performSafetyCheck();
       },
-      loop: true,
+      loop: true
     });
   }
 
@@ -1515,7 +1521,7 @@ export class PetManager {
     }
 
     console.log(`🖱️ Right-clicked on pet ${petId}, showing details modal`);
-    
+
     // Get GameUI reference to show modal
     const gameScene = this.scene as any;
     if (gameScene.gameUI && gameScene.gameUI.petDetailsModal) {

@@ -8,6 +8,26 @@ import dogChewImg from "@/assets/images/Chog/chog_chew.png";
 import dogChewJson from "@/assets/images/Chog/chog_chew.json";
 import dogWalkImg from "@/assets/images/Chog/chog_walk.png";
 import dogWalkJson from "@/assets/images/Chog/chog_walk_animated.json";
+// KeoneDog assets (using current path until migration)
+import keonedogSleepImg from "@/assets/images/KeoneDog/keonedog_sleep.png";
+import keonedogSleepJson from "@/assets/images/KeoneDog/keonedog_sleep.json";
+import keonedogPlayImg from "@/assets/images/KeoneDog/keonedog_idleplay.png";
+import keonedogPlayJson from "@/assets/images/KeoneDog/keonedog_idleplay.json";
+import keonedogChewImg from "@/assets/images/KeoneDog/keonedog_chew.png";
+import keonedogChewJson from "@/assets/images/KeoneDog/keonedog_chew.json";
+import keonedogWalkImg from "@/assets/images/KeoneDog/keonedog_walk.png";
+import keonedogWalkJson from "@/assets/images/KeoneDog/keonedog_walk.json";
+import keonedogIdleImg from "@/assets/images/KeoneDog/keonedog_idle.png";
+import keonedogIdleJson from "@/assets/images/KeoneDog/keonedog_idle.json";
+// Ghost assets
+import ghostSleepImg from "@/assets/images/pets/Ghost/ghost_sleep.png";
+import ghostSleepJson from "@/assets/images/pets/Ghost/ghost_sleep.json";
+import ghostPlayImg from "@/assets/images/pets/Ghost/ghost_idleplay.png";
+import ghostPlayJson from "@/assets/images/pets/Ghost/ghost_idleplay.json";
+import ghostChewImg from "@/assets/images/pets/Ghost/ghost_chew.png";
+import ghostChewJson from "@/assets/images/pets/Ghost/ghost_chew.json";
+import ghostIdleImg from "@/assets/images/pets/Ghost/ghost_idle.png";
+import ghostIdleJson from "@/assets/images/pets/Ghost/ghost_idle.json";
 import hamburgerImg from "@/assets/images/food/hambuger.png";
 import poopImg from "@/assets/images/poop/poop.png";
 import broomImg from "@/assets/images/broom/broom.png";
@@ -23,6 +43,29 @@ export const loadChogAssets = (scene: Phaser.Scene) => {
   scene.load.atlas("dog-play", dogPlayImg, dogPlayJson);
   scene.load.atlas("dog-chew", dogChewImg, dogChewJson);
   scene.load.atlas("dog-walk", dogWalkImg, dogWalkJson);
+};
+
+export const loadKeoneDogAssets = (scene: Phaser.Scene) => {
+  scene.load.atlas("keonedog-idle", keonedogIdleImg, keonedogIdleJson);
+  scene.load.atlas("keonedog-sleep", keonedogSleepImg, keonedogSleepJson);
+  scene.load.atlas("keonedog-play", keonedogPlayImg, keonedogPlayJson);
+  scene.load.atlas("keonedog-chew", keonedogChewImg, keonedogChewJson);
+  scene.load.atlas("keonedog-walk", keonedogWalkImg, keonedogWalkJson);
+};
+
+export const loadGhostAssets = (scene: Phaser.Scene) => {
+  scene.load.atlas("ghost-idle", ghostIdleImg, ghostIdleJson);
+  scene.load.atlas("ghost-sleep", ghostSleepImg, ghostSleepJson);
+  scene.load.atlas("ghost-play", ghostPlayImg, ghostPlayJson);
+  scene.load.atlas("ghost-chew", ghostChewImg, ghostChewJson);
+  // Note: Ghost doesn't have walk animation yet
+};
+
+// Load all pet assets
+export const loadAllPetAssets = (scene: Phaser.Scene) => {
+  loadChogAssets(scene);
+  loadKeoneDogAssets(scene);
+  loadGhostAssets(scene);
 };
 
 // Load background assets

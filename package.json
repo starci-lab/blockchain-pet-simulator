@@ -29,7 +29,9 @@
     "build:types": "tsc -p tsconfig.lib.json",
     "lint": "eslint .",
     "preview": "vite preview",
-    "prepublishOnly": "npm run build:lib"
+    "prepublishOnly": "npm run build:lib",
+    "migrate-assets": "node -e \"require('./src/utils/assetMigrationScript').printMigrationInstructions()\"",
+    "validate-assets": "node -e \"console.log(require('./src/utils/assetMigrationScript').validateAssetStructure())\""
   },
   "dependencies": {
     "@colyseus/schema": "^3.0.42",
