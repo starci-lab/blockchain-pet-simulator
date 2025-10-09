@@ -422,30 +422,14 @@ export class PetManager {
       // Update movement
       const movementResult = petData.movementSystem.update();
 
-      // Check if pet reached shared food or ball
-      if (
-        movementResult &&
-        "reachedTarget" in movementResult &&
-        movementResult.reachedTarget &&
-        movementResult.targetX !== undefined &&
-        movementResult.targetY !== undefined
-      ) {
-        // Try to eat from shared food pool
-        const ateFood = this.checkSharedFoodEating(
-          petData,
-          movementResult.targetX,
-          movementResult.targetY
-        );
+      // Always attempt to eat based on current position (even if not exactly at target)
+      this.checkSharedFoodEating(
+        petData,
+        petData.pet.sprite.x,
+        petData.pet.sprite.y
+      );
 
-        // If didn't eat food, try to play with shared ball
-        if (!ateFood) {
-          this.checkSharedBallPlaying(
-            petData,
-            movementResult.targetX,
-            movementResult.targetY
-          );
-        }
-      }
+      // Do not trigger ball interactions here; current focus is food only
 
       // Update activity and feeding
       petData.activitySystem.update();
@@ -529,9 +513,10 @@ export class PetManager {
 
   // Drop food to shared pool that all pets can eat
   private dropSharedFood(x: number, _y?: number): void {
-    // Food always drops near the bottom of the screen (ground line)
+    // Food drops onto the same ground line pets stand on, to ensure reachability
     const cameraHeight = this.scene.cameras.main.height;
     const cameraWidth = this.scene.cameras.main.width;
+    // Use food's own ground line to ensure it's visible and reachable
     const foodFinalY = GamePositioning.getFoodFinalY(cameraHeight);
 
     // Clamp food position to stay within pet boundaries (not food boundaries)
@@ -543,18 +528,15 @@ export class PetManager {
       `🍔 Dropping food: requested x=${x}, clamped x=${clampedX}, pet bounds=[${petBounds.minX}, ${petBounds.maxX}], finalY=${foodFinalY}`
     );
 
-    const food = this.scene.add.image(
-      clampedX,
-      GamePositioning.getFoodDropY(cameraHeight),
-      "hamburger"
-    );
+    const foodDropStartY = GamePositioning.getFoodDropY(cameraHeight);
+    const food = this.scene.add.image(clampedX, foodDropStartY, "hamburger");
     food.setScale(GAME_LAYOUT.FOOD_SCALE);
     food.setAlpha(0.9);
 
     // Add drop animation effect
     this.scene.tweens.add({
       targets: food,
-      y: GamePositioning.getFoodFinalY(cameraHeight),
+      y: foodFinalY,
       duration: 500,
       ease: "Bounce.easeOut",
       onComplete: () => {
@@ -571,7 +553,7 @@ export class PetManager {
     // Add shadow effect
     const shadow = this.scene.add.ellipse(
       clampedX,
-      foodFinalY + 5,
+      foodFinalY + 8,
       30,
       12,
       0x000000,
@@ -611,31 +593,16 @@ export class PetManager {
     const food = this.sharedDroppedFood[index];
     const shadow = this.sharedFoodShadows[index];
     const timer = this.sharedFoodTimers[index];
-
-    // Check if any pet was chasing this specific food
+    // If some pet was assigned to chase this food, reset it immediately to avoid stuck state
     const chasingPetId = this.foodTargets.get(food);
-    let wasBeingChased = false;
-    let chasingPetData: PetData | undefined;
-
     if (chasingPetId) {
-      chasingPetData = this.pets.get(chasingPetId);
-      if (
-        chasingPetData &&
-        chasingPetData.pet.isChasing &&
-        chasingPetData.pet.chaseTarget
-      ) {
-        const distance = Phaser.Math.Distance.Between(
-          chasingPetData.pet.chaseTarget.x,
-          chasingPetData.pet.chaseTarget.y,
-          food.x,
-          food.y
-        );
-        wasBeingChased = distance < 10;
+      const chasingPetData = this.pets.get(chasingPetId);
+      if (chasingPetData) {
+        chasingPetData.pet.stopChasing();
+        this.forceReturnToWalk(chasingPetData);
       }
+      this.foodTargets.delete(food);
     }
-
-    // Remove from food targets tracking
-    this.foodTargets.delete(food);
 
     // Cancel timer if it exists
     if (timer && !timer.hasDispatched) {
@@ -669,34 +636,7 @@ export class PetManager {
     this.sharedFoodShadows.splice(index, 1);
     this.sharedFoodTimers.splice(index, 1);
 
-    // Handle pet that was chasing this food (similar to FeedingSystem logic)
-    if (wasBeingChased && chasingPetData) {
-      console.log(
-        `🍔 Pet ${chasingPetData.id} was chasing food that disappeared, handling gracefully`
-      );
-
-      // Stop chasing immediately
-      chasingPetData.pet.stopChasing();
-
-      // Quick transition to avoid stuttering (like FeedingSystem does)
-      this.scene.time.delayedCall(30, () => {
-        if (
-          chasingPetData.feedingSystem.hungerLevel < 100 &&
-          this.sharedDroppedFood.length > 0
-        ) {
-          console.log(
-            `🔄 Pet ${chasingPetData.id} looking for another food after target disappeared`
-          );
-          this.checkPetShouldChaseSharedFood(chasingPetData);
-        } else {
-          console.log(
-            `🚶 Pet ${chasingPetData.id} returning to walk mode after target disappeared`
-          );
-          chasingPetData.pet.isUserControlled = false;
-          chasingPetData.pet.setActivity("walk");
-        }
-      });
-    }
+    // No additional handling needed; the assigned pet (if any) was already forced back to walk
 
     console.log("Shared food removed at index:", index);
   }
@@ -1011,26 +951,49 @@ export class PetManager {
 
   // Check if pet can eat shared food
   checkSharedFoodEating(petData: PetData, x: number, y: number): boolean {
-    // Find and remove food from shared pool
-    const foodIndex = this.sharedDroppedFood.findIndex(
-      (food) => Phaser.Math.Distance.Between(food.x, food.y, x, y) < 40
-    );
+    // Prefer detecting by pet's actual position to avoid target mismatch
+    const petX = petData.pet.sprite.x;
+    const petY = petData.pet.sprite.y;
+    const EAT_RADIUS = 35; // closer contact distance
+    const MAX_Y_DELTA = 25; // tighter vertical tolerance
+
+    let foodIndex = this.sharedDroppedFood.findIndex((food) => {
+      const dx = Math.abs(food.x - petX);
+      const dy = Math.abs(food.y - petY);
+      const dist = Phaser.Math.Distance.Between(food.x, food.y, petX, petY);
+      return dist < EAT_RADIUS || (dx < 20 && dy < MAX_Y_DELTA);
+    });
+
+    // Fallback: check near the movement target if not found near pet
+    if (foodIndex === -1) {
+      foodIndex = this.sharedDroppedFood.findIndex((food) => {
+        const dx = Math.abs(food.x - x);
+        const dy = Math.abs(food.y - y);
+        const dist = Phaser.Math.Distance.Between(food.x, food.y, x, y);
+        return dist < EAT_RADIUS || (dx < 20 && dy < MAX_Y_DELTA);
+      });
+    }
 
     if (foodIndex !== -1) {
-      console.log(`🍔 Pet ${petData.id} is eating food at index ${foodIndex}`);
+      console.log(`🍔 Pet ${petData.id} reached food at index ${foodIndex}`);
 
-      // Release food target for this pet
+      // Release food target for this pet immediately
       this.releaseFoodTarget(petData.id);
 
-      // Remove food from shared pool
-      this.removeSharedFoodAtIndex(foodIndex);
-
-      // Stop chasing and trigger the eating process via the feeding system
+      // Stop chasing immediately to avoid sliding
       petData.pet.stopChasing();
-      petData.feedingSystem.triggerEat("hamburger"); // Assuming "hamburger" for now
 
-      // Handle post-eating behavior
-      this.handlePetPostEating(petData);
+      // Remove food immediately and then trigger chewing shortly after
+      const foodObj = this.sharedDroppedFood[foodIndex];
+      const idx = this.sharedDroppedFood.indexOf(foodObj);
+      if (idx !== -1) {
+        this.removeSharedFoodAtIndex(idx);
+      }
+      // Start chew shortly after to ensure a visible transition
+      this.scene.time.delayedCall(100, () => {
+        petData.feedingSystem.triggerEat("hamburger");
+        this.handlePetPostEating(petData);
+      });
 
       return true;
     }
@@ -1074,14 +1037,14 @@ export class PetManager {
   // Handle pet behavior after eating
   private handlePetPostEating(petData: PetData): void {
     console.log(
-      `🍽️ Pet ${petData.id} started eating, will check for next action in 2 seconds`
+      `🍽️ Pet ${petData.id} started eating, will check for next action in 3 seconds`
     );
 
     // Force ensure pet is in correct state
     petData.pet.isUserControlled = true; // Temporarily user controlled while eating
 
     // Use fixed timer instead of animation event for reliability
-    this.scene.time.delayedCall(2000, () => {
+    this.scene.time.delayedCall(3000, () => {
       // Force check and reset pet state regardless of current activity
       if (
         petData.pet.currentActivity === "chew" ||

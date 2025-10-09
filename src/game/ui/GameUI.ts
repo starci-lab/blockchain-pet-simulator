@@ -48,8 +48,7 @@ export class GameUI {
     this.inputManager = new InputManager(
       scene,
       petManager,
-      this.notificationUI,
-      null // No longer using ShopUI
+      this.notificationUI
     );
     // Legacy ShopModal and ShopUI removed
   }

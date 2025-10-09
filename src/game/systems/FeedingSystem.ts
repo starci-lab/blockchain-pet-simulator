@@ -9,7 +9,7 @@ export const HungerState = {
   Full: "full",
   Normal: "normal",
   Hungry: "hungry",
-  Starving: "starving",
+  Starving: "starving"
 } as const;
 export type HungerState = (typeof HungerState)[keyof typeof HungerState];
 
@@ -120,7 +120,8 @@ export class FeedingSystem {
    */
   public triggerEat(foodType: string = "hamburger"): void {
     const foodItem = gameConfigManager.getFoodItem(foodType);
-    const recovery = foodItem?.hungerRestore || 10; // Default recovery value
+    const recovery =
+      foodItem?.hungerRestore ?? GAME_MECHANICS.HUNGER_RESTORE_AMOUNT;
 
     const oldHunger = this.hungerLevel;
     this.hungerLevel = Math.min(100, this.hungerLevel + recovery);
@@ -137,7 +138,7 @@ export class FeedingSystem {
       this.colyseusClient.eatedFood({
         hunger_level: this.hungerLevel,
         pet_id: this.petId,
-        owner_id: userStore.addressWallet || "unknown",
+        owner_id: userStore.addressWallet || "unknown"
       });
       console.log(`📤 Sent 'eated_food' to server for pet ${this.petId}`);
     }

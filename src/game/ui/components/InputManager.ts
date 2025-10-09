@@ -1,22 +1,22 @@
 import { PetManager } from "@/game/managers/PetManager";
+import type { NotificationUI } from "./NotificationUI";
 
-const UI_FONT = "monospace";
+// Removed unused UI_FONT constant
 
 export class InputManager {
   private scene: Phaser.Scene;
   private petManager: PetManager;
-  private notificationUI: any;
+  private notificationUI: NotificationUI;
 
   constructor(
     scene: Phaser.Scene,
     petManager: PetManager,
-    notificationUI: any,
-    shopUI: any // Keep parameter for compatibility but don't use it
+    notificationUI: NotificationUI
   ) {
     this.scene = scene;
     this.petManager = petManager;
     this.notificationUI = notificationUI;
-    // shopUI is no longer used - legacy ShopUI removed
+    // Legacy ShopUI removed
   }
 
   setupInputHandlers() {
@@ -32,6 +32,35 @@ export class InputManager {
       const isDoubleClick =
         currentTime - lastClickTime < DOUBLE_CLICK_THRESHOLD;
       lastClickTime = currentTime;
+
+      // Check placing state first (deferred purchase from React shop)
+      const placing = this.scene.registry.get("placingItem") as
+        | {
+            type: string;
+            itemId: string;
+            itemName?: string;
+            cursorUrl?: string;
+          }
+        | undefined;
+      if (placing && placing.type === "food") {
+        if (isDoubleClick) {
+          // Cancel placing on double tap: restore default cursor and clear state
+          this.scene.input.setDefaultCursor(
+            `url(./src/assets/images/cursor/navigation_nw.png), pointer`
+          );
+          this.scene.registry.set("placingItem", undefined);
+          this.notificationUI.showNotification(
+            "Canceled placement",
+            pointer.x,
+            pointer.y
+          );
+          return; // consume click
+        }
+        // Single tap: drop and buy, keep placing mode active for multi-drop
+        this.petManager.buyAndDropFood(pointer.x, pointer.y, placing.itemId);
+        // No notification per UX request; remain in placing mode on single tap
+        return; // consume click regardless
+      }
 
       if (isDoubleClick) {
         // Double click - pet interaction
@@ -53,7 +82,7 @@ export class InputManager {
     }
 
     // Check if click is near the pet
-    const petBounds = activePet.pet.getBounds();
+    const petBounds = activePet.pet.sprite.getBounds();
     const distance = Phaser.Math.Distance.Between(
       x,
       y,
